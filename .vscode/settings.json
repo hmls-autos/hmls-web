@@ -1,7 +1,6 @@
 {
   "deno.enablePaths": [
-    "supabase/functions",
-    "hmls-api"
+    "supabase/functions"
   ],
   "deno.lint": true,
   "deno.unstable": [

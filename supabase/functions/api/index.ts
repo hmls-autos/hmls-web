@@ -1,7 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+
+// FAIL FAST: Import env validation first - throws immediately if env is invalid
+import "./lib/env.ts";
+import { initLogger, logger } from "./lib/logger.ts";
 import task from "./routes/task.ts";
+
+// Initialize structured logging
+await initLogger();
 
 const app = new Hono();
 
@@ -9,10 +16,15 @@ const app = new Hono();
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "https://hmls.autos"],
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3002",
+      "https://hmls.autos",
+    ],
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Upgrade", "Connection", "Authorization"],
-  }),
+  })
 );
 
 // Health check
@@ -30,8 +42,9 @@ app.notFound((c) => {
 
 // Error handler
 app.onError((err, c) => {
-  console.error("Server error:", err);
+  logger.error`Server error: ${err.message}`;
   return c.json({ error: "Internal server error" }, 500);
 });
 
+logger.info`HMLS API server starting`;
 Deno.serve(app.fetch);

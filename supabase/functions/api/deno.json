@@ -10,6 +10,8 @@
     "drizzle-orm/postgres-js": "npm:drizzle-orm/postgres-js",
     "postgres": "npm:postgres",
     "zod": "npm:zod",
-    "rxjs-for-await": "npm:rxjs-for-await"
+    "rxjs-for-await": "npm:rxjs-for-await",
+    "stripe": "npm:stripe@^17",
+    "@logtape/logtape": "jsr:@logtape/logtape@^0.11"
   }
 }
