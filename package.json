@@ -1,13 +1,18 @@
 {
   "name": "hmls",
   "private": true,
+  "packageManager": "bun@1.3.5",
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "dev": "concurrently -n web,api -c blue,green \"bun run dev:web\" \"bun run dev:api\"",
-    "dev:web": "cd hmls-web && bun run dev",
-    "dev:api": "supabase functions serve",
-    "build:web": "cd hmls-web && bun run build"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "dev:api": "bun run --filter=@hmls/api dev",
+    "dev:web": "bun run --filter=hmls-web dev",
+    "db:push": "bun run --filter=@hmls/api db:push",
+    "db:studio": "bun run --filter=@hmls/api db:studio"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "turbo": "^2.5.0"
   }
 }
