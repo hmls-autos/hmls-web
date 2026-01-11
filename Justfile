@@ -1,16 +1,16 @@
 # Development
 dev:
     #!/usr/bin/env bash
-    cd hmls-api && deno task dev &
+    supabase functions serve &
     cd hmls-web && bun dev
 
 dev-api:
-    cd hmls-api && deno task dev
+    supabase functions serve
 
 dev-web:
     cd hmls-web && bun dev
 
-# Supabase (Database only)
+# Supabase
 start:
     supabase start
 
@@ -22,18 +22,18 @@ status:
 
 # Database
 db-migrate:
-    cd hmls-api && deno task db:migrate
+    supabase db push
 
-db-seed:
-    cd hmls-api && deno task db:seed
+db-reset:
+    supabase db reset
 
 # Code quality
 fmt:
-    cd hmls-api && deno fmt
+    deno fmt supabase/functions
     cd hmls-web && bun run format
 
 lint:
-    cd hmls-api && deno lint
+    deno lint supabase/functions
     cd hmls-web && bun run lint
 
 # Build
@@ -42,7 +42,7 @@ build:
 
 # Deploy
 deploy-api:
-    cd hmls-api && deployctl deploy --project=hmls-api main.ts
+    supabase functions deploy api
 
 deploy-web:
     cd hmls-web && bun run build

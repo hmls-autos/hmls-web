@@ -9,7 +9,7 @@ const app = new Hono();
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3000", "https://hmls.autos"],
+    origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "https://hmls.autos"],
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Upgrade", "Connection", "Authorization"],
   }),
