@@ -5,23 +5,6 @@ import { z } from "zod";
  * FAIL FAST: Application crashes immediately on import if any variable is invalid.
  */
 const envSchema = z.object({
-  // Anthropic API
-  ANTHROPIC_API_KEY: z.string().min(1, "ANTHROPIC_API_KEY is required"),
-
-  // Stripe API
-  STRIPE_SECRET_KEY: z
-    .string()
-    .refine(
-      (key) => key.startsWith("sk_test_") || key.startsWith("sk_live_"),
-      "STRIPE_SECRET_KEY must start with 'sk_test_' or 'sk_live_'"
-    ),
-
-  // Cal.com API
-  CALCOM_API_KEY: z.string().min(1, "CALCOM_API_KEY is required"),
-  CALCOM_EVENT_TYPE_ID: z
-    .string()
-    .regex(/^\d+$/, "CALCOM_EVENT_TYPE_ID must be a numeric string"),
-
   // Database
   DATABASE_URL: z
     .string()
@@ -31,8 +14,8 @@ const envSchema = z.object({
       "DATABASE_URL must be a valid PostgreSQL connection string"
     ),
 
-  // Optional: Agent model override
-  AGENT_MODEL: z.string().optional(),
+  // Agent HTTP service
+  AGENT_URL: z.string().default("localhost:50051"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -42,10 +25,6 @@ export type Env = z.infer<typeof envSchema>;
  * Throws ZodError immediately on import if validation fails.
  */
 export const env: Env = envSchema.parse({
-  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
-  CALCOM_API_KEY: process.env.CALCOM_API_KEY,
-  CALCOM_EVENT_TYPE_ID: process.env.CALCOM_EVENT_TYPE_ID,
   DATABASE_URL: process.env.DATABASE_URL,
-  AGENT_MODEL: process.env.AGENT_MODEL,
+  AGENT_URL: process.env.AGENT_URL,
 });

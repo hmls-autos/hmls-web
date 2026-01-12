@@ -1,20 +1,21 @@
 import { z } from "zod";
 import Stripe from "stripe";
-import { db, schema } from "../../db/client";
+import { db, schema } from "../db/client.ts";
 import { eq } from "drizzle-orm";
-import { env } from "../../lib/env";
-import { stripeLogger } from "../../lib/logger";
-import { NotFoundError } from "../../lib/errors";
+import { env } from "../env.ts";
 
 // Initialize Stripe SDK with validated API key
 const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
   apiVersion: "2024-12-18.acacia",
 });
 
-/**
- * Get or create a Stripe customer, preventing duplicates.
- * Stores stripeCustomerId in the database for future lookups.
- */
+class NotFoundError extends Error {
+  constructor(resource: string, id: number | string) {
+    super(`${resource} with id ${id} not found`);
+    this.name = "NotFoundError";
+  }
+}
+
 async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
   const [customer] = await db
     .select()
@@ -26,15 +27,13 @@ async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
     throw new NotFoundError("Customer", customerId);
   }
 
-  // Return cached Stripe ID if we have it
   if (customer.stripeCustomerId) {
-    stripeLogger.debug`Using cached Stripe customer: ${customer.stripeCustomerId}`;
+    console.log(`[stripe] Using cached customer: ${customer.stripeCustomerId}`);
     return customer.stripeCustomerId;
   }
 
-  // Search Stripe by email to prevent duplicates
   if (customer.email) {
-    stripeLogger.debug`Searching Stripe for customer with email: ${customer.email}`;
+    console.log(`[stripe] Searching for customer with email: ${customer.email}`);
     const existing = await stripe.customers.list({
       email: customer.email,
       limit: 1,
@@ -42,9 +41,8 @@ async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
 
     if (existing.data.length > 0) {
       const stripeId = existing.data[0].id;
-      stripeLogger.info`Found existing Stripe customer: ${stripeId}`;
+      console.log(`[stripe] Found existing customer: ${stripeId}`);
 
-      // Cache the Stripe ID in our database
       await db
         .update(schema.customers)
         .set({ stripeCustomerId: stripeId })
@@ -54,8 +52,7 @@ async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
     }
   }
 
-  // Create new Stripe customer
-  stripeLogger.info`Creating new Stripe customer for: ${customer.name || customer.email}`;
+  console.log(`[stripe] Creating new customer for: ${customer.name || customer.email}`);
   const stripeCustomer = await stripe.customers.create({
     email: customer.email ?? undefined,
     name: customer.name ?? undefined,
@@ -65,7 +62,6 @@ async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
     },
   });
 
-  // Cache the Stripe ID in our database
   await db
     .update(schema.customers)
     .set({ stripeCustomerId: stripeCustomer.id })
@@ -74,16 +70,10 @@ async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
   return stripeCustomer.id;
 }
 
-/**
- * Convert dollars to cents for Stripe API
- */
 function dollarsToCents(dollars: number): number {
   return Math.round(dollars * 100);
 }
 
-/**
- * Convert cents to dollars for display
- */
 function centsToDollars(cents: number): number {
   return cents / 100;
 }
@@ -112,7 +102,6 @@ export const createQuoteTool = {
   }) => {
     const stripeCustomerId = await getOrCreateStripeCustomer(params.customerId);
 
-    // Create line items using SDK types
     const lineItems: Stripe.QuoteCreateParams.LineItem[] = params.items.map(
       (item) => ({
         price_data: {
@@ -127,7 +116,6 @@ export const createQuoteTool = {
       })
     );
 
-    // Create quote using SDK
     const quote = await stripe.quotes.create({
       customer: stripeCustomerId,
       line_items: lineItems,
@@ -136,7 +124,6 @@ export const createQuoteTool = {
         (params.expiresInDays || 7) * 24 * 60 * 60,
     });
 
-    // Finalize the quote so it can be sent
     const finalizedQuote = await stripe.quotes.finalize(quote.id);
 
     const totalAmount = params.items.reduce(
@@ -144,9 +131,8 @@ export const createQuoteTool = {
       0
     );
 
-    stripeLogger.info`Quote created: ${finalizedQuote.id} for $${centsToDollars(totalAmount)}`;
+    console.log(`[stripe] Quote created: ${finalizedQuote.id} for $${centsToDollars(totalAmount)}`);
 
-    // Store in database
     const [dbQuote] = await db
       .insert(schema.quotes)
       .values({
@@ -205,7 +191,6 @@ export const createInvoiceTool = {
   }) => {
     const stripeCustomerId = await getOrCreateStripeCustomer(params.customerId);
 
-    // Create invoice items using SDK
     for (const item of params.items) {
       await stripe.invoiceItems.create({
         customer: stripeCustomerId,
@@ -215,14 +200,12 @@ export const createInvoiceTool = {
       });
     }
 
-    // Create invoice using SDK
     const invoice = await stripe.invoices.create({
       customer: stripeCustomerId,
       collection_method: "send_invoice",
       days_until_due: params.dueInDays || 7,
     });
 
-    // Finalize and send
     const finalizedInvoice = await stripe.invoices.finalize(invoice.id);
     const sentInvoice = await stripe.invoices.sendInvoice(finalizedInvoice.id);
 
@@ -231,9 +214,8 @@ export const createInvoiceTool = {
       0
     );
 
-    stripeLogger.info`Invoice sent: ${sentInvoice.id} for $${centsToDollars(totalAmount)}`;
+    console.log(`[stripe] Invoice sent: ${sentInvoice.id} for $${centsToDollars(totalAmount)}`);
 
-    // Store in database
     const [dbInvoice] = await db
       .insert(schema.invoices)
       .values({
@@ -279,11 +261,9 @@ export const getQuoteStatusTool = {
       return { found: false, message: "Quote not found" };
     }
 
-    // Get latest status from Stripe if we have a Stripe ID
     if (quote.stripeQuoteId) {
       const stripeQuote = await stripe.quotes.retrieve(quote.stripeQuoteId);
 
-      // Update local status if changed
       if (stripeQuote.status !== quote.status) {
         await db
           .update(schema.quotes)

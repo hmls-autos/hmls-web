@@ -1,22 +1,12 @@
 import { Hono } from "hono";
 import { eq } from "drizzle-orm";
-import { createHmlsAgent, runAgentTask } from "../agent/index";
+import { runAgentTask } from "../lib/agent-client";
 import { db, schema } from "../db/client";
 import { wsLogger } from "../lib/logger";
-import type { ServerMessage, ClientMessage } from "@hmls/shared";
+import type { ServerMessage } from "@hmls/shared";
 import { isValidClientMessage } from "@hmls/shared";
 
 const task = new Hono();
-
-// Store agent instance (singleton for performance)
-let agentInstance: Awaited<ReturnType<typeof createHmlsAgent>> | null = null;
-
-async function getAgent() {
-  if (!agentInstance) {
-    agentInstance = await createHmlsAgent();
-  }
-  return agentInstance;
-}
 
 /**
  * Send a typed message to the WebSocket client
@@ -25,21 +15,9 @@ function sendMessage(ws: { send: (data: string) => void }, message: ServerMessag
   ws.send(JSON.stringify(message));
 }
 
-// WebSocket upgrade handler using Bun's API
+// WebSocket upgrade is handled at the server level in index.ts
 task.get("/", (c) => {
-  const upgrade = c.req.header("upgrade");
-
-  if (upgrade?.toLowerCase() !== "websocket") {
-    return c.json({ error: "WebSocket upgrade required" }, 426);
-  }
-
-  // Bun's server.upgrade() is handled at the server level
-  // For Hono + Bun, we use the websocket property on the server
-  const success = c.env?.upgrade?.(c.req.raw);
-  if (success) {
-    return new Response(null);
-  }
-  return c.json({ error: "WebSocket upgrade failed" }, 500);
+  return c.json({ error: "WebSocket upgrade required" }, 426);
 });
 
 // Get conversation history (REST endpoint)
@@ -101,22 +79,19 @@ export const websocket = {
       // Send conversation ID back
       sendMessage(ws, { type: "conversation", conversationId: conversationId! });
 
-      // Get agent and run task
-      const agent = await getAgent();
-      const taskStream = runAgentTask(agent, userMessage);
-
+      // Call agent via gRPC
       let fullResponse = "";
 
-      // Use async iterator
-      const { eachValueFrom } = await import("rxjs-for-await");
-      for await (const event of eachValueFrom(taskStream)) {
-        if (event.type === "text_delta") {
+      for await (const event of runAgentTask(userMessage, conversationId ?? undefined)) {
+        if (event.type === "text_delta" && event.text) {
           fullResponse += event.text;
           sendMessage(ws, { type: "delta", text: event.text });
-        } else if (event.type === "tool_use") {
-          sendMessage(ws, { type: "tool_start", tool: event.name });
-        } else if (event.type === "tool_result") {
-          sendMessage(ws, { type: "tool_end", tool: event.name });
+        } else if (event.type === "tool_start") {
+          sendMessage(ws, { type: "tool_start", tool: event.toolName || "unknown" });
+        } else if (event.type === "tool_end") {
+          sendMessage(ws, { type: "tool_end", tool: event.toolName || "unknown" });
+        } else if (event.type === "error") {
+          sendMessage(ws, { type: "error", message: event.message || "Unknown error" });
         }
       }
 

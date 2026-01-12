@@ -25,6 +25,24 @@ services:
       postgres:
         condition: service_healthy
 
+  agent:
+    build:
+      context: .
+      dockerfile: apps/agent/Dockerfile
+    container_name: hmls-agent
+    ports:
+      - "50051:50051"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      CALCOM_API_KEY: ${CALCOM_API_KEY}
+      CALCOM_EVENT_TYPE_ID: ${CALCOM_EVENT_TYPE_ID}
+      HTTP_PORT: "50051"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   api:
     build:
       context: .
@@ -34,11 +52,10 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      CALCOM_API_KEY: ${CALCOM_API_KEY}
-      CALCOM_EVENT_TYPE_ID: ${CALCOM_EVENT_TYPE_ID}
+      AGENT_URL: agent:50051
     depends_on:
+      agent:
+        condition: service_started
       migrate:
         condition: service_completed_successfully
 

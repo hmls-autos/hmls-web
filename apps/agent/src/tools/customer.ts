@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { db, schema } from "../../db/client";
+import { db, schema } from "../db/client.ts";
 import { eq, or } from "drizzle-orm";
 
 export const getCustomerTool = {
@@ -108,7 +108,7 @@ export const getServicesTool = {
         id: s.id,
         name: s.name,
         description: s.description,
-        minPrice: s.minPrice / 100, // convert cents to dollars
+        minPrice: s.minPrice / 100,
         maxPrice: s.maxPrice / 100,
         priceRange: `$${s.minPrice / 100}-${s.maxPrice / 100}`,
         duration: s.duration,

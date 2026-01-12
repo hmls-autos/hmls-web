@@ -1,13 +1,13 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "./schema";
+import * as schema from "./schema.ts";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _client: ReturnType<typeof postgres> | null = null;
 
 function getDb() {
   if (!_db) {
-    const connectionString = process.env.DATABASE_URL;
+    const connectionString = Deno.env.get("DATABASE_URL");
     if (!connectionString) {
       throw new Error("DATABASE_URL environment variable is required");
     }

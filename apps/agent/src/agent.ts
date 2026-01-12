@@ -1,23 +1,24 @@
 import { AnthropicModelProvider, createZypherAgent } from "@corespeed/zypher";
-import { env } from "../lib/env";
-import { agentLogger } from "../lib/logger";
-import { SYSTEM_PROMPT } from "./system-prompt";
-import { calcomTools } from "./tools/calcom";
-import { customerTools } from "./tools/customer";
-import { stripeTools } from "./tools/stripe";
+import { env } from "./env.ts";
+import { SYSTEM_PROMPT } from "./system-prompt.ts";
+import { calcomTools } from "./tools/calcom.ts";
+import { customerTools } from "./tools/customer.ts";
+import { stripeTools } from "./tools/stripe.ts";
 
 // Default model, can be overridden via env
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
 export async function createHmlsAgent() {
-  agentLogger.info`Creating HMLS agent`;
+  console.log("[agent] Creating HMLS agent");
 
   const agent = await createZypherAgent({
     modelProvider: new AnthropicModelProvider({
       apiKey: env.ANTHROPIC_API_KEY,
     }),
-    systemPrompt: SYSTEM_PROMPT,
     tools: [...calcomTools, ...customerTools, ...stripeTools],
+    overrides: {
+      systemPromptLoader: async () => SYSTEM_PROMPT,
+    },
   });
 
   return agent;
@@ -28,6 +29,6 @@ export function runAgentTask(
   message: string
 ) {
   const model = env.AGENT_MODEL || DEFAULT_MODEL;
-  agentLogger.debug`Running agent task with model: ${model}`;
+  console.log(`[agent] Running task with model: ${model}`);
   return agent.runTask(message, model);
 }

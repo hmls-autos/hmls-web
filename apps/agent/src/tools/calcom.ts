@@ -1,20 +1,15 @@
 import { z } from "zod";
-import { env } from "../../lib/env";
-import { calcomLogger } from "../../lib/logger";
+import { env } from "../env.ts";
 
 const CALCOM_API_BASE = "https://api.cal.com/v1";
 
-/**
- * Cal.com API client with proper Authorization header.
- * Never exposes API key in URL.
- */
 async function calcomRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${CALCOM_API_BASE}${endpoint}`;
 
-  calcomLogger.debug`Cal.com API request: ${options.method || "GET"} ${endpoint}`;
+  console.log(`[calcom] ${options.method || "GET"} ${endpoint}`);
 
   const response = await fetch(url, {
     ...options,
@@ -27,14 +22,13 @@ async function calcomRequest<T>(
 
   if (!response.ok) {
     const error = await response.text();
-    calcomLogger.error`Cal.com API error: ${response.status} ${error}`;
+    console.error(`[calcom] Error: ${response.status} ${error}`);
     throw new Error(`Cal.com API error (${response.status}): ${error}`);
   }
 
   return response.json();
 }
 
-// Tool definitions for Zypher
 export const getAvailabilityTool = {
   name: "get_availability",
   description:
@@ -53,9 +47,7 @@ export const getAvailabilityTool = {
     const start = params.startDate || new Date().toISOString().split("T")[0];
     const end =
       params.endDate ||
-      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split(
-        "T"
-      )[0];
+      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
     const data = await calcomRequest<{ slots?: unknown[] }>(
       `/availability?eventTypeId=${env.CALCOM_EVENT_TYPE_ID}&startTime=${start}&endTime=${end}`
@@ -120,7 +112,7 @@ export const createBookingTool = {
       }),
     });
 
-    calcomLogger.info`Booking created: ${booking.uid} for ${params.name}`;
+    console.log(`[calcom] Booking created: ${booking.uid} for ${params.name}`);
 
     return {
       success: true,

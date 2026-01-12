@@ -19,8 +19,7 @@ interface ChatState {
 }
 
 const WS_URL =
-  process.env.NEXT_PUBLIC_API_WS_URL ||
-  "ws://127.0.0.1:54321/functions/v1/api/task";
+  process.env.NEXT_PUBLIC_API_WS_URL || "ws://127.0.0.1:8000/task";
 
 export function useChat() {
   const [state, setState] = useState<ChatState>({
