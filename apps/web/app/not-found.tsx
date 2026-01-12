@@ -45,8 +45,8 @@ export default function NotFound() {
             transition={{ delay: 0.4 }}
             className="text-zinc-400 max-w-md mx-auto mb-8"
           >
-            The page you're looking for doesn't exist or has been moved.
-            Let's get you back on track.
+            The page you're looking for doesn't exist or has been moved. Let's
+            get you back on track.
           </motion.p>
 
           <motion.div

@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import Background from "@/components/Background";
 import Navbar from "@/components/Navbar";
 
+// biome-ignore lint/suspicious/noShadowRestrictedNames: Next.js requires this name
 export default function Error({
   error,
   reset,

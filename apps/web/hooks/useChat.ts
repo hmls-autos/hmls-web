@@ -1,177 +1,132 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import ReconnectingWebSocket from "reconnecting-websocket";
-
-export interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
-
-interface ChatState {
-  messages: Message[];
-  isConnected: boolean;
-  isLoading: boolean;
-  conversationId: number | null;
-  currentTool: string | null;
-}
+import { useChatStore } from "@/stores/chatStore";
 
 const WS_URL = process.env.NEXT_PUBLIC_API_WS_URL || "ws://127.0.0.1:8000/task";
 
-export function useChat() {
-  const [state, setState] = useState<ChatState>({
-    messages: [],
-    isConnected: false,
-    isLoading: false,
-    conversationId: null,
-    currentTool: null,
-  });
+// Singleton WebSocket instance shared across all components
+let sharedWs: ReconnectingWebSocket | null = null;
+let wsRefCount = 0;
 
-  const wsRef = useRef<ReconnectingWebSocket | null>(null);
-  const pendingMessageRef = useRef<string>("");
-  const conversationIdRef = useRef<number | null>(null);
-
-  // Keep conversationId in sync with ref for sendMessage
-  useEffect(() => {
-    conversationIdRef.current = state.conversationId;
-  }, [state.conversationId]);
-
-  useEffect(() => {
-    // Create WebSocket with battle-tested reconnecting-websocket
-    const ws = new ReconnectingWebSocket(WS_URL, [], {
+function getSharedWebSocket() {
+  if (!sharedWs) {
+    sharedWs = new ReconnectingWebSocket(WS_URL, [], {
       maxRetries: 10,
       connectionTimeout: 5000,
-      maxReconnectionDelay: 30000, // Max 30s between retries
-      minReconnectionDelay: 1000, // Start at 1s
-      reconnectionDelayGrowFactor: 2, // Exponential backoff
+      maxReconnectionDelay: 30000,
+      minReconnectionDelay: 1000,
+      reconnectionDelayGrowFactor: 2,
     });
 
-    ws.onopen = () => {
-      setState((s) => ({ ...s, isConnected: true }));
+    sharedWs.onopen = () => {
+      useChatStore.getState().setConnected(true);
     };
 
-    ws.onclose = () => {
-      setState((s) => ({ ...s, isConnected: false }));
+    sharedWs.onclose = () => {
+      useChatStore.getState().setConnected(false);
     };
 
-    ws.onerror = () => {
+    sharedWs.onerror = () => {
       // Errors are logged internally by reconnecting-websocket
     };
 
-    ws.onmessage = (event) => {
+    sharedWs.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        const state = useChatStore.getState();
 
         switch (data.type) {
           case "conversation":
-            setState((s) => ({ ...s, conversationId: data.conversationId }));
+            state.setConversationId(data.conversationId);
             break;
 
           case "delta":
-            pendingMessageRef.current += data.text;
-            setState((s) => {
-              const messages = [...s.messages];
-              const lastMsg = messages[messages.length - 1];
-              if (lastMsg?.role === "assistant") {
-                lastMsg.content = pendingMessageRef.current;
-              } else {
-                messages.push({
-                  id: crypto.randomUUID(),
-                  role: "assistant",
-                  content: pendingMessageRef.current,
-                  timestamp: new Date(),
-                });
-              }
-              return { ...s, messages };
-            });
+            state.appendAssistantMessage(data.text);
             break;
 
           case "tool_start":
-            setState((s) => ({ ...s, currentTool: data.tool || data.name }));
+            state.setCurrentTool(data.tool || data.name);
             break;
 
           case "tool_end":
-            setState((s) => ({ ...s, currentTool: null }));
+            state.setCurrentTool(null);
             break;
 
           case "done":
-            pendingMessageRef.current = "";
-            setState((s) => ({ ...s, isLoading: false, currentTool: null }));
+            state.resetPendingMessage();
             break;
 
           case "error":
-            pendingMessageRef.current = "";
-            setState((s) => ({
-              ...s,
-              isLoading: false,
-              currentTool: null,
-              messages: [
-                ...s.messages,
-                {
-                  id: crypto.randomUUID(),
-                  role: "assistant",
-                  content: "Sorry, an error occurred. Please try again.",
-                  timestamp: new Date(),
-                },
-              ],
-            }));
+            state.addErrorMessage();
             break;
         }
       } catch {
         // Ignore invalid JSON
       }
     };
+  }
 
-    wsRef.current = ws;
+  return sharedWs;
+}
+
+export function useChat() {
+  const wsRef = useRef<ReconnectingWebSocket | null>(null);
+
+  const {
+    messages,
+    isConnected,
+    isLoading,
+    currentTool,
+    conversationId,
+    addUserMessage,
+    clearMessages,
+  } = useChatStore();
+
+  useEffect(() => {
+    wsRef.current = getSharedWebSocket();
+    wsRefCount++;
 
     return () => {
-      ws.close();
+      wsRefCount--;
+      // Only close if no more components are using it
+      if (wsRefCount === 0 && sharedWs) {
+        sharedWs.close();
+        sharedWs = null;
+      }
     };
   }, []);
 
-  const sendMessage = useCallback((message: string) => {
-    const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      return;
-    }
+  const sendMessage = useCallback(
+    (message: string) => {
+      const ws = wsRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        return;
+      }
 
-    // Add user message to state
-    setState((s) => ({
-      ...s,
-      isLoading: true,
-      messages: [
-        ...s.messages,
-        {
-          id: crypto.randomUUID(),
-          role: "user",
-          content: message,
-          timestamp: new Date(),
-        },
-      ],
-    }));
+      addUserMessage(message);
 
-    // Send to server using ref for current conversationId
-    ws.send(
-      JSON.stringify({
-        type: "message",
-        message,
-        conversationId: conversationIdRef.current,
-      }),
-    );
-  }, []);
-
-  const clearMessages = useCallback(() => {
-    setState((s) => ({ ...s, messages: [], conversationId: null }));
-  }, []);
+      ws.send(
+        JSON.stringify({
+          type: "message",
+          message,
+          conversationId,
+        }),
+      );
+    },
+    [conversationId, addUserMessage],
+  );
 
   return {
-    messages: state.messages,
-    isConnected: state.isConnected,
-    isLoading: state.isLoading,
-    currentTool: state.currentTool,
+    messages,
+    isConnected,
+    isLoading,
+    currentTool,
     sendMessage,
     clearMessages,
   };
 }
+
+// Re-export Message type for convenience
+export type { Message } from "@/stores/chatStore";

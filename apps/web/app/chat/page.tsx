@@ -133,8 +133,8 @@ export default function ChatPage() {
                   className="text-zinc-400 max-w-md"
                 >
                   I can help you with scheduling appointments, getting quotes,
-                  checking service availability, and answering questions about our
-                  mobile mechanic services.
+                  checking service availability, and answering questions about
+                  our mobile mechanic services.
                 </motion.p>
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -154,7 +154,10 @@ export default function ChatPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6 + index * 0.1 }}
-                      whileHover={{ scale: 1.05, borderColor: "rgb(16 185 129 / 0.5)" }}
+                      whileHover={{
+                        scale: 1.05,
+                        borderColor: "rgb(16 185 129 / 0.5)",
+                      }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => sendMessage(suggestion)}
                       className="px-4 py-2 rounded-full bg-zinc-800 border border-zinc-700 text-sm text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-400 transition-colors"
