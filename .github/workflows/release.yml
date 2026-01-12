@@ -1,35 +1,53 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  pull_request:
+    types: [closed]
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
-  release:
-    name: Create Release
+  create-tag:
+    name: Create Tag & Release
+    # Only run when a release PR is merged
+    if: |
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'release/v')
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Get previous tag
-        id: prev_tag
+      - name: Extract version from branch name
+        id: version
         run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          VERSION="${BRANCH#release/}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing $VERSION"
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.version.outputs.version }}
+          git push origin ${{ steps.version.outputs.version }}
 
       - name: Generate changelog
         id: changelog
         run: |
-          if [ -n "${{ steps.prev_tag.outputs.tag }}" ]; then
-            CHANGES=$(git log ${{ steps.prev_tag.outputs.tag }}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          # Get previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            CHANGES=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges | grep -v "release v")
           else
-            CHANGES=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
+            CHANGES=$(git log --pretty=format:"- %s (%h)" --no-merges -20 | grep -v "release v")
           fi
           echo "changes<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGES" >> $GITHUB_OUTPUT
@@ -38,9 +56,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
           body: |
             ## Changes
             ${{ steps.changelog.outputs.changes }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true

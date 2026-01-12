@@ -1,10 +1,13 @@
 #!/usr/bin/env bun
 /**
- * Automates the release process:
- * 1. Bumps version in root package.json
- * 2. Syncs version to all workspace packages
- * 3. Commits the changes
- * 4. Creates and pushes a git tag
+ * Creates a release PR with version bump.
+ *
+ * Flow:
+ * 1. Creates release/vX.X.X branch
+ * 2. Bumps version in all packages
+ * 3. Commits and pushes
+ * 4. Creates PR to main
+ * 5. After merge, GitHub Action creates the tag
  *
  * Usage:
  *   bun run release patch   # 0.2.0 -> 0.2.1
@@ -52,20 +55,21 @@ function main() {
     process.exit(1);
   }
 
-  // Check we're on main branch
-  const branch = exec("git branch --show-current", true);
-  if (branch !== "main") {
-    console.error(`Error: Must be on 'main' branch. Currently on '${branch}'.`);
-    process.exit(1);
-  }
+  // Make sure we're up to date with main
+  exec("git checkout main", true);
+  exec("git pull origin main", true);
 
   // Read current version
   const pkgPath = join(ROOT_DIR, "package.json");
   const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
   const currentVersion = pkg.version;
   const newVersion = bumpVersion(currentVersion, bumpType);
+  const branchName = `release/v${newVersion}`;
 
-  console.log(`\nBumping version: ${currentVersion} -> ${newVersion}\n`);
+  console.log(`\nCreating release: ${currentVersion} -> ${newVersion}\n`);
+
+  // Create release branch
+  exec(`git checkout -b ${branchName}`);
 
   // Update root package.json
   pkg.version = newVersion;
@@ -75,16 +79,38 @@ function main() {
   exec("bun run version:sync");
 
   // Commit changes
-  exec(`git add -A`);
+  exec("git add -A");
   exec(`git commit -m "chore: release v${newVersion}"`);
 
-  // Create and push tag
-  exec(`git tag v${newVersion}`);
-  exec(`git push origin main`);
-  exec(`git push origin v${newVersion}`);
+  // Push branch
+  exec(`git push origin ${branchName}`);
 
-  console.log(`\n✓ Released v${newVersion}`);
-  console.log(`  https://github.com/hmls-autos/hmls-web/releases/tag/v${newVersion}`);
+  // Create PR
+  const prUrl = exec(
+    `gh pr create --title "Release v${newVersion}" --body "$(cat <<'EOF'
+## Release v${newVersion}
+
+Bump version from ${currentVersion} to ${newVersion}.
+
+### Changes
+Run \`git log v${currentVersion}..HEAD --oneline\` to see changes.
+
+### Checklist
+- [ ] Version numbers updated
+- [ ] CI passes
+- [ ] Ready to release
+
+After merge, a tag will be created automatically.
+EOF
+)" --base main --head ${branchName}`
+  );
+
+  console.log(`\n✓ Release PR created`);
+  console.log(`  ${prUrl}`);
+  console.log(`\nNext steps:`);
+  console.log(`  1. Review and approve the PR`);
+  console.log(`  2. Merge to main`);
+  console.log(`  3. Tag and Docker image will be created automatically`);
 }
 
 main();

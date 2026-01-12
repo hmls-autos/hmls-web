@@ -2,22 +2,30 @@
 
 Thank you for your interest in contributing to HMLS! This document provides guidelines and information for contributors.
 
-## Branch Strategy (GitFlow)
+## Branch Strategy (GitHub Flow)
 
-We use GitFlow for branch management:
+We use GitHub Flow - a simple, trunk-based workflow:
 
-- **`main`** - Production-ready code. All code here is deployed to production.
-- **`develop`** - Integration branch for features. PRs should target this branch.
+```
+main ────●────●────●────●──── (always deployable)
+          ↑    ↑    ↑    ↑
+feature/a─┘    │    │    │
+feature/b──────┘    │    │
+fix/bug-x───────────┘    │
+feature/c────────────────┘
+```
+
+- **`main`** - Production-ready code. Always deployable.
 - **`feature/*`** - New features (e.g., `feature/chat-improvements`)
-- **`release/*`** - Release preparation (e.g., `release/v1.1.0`)
-- **`hotfix/*`** - Emergency production fixes
+- **`fix/*`** - Bug fixes (e.g., `fix/auth-timeout`)
+- **`release/*`** - Release PRs (created by `bun run release`)
 
 ### Workflow
 
-1. Create a feature branch from `develop`:
+1. Create a feature branch from `main`:
    ```bash
-   git checkout develop
-   git pull origin develop
+   git checkout main
+   git pull origin main
    git checkout -b feature/my-feature
    ```
 
@@ -27,15 +35,23 @@ We use GitFlow for branch management:
    git commit -m "feat: add new feature"
    ```
 
-3. Push and create a PR to `develop`:
+3. Push and create a PR to `main`:
    ```bash
    git push origin feature/my-feature
    # Create PR via GitHub
    ```
 
-4. After review and approval, your PR will be merged to `develop`.
+4. After review and CI passes, your PR will be merged to `main`.
 
-5. Releases are cut from `develop` to `main` via release branches.
+### Releasing
+
+Releases are created via PR:
+
+```bash
+bun run release patch   # Creates release PR
+# Review & merge the PR
+# Tag and Docker image are created automatically
+```
 
 ## Commit Message Convention
 
@@ -71,7 +87,7 @@ chore(deps): update turbo to v2.5.0
 
 ## Pull Request Process
 
-1. Ensure your branch is up to date with `develop`
+1. Ensure your branch is up to date with `main`
 2. Run linting and type checks locally:
    ```bash
    bun run lint
