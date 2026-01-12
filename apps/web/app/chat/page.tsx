@@ -23,14 +23,16 @@ export default function ChatPage() {
   } = useChat();
 
   // Scroll to bottom when messages change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger on messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  });
+  }, [messages]);
 
-  // Focus input on mount
+  // Focus input on mount and keep focus after loading
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger to refocus after loading
   useEffect(() => {
     inputRef.current?.focus();
-  }, []);
+  }, [isLoading]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

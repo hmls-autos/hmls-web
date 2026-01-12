@@ -24,16 +24,18 @@ export function ChatWidget() {
   } = useChat();
 
   // Scroll to bottom when messages change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger on messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  });
+  }, [messages]);
 
-  // Focus input when opened
+  // Focus input when opened and keep focus after loading
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger to refocus after loading
   useEffect(() => {
     if (isOpen) {
       inputRef.current?.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, isLoading]);
 
   // Don't render on the dedicated chat page
   if (pathname === "/chat") {
