@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@hmls/shared": "workspace:*",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/leaflet": "^1.9.21",
     "framer-motion": "^12.25.0",
     "leaflet": "^1.9.4",
@@ -20,6 +21,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-leaflet": "^5.0.0",
+    "react-markdown": "^10.1.0",
     "reconnecting-websocket": "^4.4.0"
   },
   "devDependencies": {

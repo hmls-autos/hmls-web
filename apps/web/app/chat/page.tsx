@@ -1,0 +1,198 @@
+"use client";
+
+import { Loader2, Send, Wrench } from "lucide-react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import Background from "@/components/Background";
+import Navbar from "@/components/Navbar";
+import { Markdown } from "@/components/ui/Markdown";
+import { useChat } from "@/hooks/useChat";
+
+export default function ChatPage() {
+  const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    messages,
+    isConnected,
+    isLoading,
+    currentTool,
+    sendMessage,
+    clearMessages,
+  } = useChat();
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  });
+
+  // Focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+    sendMessage(input.trim());
+    setInput("");
+  };
+
+  const toolDisplayNames: Record<string, string> = {
+    get_availability: "Checking availability",
+    create_booking: "Creating booking",
+    get_customer: "Looking up customer",
+    create_customer: "Saving customer info",
+    get_services: "Getting services",
+    create_estimate: "Calculating estimate",
+    create_quote: "Creating quote",
+    create_invoice: "Creating invoice",
+    get_quote_status: "Checking quote status",
+  };
+
+  return (
+    <main className="flex min-h-screen flex-col bg-black text-white">
+      <Navbar />
+      <Background />
+
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full pt-24 pb-4 px-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4 px-2">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <Wrench className="w-6 h-6 text-emerald-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-white">
+                HMLS Assistant
+              </h1>
+              <p className="text-sm text-zinc-400">
+                {isConnected ? "Online - Ready to help" : "Connecting..."}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={clearMessages}
+            className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors px-4 py-2 rounded-lg hover:bg-zinc-800"
+          >
+            Clear chat
+          </button>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm p-6 space-y-4">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4">
+                <Wrench className="w-8 h-8 text-emerald-400" />
+              </div>
+              <h2 className="text-xl font-medium text-white mb-2">
+                Welcome to HMLS Assistant
+              </h2>
+              <p className="text-zinc-400 max-w-md">
+                I can help you with scheduling appointments, getting quotes,
+                checking service availability, and answering questions about our
+                mobile mechanic services.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-6 justify-center">
+                {[
+                  "What services do you offer?",
+                  "I need an oil change",
+                  "Check availability",
+                  "Get a quote for brake service",
+                ].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => sendMessage(suggestion)}
+                    className="px-4 py-2 rounded-full bg-zinc-800 border border-zinc-700 text-sm text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-400 transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[80%] px-5 py-3 rounded-2xl ${
+                  msg.role === "user"
+                    ? "bg-emerald-500 text-white rounded-br-md"
+                    : "bg-zinc-800 text-zinc-100 rounded-bl-md"
+                }`}
+              >
+                {msg.role === "user" ? (
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                    {msg.content}
+                  </p>
+                ) : (
+                  <Markdown
+                    content={msg.content}
+                    className="text-sm leading-relaxed"
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+
+          {/* Tool indicator */}
+          {currentTool && (
+            <div className="flex justify-start">
+              <div className="bg-zinc-800/50 border border-zinc-700 px-4 py-2 rounded-xl flex items-center gap-2">
+                <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+                <span className="text-sm text-zinc-400">
+                  {toolDisplayNames[currentTool] || currentTool}...
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Loading indicator */}
+          {isLoading &&
+            !currentTool &&
+            messages[messages.length - 1]?.role === "user" && (
+              <div className="flex justify-start">
+                <div className="bg-zinc-800 px-5 py-3 rounded-2xl rounded-bl-md">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" />
+                    <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0.1s]" />
+                    <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Area */}
+        <form onSubmit={handleSubmit} className="mt-4">
+          <div className="flex gap-3">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              disabled={!isConnected || isLoading}
+              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 disabled:opacity-50 transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={!isConnected || isLoading || !input.trim()}
+              className="w-14 h-14 rounded-xl bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send size={20} />
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  );
+}

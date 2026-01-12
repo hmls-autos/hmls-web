@@ -18,8 +18,7 @@ interface ChatState {
   currentTool: string | null;
 }
 
-const WS_URL =
-  process.env.NEXT_PUBLIC_API_WS_URL || "ws://127.0.0.1:8000/task";
+const WS_URL = process.env.NEXT_PUBLIC_API_WS_URL || "ws://127.0.0.1:8000/task";
 
 export function useChat() {
   const [state, setState] = useState<ChatState>({
@@ -159,7 +158,7 @@ export function useChat() {
         type: "message",
         message,
         conversationId: conversationIdRef.current,
-      })
+      }),
     );
   }, []);
 

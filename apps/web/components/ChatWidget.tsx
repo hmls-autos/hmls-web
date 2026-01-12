@@ -2,10 +2,13 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, MessageCircle, Send, Wrench, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { Markdown } from "@/components/ui/Markdown";
 import { useChat } from "@/hooks/useChat";
 
 export function ChatWidget() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -31,6 +34,11 @@ export function ChatWidget() {
       inputRef.current?.focus();
     }
   }, [isOpen]);
+
+  // Don't render on the dedicated chat page
+  if (pathname === "/chat") {
+    return null;
+  }
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -136,7 +144,13 @@ export function ChatWidget() {
                         : "bg-zinc-800 text-zinc-100 rounded-bl-md"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    {msg.role === "user" ? (
+                      <p className="text-sm whitespace-pre-wrap">
+                        {msg.content}
+                      </p>
+                    ) : (
+                      <Markdown content={msg.content} className="text-sm" />
+                    )}
                   </div>
                 </div>
               ))}
