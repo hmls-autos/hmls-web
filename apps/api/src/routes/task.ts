@@ -1,17 +1,20 @@
-import { Hono } from "hono";
-import { eq } from "drizzle-orm";
-import { runAgentTask } from "../lib/agent-client";
-import { db, schema } from "../db/client";
-import { wsLogger } from "../lib/logger";
 import type { ServerMessage } from "@hmls/shared";
 import { isValidClientMessage } from "@hmls/shared";
+import { eq } from "drizzle-orm";
+import { Hono } from "hono";
+import { db, schema } from "../db/client";
+import { runAgentTask } from "../lib/agent-client";
+import { wsLogger } from "../lib/logger";
 
 const task = new Hono();
 
 /**
  * Send a typed message to the WebSocket client
  */
-function sendMessage(ws: { send: (data: string) => void }, message: ServerMessage): void {
+function sendMessage(
+  ws: { send: (data: string) => void },
+  message: ServerMessage,
+): void {
   ws.send(JSON.stringify(message));
 }
 
@@ -35,7 +38,13 @@ task.get("/history/:conversationId", async (c) => {
 
 // Export WebSocket handlers for Bun
 export const websocket = {
-  async message(ws: { send: (data: string) => void; data: { conversationId: number | null } }, message: string) {
+  async message(
+    ws: {
+      send: (data: string) => void;
+      data: { conversationId: number | null };
+    },
+    message: string,
+  ) {
     try {
       let data: unknown;
       try {
@@ -77,21 +86,36 @@ export const websocket = {
       });
 
       // Send conversation ID back
-      sendMessage(ws, { type: "conversation", conversationId: conversationId! });
+      sendMessage(ws, {
+        type: "conversation",
+        conversationId: conversationId!,
+      });
 
       // Call agent via gRPC
       let fullResponse = "";
 
-      for await (const event of runAgentTask(userMessage, conversationId ?? undefined)) {
+      for await (const event of runAgentTask(
+        userMessage,
+        conversationId ?? undefined,
+      )) {
         if (event.type === "text_delta" && event.text) {
           fullResponse += event.text;
           sendMessage(ws, { type: "delta", text: event.text });
         } else if (event.type === "tool_start") {
-          sendMessage(ws, { type: "tool_start", tool: event.toolName || "unknown" });
+          sendMessage(ws, {
+            type: "tool_start",
+            tool: event.toolName || "unknown",
+          });
         } else if (event.type === "tool_end") {
-          sendMessage(ws, { type: "tool_end", tool: event.toolName || "unknown" });
+          sendMessage(ws, {
+            type: "tool_end",
+            tool: event.toolName || "unknown",
+          });
         } else if (event.type === "error") {
-          sendMessage(ws, { type: "error", message: event.message || "Unknown error" });
+          sendMessage(ws, {
+            type: "error",
+            message: event.message || "Unknown error",
+          });
         }
       }
 

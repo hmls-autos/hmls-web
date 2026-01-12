@@ -1,6 +1,6 @@
 import {
-  configure,
   type ConsoleSinkOptions,
+  configure,
   getConsoleSink,
   getLogger,
   type LogRecord,
@@ -14,7 +14,9 @@ function jsonFormatter(record: LogRecord): string {
     time: new Date(record.timestamp).toISOString(),
     level: record.level,
     category: record.category.join("."),
-    message: record.message.map((m) => (typeof m === "string" ? m : JSON.stringify(m))).join(""),
+    message: record.message
+      .map((m) => (typeof m === "string" ? m : JSON.stringify(m)))
+      .join(""),
     ...record.properties,
   });
 }
@@ -28,7 +30,7 @@ export async function initLogger() {
     sinks: {
       console: getConsoleSink({
         formatter: jsonFormatter,
-      } as ConsoleSinkOptions<string>),
+      } as ConsoleSinkOptions),
     },
     loggers: [
       {

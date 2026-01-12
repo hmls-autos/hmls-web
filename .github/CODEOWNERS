@@ -1,0 +1,20 @@
+# CODEOWNERS - Define code ownership for automatic review requests
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @spinsirr
+
+# Application-specific ownership
+/apps/web/      @spinsirr
+/apps/api/      @spinsirr
+/apps/agent/    @spinsirr
+
+# Shared packages
+/packages/      @spinsirr
+
+# Infrastructure and CI/CD
+/.github/       @spinsirr
+/docker-compose*.yml @spinsirr
+
+# Documentation
+/*.md           @spinsirr

@@ -23,7 +23,7 @@ app.use(
     ],
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type", "Upgrade", "Connection", "Authorization"],
-  })
+  }),
 );
 
 // Health check

@@ -75,4 +75,3 @@ export const quotes = pgTable("quotes", {
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-

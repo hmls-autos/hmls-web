@@ -1,5 +1,6 @@
 {
   "name": "hmls",
+  "version": "0.2.0",
   "private": true,
   "packageManager": "bun@1.3.5",
   "workspaces": ["apps/*", "packages/*"],
@@ -7,10 +8,14 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
     "dev:api": "bun run --filter=@hmls/api dev",
     "dev:web": "bun run --filter=hmls-web dev",
     "db:push": "bun run --filter=@hmls/api db:push",
-    "db:studio": "bun run --filter=@hmls/api db:studio"
+    "db:studio": "bun run --filter=@hmls/api db:studio",
+    "version:sync": "bun run scripts/sync-versions.ts",
+    "version:check": "bun run scripts/sync-versions.ts --check",
+    "release": "bun run scripts/release.ts"
   },
   "devDependencies": {
     "turbo": "^2.5.0"

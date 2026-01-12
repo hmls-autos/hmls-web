@@ -11,7 +11,7 @@ const envSchema = z.object({
     .min(1, "DATABASE_URL is required")
     .refine(
       (url) => url.startsWith("postgres://") || url.startsWith("postgresql://"),
-      "DATABASE_URL must be a valid PostgreSQL connection string"
+      "DATABASE_URL must be a valid PostgreSQL connection string",
     ),
 
   // Agent HTTP service

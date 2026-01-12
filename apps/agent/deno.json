@@ -1,4 +1,6 @@
 {
+  "name": "@hmls/agent",
+  "version": "0.2.0",
   "nodeModulesDir": "auto",
   "imports": {
     "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@^0.71.2",

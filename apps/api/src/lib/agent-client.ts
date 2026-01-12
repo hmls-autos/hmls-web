@@ -9,7 +9,7 @@ export interface TaskEvent {
 
 export async function* runAgentTask(
   message: string,
-  conversationId?: number
+  conversationId?: number,
 ): AsyncGenerator<TaskEvent> {
   const agentUrl = `http://${env.AGENT_URL}/task`;
 
@@ -22,7 +22,10 @@ export async function* runAgentTask(
   });
 
   if (!response.ok) {
-    yield { type: "error", message: `Agent request failed: ${response.status}` };
+    yield {
+      type: "error",
+      message: `Agent request failed: ${response.status}`,
+    };
     return;
   }
 
