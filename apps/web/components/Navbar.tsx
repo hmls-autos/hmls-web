@@ -37,16 +37,16 @@ export default function Navbar() {
           Services
         </Link>
         <Link
-          href="/chat"
-          className={`hover:text-emerald-400 transition-colors ${isActive("/chat") ? "text-emerald-400" : ""}`}
-        >
-          Chat
-        </Link>
-        <Link
           href="/contact"
           className={`hover:text-emerald-400 transition-colors ${isActive("/contact") ? "text-emerald-400" : ""}`}
         >
           Contact
+        </Link>
+        <Link
+          href="/chat"
+          className={`hover:text-emerald-400 transition-colors ${isActive("/chat") ? "text-emerald-400" : ""}`}
+        >
+          Chat
         </Link>
       </div>
 
