@@ -18,7 +18,9 @@
     "db:studio": "bun run --filter=@hmls/api db:studio",
     "version:sync": "bun run scripts/sync-versions.ts",
     "version:check": "bun run scripts/sync-versions.ts --check",
-    "release": "bun run scripts/release.ts"
+    "release": "bun run scripts/release.ts",
+    "docker:build": "./scripts/docker-build.sh",
+    "docker:push": "./scripts/docker-build.sh --push"
   },
   "devDependencies": {
     "turbo": "^2.5.0"

@@ -14,8 +14,8 @@ This guide will help you set up the HMLS project for local development.
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/spinsirr/hmls.git
-cd hmls
+git clone https://github.com/hmls-autos/hmls-web.git
+cd hmls-web
 ```
 
 ### 2. Install Dependencies

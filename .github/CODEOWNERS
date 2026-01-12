@@ -2,19 +2,19 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default owners for everything in the repo
-* @spinsirr
+* @hmls-autos/developers
 
 # Application-specific ownership
-/apps/web/      @spinsirr
-/apps/api/      @spinsirr
-/apps/agent/    @spinsirr
+/apps/web/      @hmls-autos/developers
+/apps/api/      @hmls-autos/developers
+/apps/agent/    @hmls-autos/developers
 
 # Shared packages
-/packages/      @spinsirr
+/packages/      @hmls-autos/developers
 
 # Infrastructure and CI/CD
-/.github/       @spinsirr
-/docker-compose*.yml @spinsirr
+/.github/       @hmls-autos/developers
+/docker-compose*.yml @hmls-autos/developers
 
 # Documentation
-/*.md           @spinsirr
+/*.md           @hmls-autos/developers

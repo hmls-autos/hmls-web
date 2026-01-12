@@ -84,7 +84,7 @@ function main() {
   exec(`git push origin v${newVersion}`);
 
   console.log(`\n✓ Released v${newVersion}`);
-  console.log(`  https://github.com/spinsirr/hmls/releases/tag/v${newVersion}`);
+  console.log(`  https://github.com/hmls-autos/hmls-web/releases/tag/v${newVersion}`);
 }
 
 main();
