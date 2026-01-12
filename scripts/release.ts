@@ -6,7 +6,7 @@
  * 1. Creates release/vX.X.X branch
  * 2. Bumps version in all packages
  * 3. Commits and pushes
- * 4. Creates PR to main
+ * 4. Creates PR to main with changelog
  * 5. After merge, GitHub Action creates the tag
  *
  * Usage:
@@ -25,7 +25,12 @@ type BumpType = "patch" | "minor" | "major";
 
 function exec(cmd: string, silent = false): string {
   if (!silent) console.log(`$ ${cmd}`);
-  return execSync(cmd, { cwd: ROOT_DIR, encoding: "utf-8" }).trim();
+  try {
+    return execSync(cmd, { cwd: ROOT_DIR, encoding: "utf-8" }).trim();
+  } catch (e) {
+    if (!silent) throw e;
+    return "";
+  }
 }
 
 function bumpVersion(current: string, type: BumpType): string {
@@ -40,6 +45,25 @@ function bumpVersion(current: string, type: BumpType): string {
   }
 }
 
+function getChangelog(fromTag: string): string {
+  try {
+    const log = exec(
+      `git log ${fromTag}..HEAD --pretty=format:"- %s (%h)" --no-merges`,
+      true
+    );
+    return log
+      .split("\n")
+      .filter((line) => !line.includes("chore: release"))
+      .join("\n") || "- No changes";
+  } catch {
+    return "- Initial release";
+  }
+}
+
+function getLatestTag(): string {
+  return exec("git describe --tags --abbrev=0 2>/dev/null", true) || "";
+}
+
 function main() {
   const bumpType = process.argv[2] as BumpType;
 
@@ -51,7 +75,9 @@ function main() {
   // Check for uncommitted changes
   const status = exec("git status --porcelain", true);
   if (status) {
-    console.error("Error: Working directory is not clean. Commit or stash changes first.");
+    console.error(
+      "Error: Working directory is not clean. Commit or stash changes first."
+    );
     process.exit(1);
   }
 
@@ -67,6 +93,10 @@ function main() {
   const branchName = `release/v${newVersion}`;
 
   console.log(`\nCreating release: ${currentVersion} -> ${newVersion}\n`);
+
+  // Delete existing release branch if exists
+  exec(`git branch -D ${branchName}`, true);
+  exec(`git push origin --delete ${branchName}`, true);
 
   // Create release branch
   exec(`git checkout -b ${branchName}`);
@@ -85,31 +115,42 @@ function main() {
   // Push branch
   exec(`git push origin ${branchName}`);
 
-  // Create PR
-  const prUrl = exec(
-    `gh pr create --title "Release v${newVersion}" --body "$(cat <<'EOF'
-## Release v${newVersion}
+  // Generate changelog for PR description
+  const latestTag = getLatestTag();
+  const changelog = getChangelog(latestTag);
+  const fromVersion = latestTag || "beginning";
+
+  // Create PR with changelog
+  const prBody = `## Release v${newVersion}
 
 Bump version from ${currentVersion} to ${newVersion}.
 
-### Changes
-Run \`git log v${currentVersion}..HEAD --oneline\` to see changes.
+### Changelog (since ${fromVersion})
+
+${changelog}
 
 ### Checklist
 - [ ] Version numbers updated
 - [ ] CI passes
-- [ ] Ready to release
 
-After merge, a tag will be created automatically.
-EOF
-)" --base main --head ${branchName}`
+After merge, tag and Docker image will be created automatically.`;
+
+  // Write PR body to temp file to avoid shell escaping issues
+  const tempFile = join(ROOT_DIR, ".pr-body.tmp");
+  writeFileSync(tempFile, prBody);
+
+  const prUrl = exec(
+    `gh pr create --title "Release v${newVersion}" --body-file "${tempFile}" --base main --head ${branchName}`
   );
+
+  // Clean up temp file
+  exec(`rm -f "${tempFile}"`, true);
 
   console.log(`\n✓ Release PR created`);
   console.log(`  ${prUrl}`);
   console.log(`\nNext steps:`);
-  console.log(`  1. Review and approve the PR`);
-  console.log(`  2. Merge to main`);
+  console.log(`  1. Review the PR`);
+  console.log(`  2. Approve and merge`);
   console.log(`  3. Tag and Docker image will be created automatically`);
 }
 

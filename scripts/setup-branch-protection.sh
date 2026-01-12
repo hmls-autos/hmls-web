@@ -14,7 +14,7 @@ gh api \
   --method PUT \
   -H "Accept: application/vnd.github+json" \
   "/repos/$REPO/branches/main/protection" \
-  -f required_status_checks='{"strict":true,"contexts":["Lint & Type Check","Build"]}' \
+  -f required_status_checks='{"strict":true,"contexts":["CI"]}' \
   -f enforce_admins=true \
   -f required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true}' \
   -f restrictions=null \
@@ -27,7 +27,7 @@ echo "Rules applied:"
 echo "  - Require PR before merging"
 echo "  - Require 1 approval"
 echo "  - Dismiss stale reviews on new commits"
-echo "  - Require status checks: Lint & Type Check, Build"
+echo "  - Require status checks: CI"
 echo "  - No force pushes"
 echo "  - No branch deletion"
 echo "  - Admins must follow rules (no bypass)"

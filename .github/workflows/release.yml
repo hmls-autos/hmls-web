@@ -11,13 +11,10 @@ permissions:
 jobs:
   create-tag:
     name: Create Tag & Release
-    # Only run when a release PR is merged
     if: |
       github.event.pull_request.merged == true &&
       startsWith(github.event.pull_request.head.ref, 'release/v')
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -42,13 +39,15 @@ jobs:
       - name: Generate changelog
         id: changelog
         run: |
-          # Get previous tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          # Get previous tag (exclude current)
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${{ steps.version.outputs.version }}$" | head -n1 || echo "")
+
           if [ -n "$PREV_TAG" ]; then
-            CHANGES=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges | grep -v "release v")
+            CHANGES=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges | grep -v "chore: release" || echo "- No changes")
           else
-            CHANGES=$(git log --pretty=format:"- %s (%h)" --no-merges -20 | grep -v "release v")
+            CHANGES=$(git log --pretty=format:"- %s (%h)" --no-merges -20 | grep -v "chore: release" || echo "- Initial release")
           fi
+
           echo "changes<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -62,3 +61,7 @@ jobs:
             ## Changes
             ${{ steps.changelog.outputs.changes }}
           generate_release_notes: true
+
+      - name: Delete release branch
+        run: |
+          git push origin --delete ${{ github.event.pull_request.head.ref }} || true
