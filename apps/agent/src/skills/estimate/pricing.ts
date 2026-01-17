@@ -28,3 +28,45 @@ export async function getPricingConfig(): Promise<PricingConfig> {
 export function clearConfigCache(): void {
   cachedConfig = null;
 }
+
+export async function getVehicleMultiplier(
+  make: string,
+  model?: string | null
+): Promise<number> {
+  // Try exact make + model match first
+  if (model) {
+    const exact = await db
+      .select()
+      .from(schema.vehiclePricing)
+      .where(
+        and(
+          eq(schema.vehiclePricing.make, make),
+          eq(schema.vehiclePricing.model, model)
+        )
+      )
+      .limit(1);
+
+    if (exact.length > 0) {
+      return Number(exact[0].multiplier);
+    }
+  }
+
+  // Fall back to make-level default
+  const makeDefault = await db
+    .select()
+    .from(schema.vehiclePricing)
+    .where(
+      and(
+        eq(schema.vehiclePricing.make, make),
+        isNull(schema.vehiclePricing.model)
+      )
+    )
+    .limit(1);
+
+  if (makeDefault.length > 0) {
+    return Number(makeDefault[0].multiplier);
+  }
+
+  // Default multiplier if make not found
+  return 1.0;
+}

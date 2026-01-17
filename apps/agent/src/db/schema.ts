@@ -2,10 +2,12 @@ import {
   boolean,
   integer,
   jsonb,
+  numeric,
   pgTable,
   serial,
   text,
   timestamp,
+  unique,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -81,4 +83,14 @@ export const pricingConfig = pgTable("pricing_config", {
   value: integer("value").notNull(),
   description: text("description"),
 });
+
+export const vehiclePricing = pgTable("vehicle_pricing", {
+  id: serial("id").primaryKey(),
+  make: varchar("make", { length: 50 }).notNull(),
+  model: varchar("model", { length: 50 }),
+  multiplier: numeric("multiplier", { precision: 3, scale: 2 }).notNull().default("1.00"),
+  notes: text("notes"),
+}, (table) => ({
+  uniqueMakeModel: unique().on(table.make, table.model),
+}));
 
