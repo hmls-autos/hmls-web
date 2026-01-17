@@ -12,6 +12,7 @@
     "noEmit": true,
     "types": ["bun-types"],
     "lib": ["ESNext"],
+    "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/*"]
     }
