@@ -151,3 +151,40 @@ export const createEstimateTool = {
     };
   },
 };
+
+export const getEstimateTool = {
+  name: "get_estimate",
+  description: "Retrieve an existing estimate by ID to check status or details",
+  parameters: z.object({
+    estimateId: z.number().describe("Estimate ID from database"),
+  }),
+  execute: async (params: { estimateId: number }) => {
+    const [estimate] = await db
+      .select()
+      .from(schema.estimates)
+      .where(eq(schema.estimates.id, params.estimateId))
+      .limit(1);
+
+    if (!estimate) {
+      return { found: false, message: "Estimate not found" };
+    }
+
+    const isExpired = new Date() > estimate.expiresAt;
+
+    return {
+      found: true,
+      estimate: {
+        id: estimate.id,
+        items: estimate.items,
+        subtotal: estimate.subtotal / 100,
+        priceRange: `$${(estimate.priceRangeLow / 100).toFixed(2)} - $${(estimate.priceRangeHigh / 100).toFixed(2)}`,
+        notes: estimate.notes,
+        expiresAt: estimate.expiresAt,
+        isExpired,
+        convertedToQuote: estimate.convertedToQuoteId !== null,
+        downloadUrl: `/api/estimates/${estimate.id}/pdf`,
+        shareUrl: `/api/estimates/${estimate.id}/pdf?token=${estimate.shareToken}`,
+      },
+    };
+  },
+};
