@@ -4,6 +4,7 @@ import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { calcomTools } from "./tools/calcom.ts";
 import { customerTools } from "./tools/customer.ts";
 import { stripeTools } from "./tools/stripe.ts";
+import { estimateSkill } from "./skills/estimate/index.ts";
 
 // Default model, can be overridden via env
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
@@ -15,9 +16,9 @@ export async function createHmlsAgent() {
     modelProvider: new AnthropicModelProvider({
       apiKey: env.ANTHROPIC_API_KEY,
     }),
-    tools: [...calcomTools, ...customerTools, ...stripeTools],
+    tools: [...calcomTools, ...customerTools, ...stripeTools, ...estimateSkill.tools],
     overrides: {
-      systemPromptLoader: async () => SYSTEM_PROMPT,
+      systemPromptLoader: async () => SYSTEM_PROMPT + "\n\n" + estimateSkill.prompt,
     },
   });
 
