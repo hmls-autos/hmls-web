@@ -5,6 +5,7 @@ import { cors } from "hono/cors";
 import "./lib/env";
 import { initLogger, logger } from "./lib/logger";
 import task, { websocket } from "./routes/task";
+import estimates from "./routes/estimates";
 
 // Initialize structured logging
 await initLogger();
@@ -33,6 +34,7 @@ app.get("/health", (c) => {
 
 // Routes
 app.route("/task", task);
+app.route("/api/estimates", estimates);
 
 // 404 handler
 app.notFound((c) => {
