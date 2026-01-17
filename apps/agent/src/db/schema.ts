@@ -94,3 +94,17 @@ export const vehiclePricing = pgTable("vehicle_pricing", {
   uniqueMakeModel: unique().on(table.make, table.model),
 }));
 
+export const estimates = pgTable("estimates", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").references(() => customers.id).notNull(),
+  items: jsonb("items").notNull(), // LineItem[]
+  subtotal: integer("subtotal").notNull(), // in cents
+  priceRangeLow: integer("price_range_low").notNull(), // in cents
+  priceRangeHigh: integer("price_range_high").notNull(), // in cents
+  notes: text("notes"),
+  shareToken: varchar("share_token", { length: 64 }).notNull(),
+  validDays: integer("valid_days").notNull().default(14),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
