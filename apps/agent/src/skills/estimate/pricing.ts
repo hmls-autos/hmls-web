@@ -70,3 +70,49 @@ export async function getVehicleMultiplier(
   // Default multiplier if make not found
   return 1.0;
 }
+
+export async function calculatePrice(
+  service: ServiceInput,
+  vehicleMultiplier: number
+): Promise<LineItem> {
+  const config = await getPricingConfig();
+
+  let laborCost = 0;
+  let partsCost = 0;
+
+  // Labor calculation
+  if (service.laborHours) {
+    // Hourly service: rate × hours × vehicle multiplier
+    laborCost = Math.round(
+      config.hourlyRate * service.laborHours * vehicleMultiplier
+    );
+  } else if (service.serviceId) {
+    // Flat-rate from catalog - would need service lookup
+    // For now, skip if no laborHours provided
+  }
+
+  // Parts markup (tiered on OEM cost)
+  if (service.partsCost) {
+    const costCents = Math.round(service.partsCost * 100);
+    let markupPct: number;
+
+    if (costCents < 5000) {
+      // Under $50
+      markupPct = config.partsMarkupTier1;
+    } else if (costCents < 20000) {
+      // $50-200
+      markupPct = config.partsMarkupTier2;
+    } else {
+      // Over $200
+      markupPct = config.partsMarkupTier3;
+    }
+
+    partsCost = Math.round(costCents * (1 + markupPct / 100));
+  }
+
+  return {
+    name: service.name,
+    description: service.description,
+    price: laborCost + partsCost,
+  };
+}
