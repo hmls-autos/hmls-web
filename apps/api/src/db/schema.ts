@@ -75,3 +75,9 @@ export const quotes = pgTable("quotes", {
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const pricingConfig = pgTable("pricing_config", {
+  key: varchar("key", { length: 50 }).primaryKey(),
+  value: integer("value").notNull(),
+  description: text("description"),
+});
