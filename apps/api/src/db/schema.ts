@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   boolean,
   integer,
@@ -92,4 +93,30 @@ export const vehiclePricing = pgTable("vehicle_pricing", {
   notes: text("notes"),
 }, (table) => ({
   uniqueMakeModel: unique().on(table.make, table.model),
+}));
+
+export const estimates = pgTable("estimates", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id),
+  items: jsonb("items").notNull(),
+  subtotal: integer("subtotal").notNull(),
+  priceRangeLow: integer("price_range_low").notNull(),
+  priceRangeHigh: integer("price_range_high").notNull(),
+  notes: text("notes"),
+  shareToken: varchar("share_token", { length: 32 }).unique(),
+  validDays: integer("valid_days").notNull().default(14),
+  expiresAt: timestamp("expires_at").notNull(),
+  convertedToQuoteId: integer("converted_to_quote_id").references(() => quotes.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const estimatesRelations = relations(estimates, ({ one }) => ({
+  customer: one(customers, {
+    fields: [estimates.customerId],
+    references: [customers.id],
+  }),
+  convertedToQuote: one(quotes, {
+    fields: [estimates.convertedToQuoteId],
+    references: [quotes.id],
+  }),
 }));
