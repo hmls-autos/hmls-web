@@ -33,7 +33,7 @@ export const getAvailabilityTool = {
   name: "get_availability",
   description:
     "Check available time slots for booking an appointment. Returns available slots for the next 7 days.",
-  parameters: z.object({
+  schema: z.object({
     startDate: z
       .string()
       .describe("Start date in YYYY-MM-DD format (defaults to today)"),
@@ -43,7 +43,7 @@ export const getAvailabilityTool = {
         "End date in YYYY-MM-DD format (defaults to 7 days from start)"
       ),
   }),
-  execute: async (params: { startDate?: string; endDate?: string }) => {
+  execute: async (params: { startDate?: string; endDate?: string }, _ctx: unknown) => {
     const start = params.startDate || new Date().toISOString().split("T")[0];
     const end =
       params.endDate ||
@@ -53,10 +53,10 @@ export const getAvailabilityTool = {
       `/availability?eventTypeId=${env.CALCOM_EVENT_TYPE_ID}&startTime=${start}&endTime=${end}`
     );
 
-    return {
+    return JSON.stringify({
       availableSlots: data.slots || [],
       dateRange: { start, end },
-    };
+    });
   },
 };
 
@@ -64,7 +64,7 @@ export const createBookingTool = {
   name: "create_booking",
   description:
     "Create a new booking/appointment for a customer. Requires customer details and preferred time slot.",
-  parameters: z.object({
+  schema: z.object({
     name: z.string().describe("Customer's full name"),
     email: z.string().email().describe("Customer's email address"),
     phone: z.string().describe("Customer's phone number"),
@@ -89,7 +89,7 @@ export const createBookingTool = {
     serviceType: string;
     location: string;
     notes?: string;
-  }) => {
+  }, _ctx: unknown) => {
     const booking = await calcomRequest<{
       id: number;
       uid: string;
@@ -114,7 +114,7 @@ export const createBookingTool = {
 
     console.log(`[calcom] Booking created: ${booking.uid} for ${params.name}`);
 
-    return {
+    return JSON.stringify({
       success: true,
       bookingId: booking.id,
       confirmationNumber: booking.uid,
@@ -122,7 +122,7 @@ export const createBookingTool = {
       message: `Booking confirmed for ${params.name} on ${new Date(
         params.startTime
       ).toLocaleString()}`,
-    };
+    });
   },
 };
 

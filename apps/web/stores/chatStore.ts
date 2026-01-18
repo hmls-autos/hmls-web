@@ -11,14 +11,12 @@ interface ChatState {
   messages: Message[];
   isConnected: boolean;
   isLoading: boolean;
-  conversationId: number | null;
   currentTool: string | null;
 }
 
 interface ChatActions {
   setConnected: (connected: boolean) => void;
   setLoading: (loading: boolean) => void;
-  setConversationId: (id: number | null) => void;
   setCurrentTool: (tool: string | null) => void;
   addUserMessage: (content: string) => void;
   appendAssistantMessage: (text: string) => void;
@@ -35,15 +33,12 @@ export const useChatStore = create<ChatState & ChatActions>((set) => ({
   messages: [],
   isConnected: false,
   isLoading: false,
-  conversationId: null,
   currentTool: null,
 
   // Actions
   setConnected: (connected) => set({ isConnected: connected }),
 
   setLoading: (loading) => set({ isLoading: loading }),
-
-  setConversationId: (id) => set({ conversationId: id }),
 
   setCurrentTool: (tool) => set({ currentTool: tool }),
 
@@ -99,7 +94,7 @@ export const useChatStore = create<ChatState & ChatActions>((set) => ({
 
   clearMessages: () => {
     pendingMessageContent = "";
-    set({ messages: [], conversationId: null });
+    set({ messages: [] });
   },
 
   resetPendingMessage: () => {

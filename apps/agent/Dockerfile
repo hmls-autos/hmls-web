@@ -5,8 +5,9 @@ WORKDIR /app
 # Copy deno.json for import maps
 COPY apps/agent/deno.json ./apps/agent/
 
-# Copy agent source
+# Copy agent source and skills
 COPY apps/agent/src ./apps/agent/src
+COPY apps/agent/.skills ./apps/agent/.skills
 
 WORKDIR /app/apps/agent
 

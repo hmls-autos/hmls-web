@@ -109,3 +109,14 @@ export const estimates = pgTable("estimates", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").references(() => customers.id),
+  bookingId: integer("booking_id").references(() => bookings.id),
+  stripeInvoiceId: varchar("stripe_invoice_id", { length: 100 }),
+  items: jsonb("items").notNull(), // [{ service, description, amount }]
+  totalAmount: integer("total_amount").notNull(), // in cents
+  status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, sent, paid
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+

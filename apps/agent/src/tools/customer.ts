@@ -5,16 +5,16 @@ import { eq, or } from "drizzle-orm";
 export const getCustomerTool = {
   name: "get_customer",
   description: "Look up an existing customer by phone number or email address.",
-  parameters: z.object({
+  schema: z.object({
     phone: z.string().optional().describe("Customer's phone number"),
     email: z.string().email().optional().describe("Customer's email address"),
   }),
-  execute: async (params: { phone?: string; email?: string }) => {
+  execute: async (params: { phone?: string; email?: string }, _ctx: unknown) => {
     if (!params.phone && !params.email) {
-      return {
+      return JSON.stringify({
         found: false,
         message: "Please provide a phone number or email",
-      };
+      });
     }
 
     const conditions = [];
@@ -28,16 +28,16 @@ export const getCustomerTool = {
       .limit(1);
 
     if (customer.length === 0) {
-      return {
+      return JSON.stringify({
         found: false,
         message: "No customer found with that information",
-      };
+      });
     }
 
-    return {
+    return JSON.stringify({
       found: true,
       customer: customer[0],
-    };
+    });
   },
 };
 
@@ -45,7 +45,7 @@ export const createCustomerTool = {
   name: "create_customer",
   description:
     "Create a new customer record with their contact and vehicle information.",
-  parameters: z.object({
+  schema: z.object({
     name: z.string().describe("Customer's full name"),
     phone: z.string().describe("Customer's phone number"),
     email: z.string().email().optional().describe("Customer's email address"),
@@ -62,7 +62,7 @@ export const createCustomerTool = {
     vehicleMake?: string;
     vehicleModel?: string;
     vehicleYear?: string;
-  }) => {
+  }, _ctx: unknown) => {
     const vehicleInfo =
       params.vehicleMake || params.vehicleModel || params.vehicleYear
         ? {
@@ -83,11 +83,11 @@ export const createCustomerTool = {
       })
       .returning();
 
-    return {
+    return JSON.stringify({
       success: true,
       customerId: customer.id,
       message: `Customer ${params.name} created successfully`,
-    };
+    });
   },
 };
 
@@ -95,15 +95,15 @@ export const getServicesTool = {
   name: "get_services",
   description:
     "Get the list of available services with descriptions and pricing from the database.",
-  parameters: z.object({}),
-  execute: async () => {
+  schema: z.object({}),
+  execute: async (_params: Record<string, never>, _ctx: unknown) => {
     const servicesList = await db
       .select()
       .from(schema.services)
       .where(eq(schema.services.isActive, true))
       .orderBy(schema.services.name);
 
-    return {
+    return JSON.stringify({
       services: servicesList.map((s) => ({
         id: s.id,
         name: s.name,
@@ -114,7 +114,7 @@ export const getServicesTool = {
         duration: s.duration,
         category: s.category,
       })),
-    };
+    });
   },
 };
 
@@ -122,7 +122,7 @@ export const createEstimateTool = {
   name: "create_estimate",
   description:
     "Generate an informal price estimate for the customer. This is NOT a formal quote - just a quick price range to share in chat. Use this before creating a formal Stripe quote.",
-  parameters: z.object({
+  schema: z.object({
     services: z
       .array(
         z.object({
@@ -136,10 +136,10 @@ export const createEstimateTool = {
       "Any additional notes about the estimate",
     ),
   }),
-  execute: (params: {
+  execute: async (params: {
     services: { name: string; description: string; estimatedPrice: number }[];
     notes?: string;
-  }) => {
+  }, _ctx: unknown) => {
     const totalMin = params.services.reduce(
       (sum, s) => sum + s.estimatedPrice * 0.9,
       0,
@@ -153,7 +153,7 @@ export const createEstimateTool = {
       0,
     );
 
-    return {
+    return JSON.stringify({
       services: params.services,
       estimatedTotal: totalEstimate,
       priceRange: {
@@ -163,7 +163,7 @@ export const createEstimateTool = {
       notes: params.notes,
       disclaimer:
         "This is an informal estimate. Final price may vary based on actual conditions. Would you like me to send you a formal quote?",
-    };
+    });
   },
 };
 

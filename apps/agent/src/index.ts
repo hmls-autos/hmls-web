@@ -1,6 +1,10 @@
 import { eachValueFrom } from "rxjs-for-await";
 import { env } from "./env.ts";
-import { createHmlsAgent, runAgentTask } from "./agent.ts";
+import { createHmlsAgent } from "./agent.ts";
+import {
+  createAguiEventStream,
+  parseRunAgentInput,
+} from "@zypher/agui";
 
 // Store agent instance (singleton)
 let agentInstance: Awaited<ReturnType<typeof createHmlsAgent>> | null = null;
@@ -12,62 +16,73 @@ async function getAgent() {
   return agentInstance;
 }
 
-// HTTP server with SSE for streaming
+// CORS headers for browser requests
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Accept",
+};
+
+// HTTP server with SSE for streaming (AG-UI protocol)
 Deno.serve({ port: env.HTTP_PORT }, async (req) => {
   const url = new URL(req.url);
 
-  // Health check
-  if (url.pathname === "/health") {
-    return new Response("ok", { status: 200 });
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders });
   }
 
-  // Run task endpoint with SSE streaming
+  // Health check
+  if (url.pathname === "/health") {
+    return new Response("ok", { status: 200, headers: corsHeaders });
+  }
+
+  // AG-UI compatible endpoint
   if (url.pathname === "/task" && req.method === "POST") {
     try {
       const body = await req.json();
-      const { message, conversation_id } = body;
 
-      if (!message) {
-        return new Response(JSON.stringify({ error: "message is required" }), {
+      // Parse and validate AG-UI input (throws on invalid input)
+      let input;
+      try {
+        input = parseRunAgentInput(body);
+      } catch (parseError) {
+        return new Response(JSON.stringify({ error: "Invalid AG-UI input", details: String(parseError) }), {
           status: 400,
-          headers: { "Content-Type": "application/json" },
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      console.log(`[http] RunTask called: "${message.substring(0, 50)}..."`);
+      const { threadId, runId, messages } = input;
+      console.log(`[http] AG-UI RunTask called: threadId=${threadId}, messages=${messages.length}`);
 
       const agent = await getAgent();
-      const taskStream = runAgentTask(agent, message);
 
-      // Create SSE stream
+      // Create AG-UI event stream
+      const aguiStream = createAguiEventStream({
+        agent,
+        messages,
+        threadId,
+        runId,
+      });
+
+      // Stream AG-UI events as SSE
       const stream = new ReadableStream({
         async start(controller) {
           const encoder = new TextEncoder();
 
           try {
-            for await (const event of eachValueFrom(taskStream)) {
-              let data: Record<string, unknown> | null = null;
-
-              if (event.type === "text") {
-                // Streaming text content
-                data = { type: "text_delta", text: event.content };
-              } else if (event.type === "tool_use") {
-                data = { type: "tool_start", tool_name: event.name };
-              } else if (event.type === "tool_result") {
-                data = { type: "tool_end", tool_name: event.name };
-              }
-
-              if (data) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-              }
+            for await (const event of eachValueFrom(aguiStream)) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
             }
-
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
             controller.close();
           } catch (error) {
             console.error(`[http] Error:`, error);
-            const errorData = { type: "error", message: error instanceof Error ? error.message : String(error) };
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorData)}\n\n`));
+            const errorEvent = {
+              type: "RUN_ERROR",
+              message: error instanceof Error ? error.message : String(error),
+            };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorEvent)}\n\n`));
             controller.close();
           }
         },
@@ -75,6 +90,7 @@ Deno.serve({ port: env.HTTP_PORT }, async (req) => {
 
       return new Response(stream, {
         headers: {
+          ...corsHeaders,
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           "Connection": "keep-alive",
@@ -84,12 +100,12 @@ Deno.serve({ port: env.HTTP_PORT }, async (req) => {
       console.error(`[http] Request error:`, error);
       return new Response(JSON.stringify({ error: "Internal server error" }), {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
   }
 
-  return new Response("Not found", { status: 404 });
+  return new Response("Not found", { status: 404, headers: corsHeaders });
 });
 
-console.log(`[http] Agent service listening on 0.0.0.0:${env.HTTP_PORT}`);
+console.log(`[http] Agent service (AG-UI) listening on 0.0.0.0:${env.HTTP_PORT}`);
