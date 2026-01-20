@@ -30,8 +30,8 @@ const envSchema = z.object({
       "DATABASE_URL must be a valid PostgreSQL connection string"
     ),
 
-  // HTTP port
-  HTTP_PORT: z.coerce.number().default(50051),
+  // HTTP port (default 8000 for direct frontend access)
+  HTTP_PORT: z.coerce.number().default(8000),
 });
 
 export type Env = z.infer<typeof envSchema>;

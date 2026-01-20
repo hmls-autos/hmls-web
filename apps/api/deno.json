@@ -1,21 +1,25 @@
 {
-  "name": "@hmls/agent",
+  "name": "@hmls/api",
   "version": "0.3.0",
+  "exports": "./src/index.ts",
   "nodeModulesDir": "auto",
   "imports": {
     "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@0.71.2",
     "@corespeed/zypher": "jsr:@zypher/agent",
     "@zypher/agui": "jsr:@zypher/agui",
+    "hono": "npm:hono@^4.7.10",
     "zod": "npm:zod@^4.3.5",
     "stripe": "npm:stripe@^20.2.0",
     "rxjs": "npm:rxjs@^7.8.2",
     "rxjs-for-await": "npm:rxjs-for-await@1.0.0",
     "drizzle-orm": "npm:drizzle-orm@^0.45.1",
     "drizzle-orm/postgres-js": "npm:drizzle-orm@^0.45.1/postgres-js",
-    "postgres": "npm:postgres@^3.4.8"
+    "postgres": "npm:postgres@^3.4.8",
+    "@react-pdf/renderer": "npm:@react-pdf/renderer@^4.3.2",
+    "react": "npm:react@^19.2.3"
   },
   "tasks": {
-    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run --allow-sys --watch src/index.ts",
-    "start": "deno run --allow-net --allow-env --allow-read --allow-write --allow-run --allow-sys src/index.ts"
+    "dev": "deno run --env=../../.env --allow-net --allow-env --allow-read --allow-write --allow-run --allow-sys --watch src/index.ts",
+    "start": "deno run --env=../../.env --allow-net --allow-env --allow-read --allow-write --allow-run --allow-sys src/index.ts"
   }
 }

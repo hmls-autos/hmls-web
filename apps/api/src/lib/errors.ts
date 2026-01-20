@@ -1,79 +1,69 @@
-/**
- * Base application error class with error codes and HTTP status.
- * All custom errors should extend this class.
- */
+// Unified error handling for the agent
+
+export enum ErrorCode {
+  BAD_REQUEST = "BAD_REQUEST",
+  UNAUTHORIZED = "UNAUTHORIZED",
+  FORBIDDEN = "FORBIDDEN",
+  NOT_FOUND = "NOT_FOUND",
+  VALIDATION_ERROR = "VALIDATION_ERROR",
+  INTERNAL_ERROR = "INTERNAL_ERROR",
+  EXTERNAL_SERVICE_ERROR = "EXTERNAL_SERVICE_ERROR",
+  DATABASE_ERROR = "DATABASE_ERROR",
+}
+
+const statusCodes: Record<ErrorCode, number> = {
+  [ErrorCode.BAD_REQUEST]: 400,
+  [ErrorCode.UNAUTHORIZED]: 401,
+  [ErrorCode.FORBIDDEN]: 403,
+  [ErrorCode.NOT_FOUND]: 404,
+  [ErrorCode.VALIDATION_ERROR]: 422,
+  [ErrorCode.INTERNAL_ERROR]: 500,
+  [ErrorCode.EXTERNAL_SERVICE_ERROR]: 502,
+  [ErrorCode.DATABASE_ERROR]: 500,
+};
+
 export class AppError extends Error {
   constructor(
+    public code: ErrorCode,
     message: string,
-    public readonly code: string,
-    public readonly statusCode: number = 500,
-    public readonly cause?: unknown,
+    public details?: unknown
   ) {
     super(message);
-    this.name = this.constructor.name;
-    Error.captureStackTrace?.(this, this.constructor);
+    this.name = "AppError";
+  }
+
+  get status(): number {
+    return statusCodes[this.code];
   }
 
   toJSON() {
     return {
-      name: this.name,
-      code: this.code,
-      message: this.message,
-      statusCode: this.statusCode,
+      error: {
+        code: this.code,
+        message: this.message,
+        ...(this.details && { details: this.details }),
+      },
     };
   }
 }
 
-/**
- * Validation error (400 Bad Request)
- */
-export class ValidationError extends AppError {
-  constructor(message: string, cause?: unknown) {
-    super(message, "VALIDATION_ERROR", 400, cause);
-  }
-}
+// Convenience factories
+export const Errors = {
+  notFound: (resource: string, id?: string | number) =>
+    new AppError(ErrorCode.NOT_FOUND, id ? `${resource} ${id} not found` : `${resource} not found`),
 
-/**
- * Resource not found error (404 Not Found)
- */
-export class NotFoundError extends AppError {
-  constructor(resource: string, id: string | number) {
-    super(`${resource} with ID ${id} not found`, "NOT_FOUND", 404);
-  }
-}
+  badRequest: (message: string, details?: unknown) =>
+    new AppError(ErrorCode.BAD_REQUEST, message, details),
 
-/**
- * Cal.com API error
- */
-export class CalComError extends AppError {
-  constructor(message: string, statusCode: number = 502) {
-    super(message, "CALCOM_ERROR", statusCode);
-  }
-}
+  validation: (message: string, details?: unknown) =>
+    new AppError(ErrorCode.VALIDATION_ERROR, message, details),
 
-/**
- * Stripe API error wrapper
- */
-export class StripeApiError extends AppError {
-  constructor(message: string, cause?: unknown) {
-    super(message, "STRIPE_ERROR", 502, cause);
-  }
-}
+  internal: (message = "Internal server error") =>
+    new AppError(ErrorCode.INTERNAL_ERROR, message),
 
-/**
- * Database error
- */
-export class DatabaseError extends AppError {
-  constructor(message: string, cause?: unknown) {
-    super(message, "DATABASE_ERROR", 500, cause);
-  }
-}
+  external: (service: string, message: string) =>
+    new AppError(ErrorCode.EXTERNAL_SERVICE_ERROR, `${service}: ${message}`),
 
-/**
- * Configuration error (fail fast)
- */
-export class ConfigurationError extends AppError {
-  constructor(message: string) {
-    super(message, "CONFIGURATION_ERROR", 500);
-  }
-}
+  database: (message: string) =>
+    new AppError(ErrorCode.DATABASE_ERROR, message),
+};

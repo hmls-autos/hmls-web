@@ -1,70 +1,164 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { streamSSE } from "hono/streaming";
+import { eachValueFrom } from "rxjs-for-await";
+import { renderToStream } from "@react-pdf/renderer";
 
-// FAIL FAST: Import env validation first - throws immediately if env is invalid
-import "./lib/env";
-import { initLogger, logger } from "./lib/logger";
-import task, { websocket } from "./routes/task";
-import estimates from "./routes/estimates";
+import { env } from "./env.ts";
+import { createHmlsAgent } from "./agent.ts";
+import { db } from "./db/client.ts";
+import * as schema from "./db/schema.ts";
+import { eq, and } from "drizzle-orm";
+import { EstimatePdf } from "./pdf/EstimatePdf.tsx";
+import { AppError, Errors } from "./lib/errors.ts";
+import { createAguiEventStream, parseRunAgentInput } from "@zypher/agui";
 
-// Initialize structured logging
-await initLogger();
+// Agent singleton
+let agentInstance: Awaited<ReturnType<typeof createHmlsAgent>> | null = null;
+async function getAgent() {
+  if (!agentInstance) {
+    agentInstance = await createHmlsAgent();
+  }
+  return agentInstance;
+}
 
+// Create Hono app
 const app = new Hono();
 
 // Middleware
-app.use(
-  "*",
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:3002",
-      "https://hmls.autos",
-    ],
-    allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Upgrade", "Connection", "Authorization"],
-  }),
-);
+app.use("*", cors());
+app.use("*", logger());
+
+// Global error handler
+app.onError((err, c) => {
+  if (err instanceof AppError) {
+    console.error(`[error] ${err.code}: ${err.message}`);
+    return c.json(err.toJSON(), err.status);
+  }
+  console.error(`[error] Unhandled:`, err);
+  return c.json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } }, 500);
+});
+
+// 404 handler
+app.notFound((c) => {
+  return c.json({ error: { code: "NOT_FOUND", message: "Route not found" } }, 404);
+});
 
 // Health check
 app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Routes
-app.route("/task", task);
-app.route("/api/estimates", estimates);
+// GET estimate by ID
+app.get("/api/estimates/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  const [estimate] = await db
+    .select()
+    .from(schema.estimates)
+    .where(eq(schema.estimates.id, id))
+    .limit(1);
 
-// 404 handler
-app.notFound((c) => {
-  return c.json({ error: "Not found" }, 404);
+  if (!estimate) throw Errors.notFound("Estimate", id);
+  return c.json(estimate);
 });
 
-// Error handler
-app.onError((err, c) => {
-  logger.error`Server error: ${err.message}`;
-  return c.json({ error: "Internal server error" }, 500);
+// GET customer by ID
+app.get("/api/customers/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  const [customer] = await db
+    .select()
+    .from(schema.customers)
+    .where(eq(schema.customers.id, id))
+    .limit(1);
+
+  if (!customer) throw Errors.notFound("Customer", id);
+  return c.json(customer);
 });
 
-logger.info`HMLS API server starting`;
+// GET estimate PDF
+app.get("/api/estimates/:id/pdf", async (c) => {
+  const id = Number(c.req.param("id"));
+  const token = c.req.query("token");
 
-// Bun server with WebSocket support
-export default {
-  port: 8000,
-  fetch(req: Request, server: { upgrade: (req: Request) => boolean }) {
-    // Handle WebSocket upgrade for /task path
-    if (req.headers.get("upgrade") === "websocket") {
-      const url = new URL(req.url);
-      if (url.pathname === "/task") {
-        const success = server.upgrade(req);
-        if (success) {
-          return undefined;
-        }
-        return new Response("WebSocket upgrade failed", { status: 500 });
+  const [estimate] = await db
+    .select()
+    .from(schema.estimates)
+    .where(
+      token
+        ? and(eq(schema.estimates.id, id), eq(schema.estimates.shareToken, token))
+        : eq(schema.estimates.id, id)
+    )
+    .limit(1);
+
+  if (!estimate) throw Errors.notFound("Estimate", id);
+
+  const [customer] = await db
+    .select()
+    .from(schema.customers)
+    .where(eq(schema.customers.id, estimate.customerId))
+    .limit(1);
+
+  if (!customer) throw Errors.notFound("Customer", estimate.customerId);
+
+  const pdfStream = await renderToStream(
+    EstimatePdf({
+      estimate: {
+        ...estimate,
+        items: estimate.items as { name: string; description: string; price: number }[],
+      },
+      customer: {
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email,
+        address: customer.address,
+        vehicleInfo: customer.vehicleInfo as { make?: string; model?: string; year?: string } | null,
+      },
+    })
+  );
+
+  return new Response(pdfStream as unknown as ReadableStream, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="HMLS-Estimate-${id}.pdf"`,
+    },
+  });
+});
+
+// AG-UI chat endpoint
+app.post("/task", async (c) => {
+  const body = await c.req.json();
+
+  let input;
+  try {
+    input = parseRunAgentInput(body);
+  } catch (parseError) {
+    throw Errors.validation("Invalid AG-UI input", String(parseError));
+  }
+
+  const { threadId, runId, messages } = input;
+  console.log(`[agent] threadId=${threadId}, messages=${messages.length}`);
+
+  const agent = await getAgent();
+  const aguiStream = createAguiEventStream({ agent, messages, threadId, runId });
+
+  return streamSSE(c, async (stream) => {
+    try {
+      for await (const event of eachValueFrom(aguiStream)) {
+        await stream.writeSSE({ data: JSON.stringify(event) });
       }
+    } catch (error) {
+      console.error(`[agent] Stream error:`, error);
+      await stream.writeSSE({
+        data: JSON.stringify({
+          type: "RUN_ERROR",
+          message: error instanceof Error ? error.message : String(error),
+        }),
+      });
     }
-    return app.fetch(req);
-  },
-  websocket,
-};
+  });
+});
+
+// Start server
+Deno.serve({ port: env.HTTP_PORT }, app.fetch);
+console.log(`[server] HMLS Agent running on http://localhost:${env.HTTP_PORT}`);

@@ -3,9 +3,9 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, MessageCircle, Send, Wrench, X } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { Markdown } from "@/components/ui/Markdown";
-import { useChat } from "@/hooks/useChat";
+import { useAgentChat } from "@/hooks/useAgentChat";
 
 export function ChatWidget() {
   const pathname = usePathname();
@@ -14,28 +14,8 @@ export function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const {
-    messages,
-    isConnected,
-    isLoading,
-    currentTool,
-    sendMessage,
-    clearMessages,
-  } = useChat();
-
-  // Scroll to bottom when messages change
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger on messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Focus input when opened and keep focus after loading
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger to refocus after loading
-  useEffect(() => {
-    if (isOpen) {
-      inputRef.current?.focus();
-    }
-  }, [isOpen, isLoading]);
+  const { messages, isLoading, currentTool, sendMessage, clearMessages } =
+    useAgentChat({ scrollRef: messagesEndRef, inputRef });
 
   // Don't render on the dedicated chat page
   if (pathname === "/chat") {
@@ -113,7 +93,7 @@ export function ChatWidget() {
                 <div>
                   <h3 className="font-semibold text-white">HMLS Assistant</h3>
                   <p className="text-xs text-zinc-400">
-                    {isConnected ? "Online" : "Connecting..."}
+                    Online
                   </p>
                 </div>
               </div>
@@ -200,12 +180,13 @@ export function ChatWidget() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type a message..."
-                  disabled={!isConnected || isLoading}
+                  disabled={isLoading}
+                  autoFocus
                   className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                 />
                 <button
                   type="submit"
-                  disabled={!isConnected || isLoading || !input.trim()}
+                  disabled={isLoading || !input.trim()}
                   className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send size={18} />

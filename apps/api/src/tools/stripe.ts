@@ -3,18 +3,12 @@ import Stripe from "stripe";
 import { db, schema } from "../db/client.ts";
 import { eq } from "drizzle-orm";
 import { env } from "../env.ts";
+import { Errors } from "../lib/errors.ts";
 
 // Initialize Stripe SDK with validated API key
 const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-12-15.clover",
 });
-
-class NotFoundError extends Error {
-  constructor(resource: string, id: number | string) {
-    super(`${resource} with id ${id} not found`);
-    this.name = "NotFoundError";
-  }
-}
 
 async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
   const [customer] = await db
@@ -24,7 +18,7 @@ async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
     .limit(1);
 
   if (!customer) {
-    throw new NotFoundError("Customer", customerId);
+    throw Errors.notFound("Customer", customerId);
   }
 
   if (customer.stripeCustomerId) {

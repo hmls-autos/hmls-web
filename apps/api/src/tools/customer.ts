@@ -118,58 +118,8 @@ export const getServicesTool = {
   },
 };
 
-export const createEstimateTool = {
-  name: "create_estimate",
-  description:
-    "Generate an informal price estimate for the customer. This is NOT a formal quote - just a quick price range to share in chat. Use this before creating a formal Stripe quote.",
-  schema: z.object({
-    services: z
-      .array(
-        z.object({
-          name: z.string().describe("Service name"),
-          description: z.string().describe("Brief description of work needed"),
-          estimatedPrice: z.number().describe("Estimated price in dollars"),
-        }),
-      )
-      .describe("List of services needed"),
-    notes: z.string().optional().describe(
-      "Any additional notes about the estimate",
-    ),
-  }),
-  execute: async (params: {
-    services: { name: string; description: string; estimatedPrice: number }[];
-    notes?: string;
-  }, _ctx: unknown) => {
-    const totalMin = params.services.reduce(
-      (sum, s) => sum + s.estimatedPrice * 0.9,
-      0,
-    );
-    const totalMax = params.services.reduce(
-      (sum, s) => sum + s.estimatedPrice * 1.1,
-      0,
-    );
-    const totalEstimate = params.services.reduce(
-      (sum, s) => sum + s.estimatedPrice,
-      0,
-    );
-
-    return JSON.stringify({
-      services: params.services,
-      estimatedTotal: totalEstimate,
-      priceRange: {
-        low: Math.round(totalMin),
-        high: Math.round(totalMax),
-      },
-      notes: params.notes,
-      disclaimer:
-        "This is an informal estimate. Final price may vary based on actual conditions. Would you like me to send you a formal quote?",
-    });
-  },
-};
-
 export const customerTools = [
   getCustomerTool,
   createCustomerTool,
   getServicesTool,
-  createEstimateTool,
 ];

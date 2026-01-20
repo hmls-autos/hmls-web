@@ -6,21 +6,18 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import Background from "@/components/Background";
 import Navbar from "@/components/Navbar";
 import { Markdown } from "@/components/ui/Markdown";
-import { useChat } from "@/hooks/useChat";
+import { useAgentChat } from "@/hooks/useAgentChat";
 
 export default function ChatPage() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const {
-    messages,
-    isConnected,
-    isLoading,
-    currentTool,
-    sendMessage,
-    clearMessages,
-  } = useChat();
+  const { messages, isLoading, currentTool, sendMessage, clearMessages } =
+    useAgentChat();
+
+  // Always connected when hook is mounted
+  const isConnected = true;
 
   // Scroll to bottom when messages change
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger on messages change

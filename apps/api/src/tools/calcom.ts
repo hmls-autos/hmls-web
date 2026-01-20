@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { env } from "../env.ts";
+import { Errors } from "../lib/errors.ts";
 
 const CALCOM_API_BASE = "https://api.cal.com/v1";
 
@@ -8,7 +9,6 @@ async function calcomRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${CALCOM_API_BASE}${endpoint}`;
-
   console.log(`[calcom] ${options.method || "GET"} ${endpoint}`);
 
   const response = await fetch(url, {
@@ -22,8 +22,7 @@ async function calcomRequest<T>(
 
   if (!response.ok) {
     const error = await response.text();
-    console.error(`[calcom] Error: ${response.status} ${error}`);
-    throw new Error(`Cal.com API error (${response.status}): ${error}`);
+    throw Errors.external("Cal.com", `${response.status} - ${error}`);
   }
 
   return response.json();

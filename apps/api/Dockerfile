@@ -1,23 +1,20 @@
-FROM oven/bun:latest
+FROM denoland/deno:2.1.4
 
 WORKDIR /app
 
-# Copy workspace root files and all package.json files
-COPY package.json bun.lock .npmrc ./
-COPY apps/api/package.json ./apps/api/
-COPY apps/web/package.json ./apps/web/
-COPY packages/shared/package.json ./packages/shared/
-COPY packages/proto/package.json ./packages/proto/
+# Copy deno.json for import maps
+COPY apps/agent/deno.json ./apps/agent/
 
-# Install dependencies
-RUN bun install --frozen-lockfile
+# Copy agent source and skills
+COPY apps/agent/src ./apps/agent/src
+COPY apps/agent/.skills ./apps/agent/.skills
 
-# Copy source code
-COPY apps/api ./apps/api
-COPY packages/shared ./packages/shared
+WORKDIR /app/apps/agent
 
-WORKDIR /app/apps/api
+# Install dependencies and cache
+RUN deno install --allow-scripts
+RUN deno cache src/index.ts
 
 EXPOSE 8000
 
-CMD ["bun", "run", "src/index.ts"]
+CMD ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "--allow-run", "--allow-sys", "src/index.ts"]

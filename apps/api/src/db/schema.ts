@@ -1,4 +1,3 @@
-import { relations } from "drizzle-orm";
 import {
   boolean,
   integer,
@@ -97,26 +96,27 @@ export const vehiclePricing = pgTable("vehicle_pricing", {
 
 export const estimates = pgTable("estimates", {
   id: serial("id").primaryKey(),
-  customerId: integer("customer_id").notNull().references(() => customers.id),
-  items: jsonb("items").notNull(),
-  subtotal: integer("subtotal").notNull(),
-  priceRangeLow: integer("price_range_low").notNull(),
-  priceRangeHigh: integer("price_range_high").notNull(),
+  customerId: integer("customer_id").references(() => customers.id).notNull(),
+  items: jsonb("items").notNull(), // LineItem[]
+  subtotal: integer("subtotal").notNull(), // in cents
+  priceRangeLow: integer("price_range_low").notNull(), // in cents
+  priceRangeHigh: integer("price_range_high").notNull(), // in cents
   notes: text("notes"),
-  shareToken: varchar("share_token", { length: 32 }).unique(),
+  shareToken: varchar("share_token", { length: 64 }).notNull(),
   validDays: integer("valid_days").notNull().default(14),
   expiresAt: timestamp("expires_at").notNull(),
   convertedToQuoteId: integer("converted_to_quote_id").references(() => quotes.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const estimatesRelations = relations(estimates, ({ one }) => ({
-  customer: one(customers, {
-    fields: [estimates.customerId],
-    references: [customers.id],
-  }),
-  convertedToQuote: one(quotes, {
-    fields: [estimates.convertedToQuoteId],
-    references: [quotes.id],
-  }),
-}));
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").references(() => customers.id),
+  bookingId: integer("booking_id").references(() => bookings.id),
+  stripeInvoiceId: varchar("stripe_invoice_id", { length: 100 }),
+  items: jsonb("items").notNull(), // [{ service, description, amount }]
+  totalAmount: integer("total_amount").notNull(), // in cents
+  status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, sent, paid
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+

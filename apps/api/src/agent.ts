@@ -4,6 +4,7 @@ import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { calcomTools } from "./tools/calcom.ts";
 import { customerTools } from "./tools/customer.ts";
 import { stripeTools } from "./tools/stripe.ts";
+import { estimateTools } from "./skills/estimate/tools.ts";
 
 // Default model, can be overridden via env
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
@@ -14,7 +15,7 @@ export async function createHmlsAgent() {
 
   const agent = await createZypherAgent({
     model: anthropic(modelId, { apiKey: env.ANTHROPIC_API_KEY }),
-    tools: [...calcomTools, ...customerTools, ...stripeTools],
+    tools: [...calcomTools, ...customerTools, ...stripeTools, ...estimateTools],
     overrides: {
       systemPromptLoader: async () => SYSTEM_PROMPT,
     },
