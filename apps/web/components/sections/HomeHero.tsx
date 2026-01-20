@@ -70,7 +70,7 @@ export default function HomeHero() {
             <Wrench className="w-4 h-4 group-hover:rotate-90 transition-transform" />
           </Link>
           <Link
-            href="/services"
+            href="#services"
             className="px-8 py-4 rounded-lg border border-white/10 hover:bg-white/5 transition-colors text-gray-300 font-light min-w-[200px]"
           >
             Explore Services

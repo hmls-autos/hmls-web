@@ -65,14 +65,14 @@ export default function NotFound() {
                 Back to Home
               </motion.button>
             </Link>
-            <Link href="/services">
+            <Link href="/chat">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="flex items-center gap-2 px-6 py-3 bg-zinc-800 border border-zinc-700 text-white rounded-xl font-medium hover:border-emerald-500/50 transition-colors"
               >
                 <Search size={20} />
-                Browse Services
+                Chat with Us
               </motion.button>
             </Link>
           </motion.div>

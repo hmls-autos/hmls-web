@@ -25,18 +25,6 @@ export default function Navbar() {
           Home
         </Link>
         <Link
-          href="/about"
-          className={`hover:text-emerald-400 transition-colors ${isActive("/about") ? "text-emerald-400" : ""}`}
-        >
-          About
-        </Link>
-        <Link
-          href="/services"
-          className={`hover:text-emerald-400 transition-colors ${isActive("/services") ? "text-emerald-400" : ""}`}
-        >
-          Services
-        </Link>
-        <Link
           href="/contact"
           className={`hover:text-emerald-400 transition-colors ${isActive("/contact") ? "text-emerald-400" : ""}`}
         >

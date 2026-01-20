@@ -1,4 +1,18 @@
-import { ArrowRight, CheckCircle2, Clock, Cpu, Wrench } from "lucide-react";
+import {
+  ArrowRight,
+  Battery,
+  Car,
+  CheckCircle2,
+  Clock,
+  Cog,
+  Cpu,
+  Gauge,
+  Heart,
+  ShieldCheck,
+  Thermometer,
+  UserCheck,
+  Wrench,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import Background from "@/components/Background";
@@ -38,79 +52,90 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Why Choose Us */}
-      <section className="w-full max-w-7xl px-6 py-24 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <FadeIn direction="right">
+      {/* About Section */}
+      <section id="about" className="w-full max-w-7xl px-6 py-24 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+          <FadeIn direction="left">
             <h2 className="text-sm font-medium text-emerald-500 tracking-widest uppercase mb-4">
-              Why Choose hmls.
+              About HMLS
             </h2>
             <h3 className="text-4xl md:text-5xl font-thin mb-8 leading-tight">
-              Your Trusted <br /> Mobile Expert
+              20+ Years of <br />
+              <span className="text-emerald-500">Expertise</span>
             </h3>
 
-            <div className="space-y-8">
-              {[
-                {
-                  title: "Convenience You Can Count On",
-                  desc: "From pick-up to delivery, we handle your repairs with ease and efficiency right at your driveway.",
-                  icon: <Clock className="w-6 h-6 text-emerald-500" />,
-                },
-                {
-                  title: "Exceptional Care for Every Vehicle",
-                  desc: "Get expert service backed by decades of automotive experience and futuristic diagnostic tech.",
-                  icon: <CheckCircle2 className="w-6 h-6 text-emerald-500" />,
-                },
-              ].map((item, i) => (
-                <FadeIn
-                  key={item.title}
-                  direction="right"
-                  delay={i * 0.2}
-                  className="flex gap-4"
-                >
-                  <div className="shrink-0 w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                    {item.icon}
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-medium text-white mb-1">
-                      {item.title}
-                    </h4>
-                    <p className="text-gray-400 font-light text-sm leading-relaxed">
-                      {item.desc}
-                    </p>
-                  </div>
-                </FadeIn>
-              ))}
+            <div className="glass-panel p-8 rounded-2xl border border-emerald-500/20 mb-8">
+              <p className="text-gray-400 font-light leading-relaxed mb-6">
+                Hi, I&apos;m the founder of HMLS Mobile Mechanic. With over 20
+                years of hands-on experience, including time at Fortune 100
+                dealerships, I&apos;ve seen it all.
+              </p>
+              <p className="text-gray-400 font-light leading-relaxed mb-6">
+                I started this business to give Orange County a better, more
+                personalized alternative to traditional auto repair shops. My
+                aim is to deliver exceptional care for your vehicle without the
+                high overhead costs or the impersonal service you&apos;d find at
+                a dealership.
+              </p>
+              <p className="text-gray-400 font-light leading-relaxed">
+                Whether it&apos;s routine maintenance or complex diagnostics,
+                I&apos;ll make sure your car gets the attention it deserves
+                right at your driveway.
+              </p>
             </div>
-
-            <Link
-              href="/about"
-              className="inline-flex items-center gap-2 text-emerald-400 mt-8 hover:gap-4 transition-all"
-            >
-              Learn more about us <ArrowRight className="w-4 h-4" />
-            </Link>
           </FadeIn>
 
-          <div className="relative">
-            <ScaleIn className="relative h-[500px] rounded-2xl overflow-hidden glass-panel border-emerald-500/20 z-10">
+          <div className="space-y-6">
+            {[
+              {
+                title: "Our Mission",
+                desc: "We deliver convenient, affordable, and high-quality auto repair services to keep your vehicle running smoothly.",
+                icon: <Wrench className="w-6 h-6 text-emerald-500" />,
+              },
+              {
+                title: "Our Vision",
+                desc: "To become the trusted go-to mobile mechanic for stress-free, reliable, and expert automotive care in Orange County.",
+                icon: <UserCheck className="w-6 h-6 text-emerald-500" />,
+              },
+              {
+                title: "Core Values",
+                desc: "Honesty, dedication, and customer satisfaction are the driving forces behind every repair we perform.",
+                icon: <Heart className="w-6 h-6 text-emerald-500" />,
+              },
+            ].map((item, i) => (
+              <FadeIn
+                key={item.title}
+                direction="right"
+                delay={i * 0.2}
+                className="flex gap-4 items-start"
+              >
+                <div className="shrink-0 w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                  {item.icon}
+                </div>
+                <div>
+                  <h4 className="text-xl font-medium text-white mb-2">
+                    {item.title}
+                  </h4>
+                  <p className="text-gray-400 font-light text-sm leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              </FadeIn>
+            ))}
+
+            <FadeIn
+              direction="right"
+              delay={0.6}
+              className="relative h-64 rounded-2xl overflow-hidden glass-panel border-white/5 mt-8"
+            >
               <Image
                 src="/images/engine-bay.png"
-                alt="Mechanic working on car"
+                alt="Engine bay"
                 fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover hover:scale-105 transition-transform duration-700"
               />
-            </ScaleIn>
-            {/* Decorative offset image */}
-            <div className="absolute -bottom-8 -right-8 w-2/3 h-64 rounded-2xl overflow-hidden border border-white/10 bg-black z-20 shadow-2xl">
-              <Image
-                src="/images/dipstick.png"
-                alt="Engine detail"
-                fill
-                sizes="33vw"
-                className="object-cover hover:scale-105 transition-transform duration-700"
-              />
-            </div>
+            </FadeIn>
           </div>
         </div>
       </section>
@@ -127,7 +152,6 @@ export default function Home() {
         </StaggerContainer>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-          {/* Connecting Line */}
           <div className="hidden md:block absolute top-12 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent -z-10" />
 
           {[
@@ -170,69 +194,107 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Services Preview */}
-      <section className="w-full bg-white/[0.02] py-24 md:py-32">
+      {/* Services Section */}
+      <section id="services" className="w-full bg-white/[0.02] py-24 md:py-32">
         <div className="max-w-7xl mx-auto px-6">
-          <FadeIn className="mb-16 md:flex justify-between items-end">
-            <div>
-              <h2 className="text-sm font-medium text-emerald-500 tracking-widest uppercase mb-4">
-                Our Expertise
-              </h2>
-              <h3 className="text-4xl md:text-5xl font-thin">
-                Comprehensive Services
-              </h3>
-            </div>
-            <Link
-              href="/services"
-              className="hidden md:flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
-            >
-              View all services <ArrowRight className="w-4 h-4" />
-            </Link>
+          <FadeIn className="mb-16 text-center">
+            <h2 className="text-sm font-medium text-emerald-500 tracking-widest uppercase mb-4">
+              Our Services
+            </h2>
+            <h3 className="text-4xl md:text-5xl font-thin">
+              Comprehensive Care for Your Vehicle
+            </h3>
+            <p className="text-xl text-gray-400 font-light max-w-2xl mx-auto mt-6">
+              From routine maintenance to complex engine work, we handle it all
+              with precision right at your location.
+            </p>
           </FadeIn>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Value Props */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {[
               {
-                title: "Maintenance Services",
-                desc: "Routine oil changes, tune-ups, and fluid top-ups.",
-                icon: <Clock />,
+                step: "01",
+                title: "Lower Overhead, Lower Costs",
+                desc: "Our streamlined mobile approach minimizes operational expenses, passing the savings directly to you.",
               },
               {
-                title: "Repair Services",
-                desc: "Brakes, suspension, and essential mechanical repairs.",
-                icon: <Wrench />,
+                step: "02",
+                title: "Customized Part Solutions",
+                desc: "We collaborate with multiple suppliers to find the perfect part for your budget and specific needs.",
               },
               {
-                title: "Diagnostics Services",
-                desc: "Advanced computer diagnostics for electrical issues.",
-                icon: <Cpu />,
+                step: "03",
+                title: "Proactive Care Saves Money",
+                desc: "Regular maintenance prevents costly future repairs, keeping your car in top condition for longer.",
+              },
+            ].map((item, i) => (
+              <FadeIn
+                key={item.step}
+                delay={i * 0.2}
+                className="glass-panel p-8 rounded-2xl relative group hover:border-emerald-500/30 transition-colors"
+              >
+                <div className="text-sm text-emerald-500 font-medium mb-4">
+                  {item.step}
+                </div>
+                <h4 className="text-xl font-medium mb-3">{item.title}</h4>
+                <p className="text-gray-400 font-light leading-relaxed">
+                  {item.desc}
+                </p>
+              </FadeIn>
+            ))}
+          </div>
+
+          {/* Detailed Services Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                title: "Oil Change",
+                desc: "Replace engine oil and filter while topping off all fluids for smooth performance.",
+                icon: <Gauge className="w-6 h-6" />,
+              },
+              {
+                title: "Brakes",
+                desc: "Inspect brake pads, rotors, and fluid to ensure safety and stopping power.",
+                icon: <ShieldCheck className="w-6 h-6" />,
+              },
+              {
+                title: "HVAC Service",
+                desc: "Comprehensive air conditioning inspection and servicing for your comfort.",
+                icon: <Thermometer className="w-6 h-6" />,
+              },
+              {
+                title: "Suspension",
+                desc: "Diagnose and repair suspension for a smooth, noise-free ride.",
+                icon: <Cog className="w-6 h-6" />,
+              },
+              {
+                title: "Battery & Electrical",
+                desc: "Full diagnostics for starting and charging systems, including alternator and battery replacement.",
+                icon: <Battery className="w-6 h-6" />,
+              },
+              {
+                title: "Engine Diagnostics",
+                desc: "Advanced tools to diagnose and resolve complex engine issues efficiently.",
+                icon: <Car className="w-6 h-6" />,
               },
             ].map((service, i) => (
               <ScaleIn
                 key={service.title}
                 delay={i * 0.1}
-                className="p-8 rounded-2xl border border-white/5 hover:border-emerald-500/30 hover:bg-white/[0.02] transition-all group cursor-default"
+                className="p-8 rounded-2xl border border-white/5 hover:border-emerald-500/30 hover:bg-white/[0.02] transition-all group cursor-default flex flex-col"
               >
-                <div className="mb-6 text-emerald-500 group-hover:text-emerald-400 transition-colors">
+                <div className="mb-6 w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:text-emerald-400 transition-colors">
                   {service.icon}
                 </div>
-                <h4 className="text-lg font-medium mb-2 text-white group-hover:translate-x-2 transition-transform duration-300">
+                <h4 className="text-lg font-medium mb-3 text-white group-hover:translate-x-2 transition-transform duration-300">
                   {service.title}
                 </h4>
-                <p className="text-sm text-gray-500 font-light leading-relaxed group-hover:text-gray-400 transition-colors">
+                <p className="text-sm text-gray-400 font-light leading-relaxed">
                   {service.desc}
                 </p>
               </ScaleIn>
             ))}
-          </div>
-
-          <div className="md:hidden mt-8 text-center">
-            <Link
-              href="/services"
-              className="inline-flex items-center gap-2 text-emerald-400"
-            >
-              View all services <ArrowRight className="w-4 h-4" />
-            </Link>
           </div>
         </div>
       </section>
@@ -281,7 +343,6 @@ export default function Home() {
       {/* CTA Section */}
       <section className="w-full px-6 py-24">
         <FadeIn className="max-w-4xl mx-auto glass-panel p-12 md:p-20 rounded-[2rem] border-emerald-500/20 text-center relative overflow-hidden">
-          {/* Background image for CTA */}
           <div className="absolute inset-0 opacity-20">
             <Image
               src="/images/oil-pan.png"
@@ -301,12 +362,18 @@ export default function Home() {
             reliable, and futuristic service at your doorstep.
           </p>
 
-          <div className="flex justify-center relative z-10">
+          <div className="flex justify-center gap-4 relative z-10">
             <Link
               href="/contact"
               className="glass-button px-12 py-5 rounded-xl text-emerald-400 font-medium tracking-wide text-lg hover:scale-105 active:scale-95"
             >
               Get Started
+            </Link>
+            <Link
+              href="/chat"
+              className="px-12 py-5 rounded-xl border border-white/10 text-white font-medium tracking-wide text-lg hover:border-emerald-500/30 hover:scale-105 active:scale-95 transition-all"
+            >
+              Chat with AI
             </Link>
           </div>
         </FadeIn>
