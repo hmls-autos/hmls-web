@@ -92,9 +92,7 @@ export function ChatWidget() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-white">HMLS Assistant</h3>
-                  <p className="text-xs text-zinc-400">
-                    Online
-                  </p>
+                  <p className="text-xs text-zinc-400">Online</p>
                 </div>
               </div>
               <button
@@ -181,7 +179,6 @@ export function ChatWidget() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type a message..."
                   disabled={isLoading}
-                  autoFocus
                   className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 disabled:opacity-50"
                 />
                 <button

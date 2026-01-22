@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/components/AuthProvider";
 import { ChatWidget } from "@/components/ChatWidget";
 
 const inter = Inter({
@@ -24,8 +25,10 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-sans antialiased bg-black text-white`}
       >
-        {children}
-        <ChatWidget />
+        <AuthProvider>
+          {children}
+          <ChatWidget />
+        </AuthProvider>
       </body>
     </html>
   );

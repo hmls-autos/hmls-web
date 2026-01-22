@@ -1,14 +1,16 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, Send, Wrench } from "lucide-react";
+import { Loader2, LogIn, Send, Wrench } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import Background from "@/components/Background";
 import Navbar from "@/components/Navbar";
 import { Markdown } from "@/components/ui/Markdown";
 import { useAgentChat } from "@/hooks/useAgentChat";
 
 export default function ChatPage() {
+  const { user, isLoading: authLoading } = useAuth();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +52,59 @@ export default function ChatPage() {
     create_invoice: "Creating invoice",
     get_quote_status: "Checking quote status",
   };
+
+  // Show loading state
+  if (authLoading) {
+    return (
+      <main className="flex min-h-screen flex-col bg-black text-white">
+        <Navbar />
+        <Background />
+        <div className="flex-1 flex flex-col items-center justify-center px-4">
+          <div className="text-emerald-500 animate-pulse">Loading...</div>
+        </div>
+      </main>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <main className="flex min-h-screen flex-col bg-black text-white">
+        <Navbar />
+        <Background />
+        <div className="flex-1 flex flex-col items-center justify-center px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center max-w-md"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6"
+            >
+              <Wrench className="w-10 h-10 text-emerald-400" />
+            </motion.div>
+            <h1 className="text-2xl font-semibold mb-3">Sign in to Chat</h1>
+            <p className="text-zinc-400 mb-8">
+              Log in to access our AI assistant for scheduling, quotes, and
+              service questions.
+            </p>
+            <motion.a
+              href="/login"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-colors"
+            >
+              <LogIn className="w-5 h-5" />
+              Sign In
+            </motion.a>
+          </motion.div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-screen flex-col bg-black text-white">

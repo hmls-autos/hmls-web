@@ -1,9 +1,7 @@
 import {
-  ArrowRight,
   Battery,
   Car,
   CheckCircle2,
-  Clock,
   Cog,
   Cpu,
   Gauge,

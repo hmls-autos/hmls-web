@@ -1,7 +1,7 @@
 "use client";
 
-import { HttpAgent, type Message as AgentMessage } from "@ag-ui/client";
-import { useState, useRef, useCallback, type RefObject } from "react";
+import { type Message as AgentMessage, HttpAgent } from "@ag-ui/client";
+import { type RefObject, useCallback, useRef, useState } from "react";
 
 const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8000";
 
@@ -47,7 +47,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     const agent = getAgent();
 
     agent.setMessages([
-      ...messages.map((m) => ({ id: m.id, role: m.role, content: m.content }) as AgentMessage),
+      ...messages.map(
+        (m) => ({ id: m.id, role: m.role, content: m.content }) as AgentMessage,
+      ),
       { id: userMsg.id, role: "user", content } as AgentMessage,
     ]);
 
@@ -59,13 +61,18 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         onTextMessageStartEvent: ({ event }) => {
           assistantId = event.messageId;
           buffer = "";
-          setMessages((m) => [...m, { id: assistantId, role: "assistant", content: "" }]);
+          setMessages((m) => [
+            ...m,
+            { id: assistantId, role: "assistant", content: "" },
+          ]);
           setTimeout(scrollToBottom, 0);
         },
         onTextMessageContentEvent: ({ event }) => {
           buffer += event.delta;
           setMessages((m) =>
-            m.map((msg) => (msg.id === assistantId ? { ...msg, content: buffer } : msg))
+            m.map((msg) =>
+              msg.id === assistantId ? { ...msg, content: buffer } : msg,
+            ),
           );
           setTimeout(scrollToBottom, 0);
         },

@@ -21,7 +21,7 @@ interface Customer {
 export function useCustomer(id: number | null) {
   const { data, error, isLoading, mutate } = useSWR<Customer>(
     id ? `/api/customers/${id}` : null,
-    fetcher
+    fetcher,
   );
 
   return {

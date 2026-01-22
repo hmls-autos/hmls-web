@@ -24,7 +24,7 @@ interface Estimate {
 export function useEstimate(id: number | null) {
   const { data, error, isLoading, mutate } = useSWR<Estimate>(
     id ? `/api/estimates/${id}` : null,
-    fetcher
+    fetcher,
   );
 
   return {
