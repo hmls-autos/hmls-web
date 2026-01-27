@@ -76,17 +76,42 @@ This design supports customers with multiple vehicles - each conversation can be
 | `get_customer` | User info injected from session |
 | `create_invoice` | Owner handles this in backend after service |
 
+### Architecture
+
+```
+src/system-prompt.ts     # Simple identity + role + context
+.skills/                 # Detailed workflow instructions
+├── services/skill.md    # Service catalog lookup
+├── estimate/skill.md    # PDF estimate generation
+├── payments/skill.md    # Stripe quotes
+└── scheduling/skill.md  # Cal.com booking
+```
+
+### Pricing Guidelines
+
+**Internal adjustments** (not shared with customers):
+- Vehicle type (luxury/European may cost more)
+- Vehicle age
+- Issue complexity
+
+**Important:** Agent should NOT explain pricing adjustments to customers. Just provide the final price range in a friendly way.
+
 ### Implementation Changes
 
 1. **Modify:**
-   - `src/tools/customer.ts` - Keep only `get_services`, remove `get_customer` and `create_customer`
+   - `src/tools/customer.ts` - Keep only `get_services`, rename export to `serviceTools`
    - `src/tools/stripe.ts` - Remove `create_invoice` tool
    - `src/agent.ts` - Update tool imports
-   - `src/system-prompt.ts` - Rewrite for receptionist role
+   - `src/system-prompt.ts` - Simplified receptionist prompt
 
 2. **Add:**
-   - Session context injection - Pass user info (name, phone, email) to agent via `X-User-Context` header
-   - Vehicle info is collected per-conversation by the agent (not stored in profile)
+   - Session context injection via `X-User-Context` header
+   - Vehicle info collected per-conversation (not stored in profile)
+
+3. **Skills updated:**
+   - `services/skill.md` - Replaced `customer/skill.md`
+   - `estimate/skill.md` - Removed `get_customer` references
+   - `payments/skill.md` - Removed invoice references
 
 ## Future: AI Diagnostic Agent
 
