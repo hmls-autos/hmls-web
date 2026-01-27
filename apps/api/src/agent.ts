@@ -2,7 +2,7 @@ import { createZypherAgent, anthropic } from "@corespeed/zypher";
 import { env } from "./env.ts";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { calcomTools } from "./tools/calcom.ts";
-import { customerTools } from "./tools/customer.ts";
+import { serviceTools } from "./tools/customer.ts";
 import { stripeTools } from "./tools/stripe.ts";
 import { estimateTools } from "./skills/estimate/tools.ts";
 
@@ -15,7 +15,7 @@ export async function createHmlsAgent() {
 
   const agent = await createZypherAgent({
     model: anthropic(modelId, { apiKey: env.ANTHROPIC_API_KEY }),
-    tools: [...calcomTools, ...customerTools, ...stripeTools, ...estimateTools],
+    tools: [...serviceTools, ...estimateTools, ...stripeTools, ...calcomTools],
     overrides: {
       systemPromptLoader: async () => SYSTEM_PROMPT,
     },
