@@ -1,0 +1,84 @@
+# Mobile Mechanic Agent Redesign
+
+## Background
+
+The current agent design has audience confusion - it mixes customer-facing and mechanic-facing functionality. This redesign clarifies the agent's role as a customer-facing receptionist for the mobile mechanic business.
+
+## Two Separate Products
+
+HMLS has two distinct agent products:
+
+| Product | Purpose | Status |
+|---------|---------|--------|
+| **Mobile Mechanic Agent** | Receptionist for the mobile mechanic business | This design |
+| **AI Diagnostic Agent** | Standalone AI car diagnosis product | Future |
+
+This document focuses on the Mobile Mechanic Agent.
+
+## Mobile Mechanic Agent
+
+### Role
+
+A website chat receptionist that helps customers:
+1. Understand available services
+2. Get price estimates
+3. Receive formal quotes
+4. Book appointments
+
+### Access
+
+**Login required** - Users must be logged in to access the chat service.
+
+### User Flow
+
+```
+User logs in → Enters chat → Agent knows user info (name, phone, vehicle)
+    │
+    ├── Ask about services → Answer questions
+    ├── Request quote → Generate estimate PDF
+    ├── Confirm quote → Send Stripe formal quote
+    └── Book appointment → Create Cal.com booking
+```
+
+### Tools
+
+**Keep:**
+
+| Tool | Purpose |
+|------|---------|
+| `get_services` | Query available services with pricing and duration |
+| `create_estimate` | Generate estimate PDF |
+| `create_quote` | Send formal Stripe quote |
+| `get_quote_status` | Check quote status |
+| `get_availability` | Query available time slots (Cal.com) |
+| `create_booking` | Create appointment (Cal.com) |
+
+**Remove:**
+
+| Tool | Reason |
+|------|--------|
+| `create_customer` | User registers through auth flow, not agent |
+| `get_customer` | User info injected from session |
+| `create_invoice` | Owner handles this in backend after service |
+
+### Implementation Changes
+
+1. **Modify:**
+   - `src/tools/customer.ts` - Keep only `get_services`, remove `get_customer` and `create_customer`
+   - `src/tools/stripe.ts` - Remove `create_invoice` tool
+   - `src/agent.ts` - Update tool imports
+   - `src/system-prompt.ts` - Rewrite for receptionist role
+
+2. **Add:**
+   - Session context injection - Pass user info (name, phone, email, vehicle) to agent at start of conversation
+
+## Future: AI Diagnostic Agent
+
+A separate product for intelligent car diagnosis:
+- Standalone AI product (potentially mobile app)
+- Multi-turn diagnostic conversations
+- Multimedia input (photos, audio of car sounds)
+- Requires login
+- May have separate monetization
+
+This will be designed separately.
