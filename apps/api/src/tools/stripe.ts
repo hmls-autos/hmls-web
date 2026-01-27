@@ -153,89 +153,6 @@ export const createQuoteTool = {
   },
 };
 
-export const createInvoiceTool = {
-  name: "create_invoice",
-  description:
-    "Create and send an invoice to a customer for completed services. The invoice will be emailed to the customer.",
-  schema: z.object({
-    customerId: z.number().describe("The customer ID from the database"),
-    items: z
-      .array(
-        z.object({
-          service: z.string().describe("Service name"),
-          description: z
-            .string()
-            .describe("Description of the work completed"),
-          amount: z.number().describe("Price in dollars"),
-        })
-      )
-      .describe("List of services and their prices"),
-    bookingId: z
-      .number()
-      .optional()
-      .describe("Associated booking ID if applicable"),
-    dueInDays: z.number().default(7).describe("Days until invoice is due"),
-  }),
-  execute: async (params: {
-    customerId: number;
-    items: { service: string; description: string; amount: number }[];
-    bookingId?: number;
-    dueInDays?: number;
-  }, _ctx: unknown) => {
-    const stripeCustomerId = await getOrCreateStripeCustomer(params.customerId);
-
-    for (const item of params.items) {
-      await stripe.invoiceItems.create({
-        customer: stripeCustomerId,
-        description: `${item.service}: ${item.description}`,
-        amount: dollarsToCents(item.amount),
-        currency: "usd",
-      });
-    }
-
-    const invoice = await stripe.invoices.create({
-      customer: stripeCustomerId,
-      collection_method: "send_invoice",
-      days_until_due: params.dueInDays || 7,
-    });
-
-    const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
-    const sentInvoice = await stripe.invoices.sendInvoice(finalizedInvoice.id);
-
-    const totalAmount = params.items.reduce(
-      (sum, item) => sum + dollarsToCents(item.amount),
-      0
-    );
-
-    console.log(`[stripe] Invoice sent: ${sentInvoice.id} for $${centsToDollars(totalAmount)}`);
-
-    const [dbInvoice] = await db
-      .insert(schema.invoices)
-      .values({
-        customerId: params.customerId,
-        bookingId: params.bookingId,
-        stripeInvoiceId: sentInvoice.id,
-        items: params.items,
-        totalAmount,
-        status: "sent",
-      })
-      .returning();
-
-    return JSON.stringify({
-      success: true,
-      invoiceId: dbInvoice.id,
-      stripeInvoiceId: sentInvoice.id,
-      totalAmount: centsToDollars(totalAmount),
-      hostedUrl: sentInvoice.hosted_invoice_url,
-      message: `Invoice for $${centsToDollars(totalAmount).toFixed(
-        2
-      )} has been sent to the customer. They can pay at: ${
-        sentInvoice.hosted_invoice_url
-      }`,
-    });
-  },
-};
-
 export const getQuoteStatusTool = {
   name: "get_quote_status",
   description:
@@ -286,6 +203,5 @@ export const getQuoteStatusTool = {
 
 export const stripeTools = [
   createQuoteTool,
-  createInvoiceTool,
   getQuoteStatusTool,
 ];
