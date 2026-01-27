@@ -13,14 +13,20 @@ import { eq, and } from "drizzle-orm";
 import { EstimatePdf } from "./pdf/EstimatePdf.tsx";
 import { AppError, Errors } from "./lib/errors.ts";
 import { createAguiEventStream, parseRunAgentInput } from "@zypher/agui";
+import { type UserContext } from "./types/user-context.ts";
 
-// Agent singleton
-let agentInstance: Awaited<ReturnType<typeof createHmlsAgent>> | null = null;
-async function getAgent() {
-  if (!agentInstance) {
-    agentInstance = await createHmlsAgent();
+// Agent cache by user ID (or singleton for anonymous)
+const agentCache = new Map<string, Awaited<ReturnType<typeof createHmlsAgent>>>();
+
+async function getAgent(userContext?: UserContext) {
+  const cacheKey = userContext ? `user:${userContext.id}` : "anonymous";
+
+  if (!agentCache.has(cacheKey)) {
+    const agent = await createHmlsAgent({ userContext });
+    agentCache.set(cacheKey, agent);
   }
-  return agentInstance;
+
+  return agentCache.get(cacheKey)!;
 }
 
 // Create Hono app
@@ -136,10 +142,21 @@ app.post("/task", async (c) => {
     throw Errors.validation("Invalid AG-UI input", String(parseError));
   }
 
-  const { threadId, runId, messages } = input;
-  console.log(`[agent] threadId=${threadId}, messages=${messages.length}`);
+  // Extract user context from header (set by web frontend)
+  let userContext: UserContext | undefined;
+  const userContextHeader = c.req.header("X-User-Context");
+  if (userContextHeader) {
+    try {
+      userContext = JSON.parse(userContextHeader);
+    } catch {
+      console.warn("[agent] Invalid X-User-Context header");
+    }
+  }
 
-  const agent = await getAgent();
+  const { threadId, runId, messages } = input;
+  console.log(`[agent] threadId=${threadId}, messages=${messages.length}, user=${userContext?.id ?? "anonymous"}`);
+
+  const agent = await getAgent(userContext);
   const aguiStream = createAguiEventStream({ agent, messages, threadId, runId });
 
   return streamSSE(c, async (stream) => {
