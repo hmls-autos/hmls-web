@@ -5,7 +5,7 @@ description: Generate downloadable PDF estimates for customers with automatic pr
 
 # Estimate Skill
 
-You can create downloadable PDF estimates for customers.
+Create downloadable PDF estimates for customers.
 
 ## Available Tools
 
@@ -21,15 +21,15 @@ You can create downloadable PDF estimates for customers.
 ## Requirements
 
 Before creating an estimate, you MUST have:
-1. Customer record (use get_customer or create_customer first)
-2. Vehicle info (make, model, year) - needed for accurate pricing
-3. Clear understanding of services needed
+1. **Vehicle info** (make, model, year) - ask the customer if not provided
+2. **Customer ID** - available from the logged-in user context
+3. **Clear understanding of services needed**
 
 ## Flow
 
-1. Gather vehicle info and understand the issue
-2. Look up or create customer record
-3. Call create_estimate with customerId and itemized services
+1. Ask about the vehicle (make, model, year) if not already provided
+2. Understand the issue/service needed
+3. Call `create_estimate` with customerId and itemized services
 4. Present the download link to the customer
 5. Ask if they'd like to proceed with a formal quote
 
