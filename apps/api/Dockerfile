@@ -2,18 +2,15 @@ FROM denoland/deno:2.1.4
 
 WORKDIR /app
 
-# Copy deno.json for import maps
-COPY apps/agent/deno.json ./apps/agent/
+# Copy API manifest/lock first to leverage Docker layer caching
+COPY apps/api/deno.json ./deno.json
+COPY apps/api/deno.lock ./deno.lock
 
-# Copy agent source and skills
-COPY apps/agent/src ./apps/agent/src
-COPY apps/agent/.skills ./apps/agent/.skills
+# Copy API source
+COPY apps/api/src ./src
 
-WORKDIR /app/apps/agent
-
-# Install dependencies and cache
-RUN deno install --allow-scripts
-RUN deno cache src/index.ts
+# Pre-cache dependencies so runtime containers spin up fast
+RUN deno cache --lock=deno.lock src/index.ts
 
 EXPOSE 8000
 
