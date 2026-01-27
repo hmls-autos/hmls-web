@@ -32,13 +32,28 @@ A website chat receptionist that helps customers:
 ### User Flow
 
 ```
-User logs in → Enters chat → Agent knows user info (name, phone, vehicle)
+User logs in → Enters chat → Agent knows user info (name, phone, email)
     │
     ├── Ask about services → Answer questions
-    ├── Request quote → Generate estimate PDF
+    ├── Request estimate → Agent asks for vehicle info → Generate estimate PDF
     ├── Confirm quote → Send Stripe formal quote
     └── Book appointment → Create Cal.com booking
 ```
+
+### User Context
+
+**From session (automatic):**
+- Name
+- Email
+- Phone
+- Customer ID
+
+**Collected per conversation (agent asks):**
+- Vehicle make
+- Vehicle model
+- Vehicle year
+
+This design supports customers with multiple vehicles - each conversation can be about a different car.
 
 ### Tools
 
@@ -70,7 +85,8 @@ User logs in → Enters chat → Agent knows user info (name, phone, vehicle)
    - `src/system-prompt.ts` - Rewrite for receptionist role
 
 2. **Add:**
-   - Session context injection - Pass user info (name, phone, email, vehicle) to agent at start of conversation
+   - Session context injection - Pass user info (name, phone, email) to agent via `X-User-Context` header
+   - Vehicle info is collected per-conversation by the agent (not stored in profile)
 
 ## Future: AI Diagnostic Agent
 
