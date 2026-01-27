@@ -5,19 +5,29 @@ import { calcomTools } from "./tools/calcom.ts";
 import { serviceTools } from "./tools/customer.ts";
 import { stripeTools } from "./tools/stripe.ts";
 import { estimateTools } from "./skills/estimate/tools.ts";
+import { type UserContext, formatUserContext } from "./types/user-context.ts";
 
 // Default model, can be overridden via env
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
-export async function createHmlsAgent() {
+export interface CreateAgentOptions {
+  userContext?: UserContext;
+}
+
+export async function createHmlsAgent(options: CreateAgentOptions = {}) {
   const modelId = env.AGENT_MODEL || DEFAULT_MODEL;
   console.log(`[agent] Creating HMLS agent with model: ${modelId}`);
+
+  // Build system prompt with user context if available
+  const systemPrompt = options.userContext
+    ? `${SYSTEM_PROMPT}\n\n${formatUserContext(options.userContext)}`
+    : SYSTEM_PROMPT;
 
   const agent = await createZypherAgent({
     model: anthropic(modelId, { apiKey: env.ANTHROPIC_API_KEY }),
     tools: [...serviceTools, ...estimateTools, ...stripeTools, ...calcomTools],
     overrides: {
-      systemPromptLoader: async () => SYSTEM_PROMPT,
+      systemPromptLoader: async () => systemPrompt,
     },
   });
 
