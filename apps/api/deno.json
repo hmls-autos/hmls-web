@@ -20,6 +20,9 @@
   },
   "tasks": {
     "dev": "deno run --env=../../.env --allow-net --allow-env --allow-read --allow-write --allow-run --allow-sys --watch src/index.ts",
-    "start": "deno run --env=../../.env --allow-net --allow-env --allow-read --allow-write --allow-run --allow-sys src/index.ts"
+    "start": "deno run --env=../../.env --allow-net --allow-env --allow-read --allow-write --allow-run --allow-sys src/index.ts",
+    "db:migrate": "deno run --env=../../.env --allow-net --allow-env --allow-read src/db/migrate.ts",
+    "db:seed": "deno run --env=../../.env --allow-net --allow-env --allow-read src/db/seed.ts",
+    "db:reset": "deno task db:migrate && deno task db:seed"
   }
 }

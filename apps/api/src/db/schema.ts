@@ -15,9 +15,7 @@ export const services = pgTable("services", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description").notNull(),
-  minPrice: integer("min_price").notNull(), // in cents
-  maxPrice: integer("max_price").notNull(), // in cents
-  duration: varchar("duration", { length: 50 }), // e.g., "30-45 minutes"
+  laborHours: numeric("labor_hours", { precision: 4, scale: 2 }).notNull(), // e.g., 0.5, 1.0, 2.5
   category: varchar("category", { length: 50 }), // e.g., "maintenance", "repair", "diagnostic"
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),

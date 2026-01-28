@@ -3,15 +3,71 @@
 import { z } from "zod";
 import { nanoid } from "npm:nanoid";
 import { db, schema } from "../../db/client.ts";
-import { eq } from "drizzle-orm";
+import { eq, ilike, or } from "drizzle-orm";
 import { calculatePrice, getVehicleMultiplier, getPricingConfig } from "./pricing.ts";
 import type { EstimateResult } from "./types.ts";
+
+export const listServicesTool = {
+  name: "list_services",
+  description:
+    "Search the service catalog for available services with standardized labor hours. Use this to find serviceIds for consistent estimates.",
+  schema: z.object({
+    search: z
+      .string()
+      .optional()
+      .describe("Optional search term to filter services by name or category"),
+    category: z
+      .string()
+      .optional()
+      .describe("Filter by category (e.g., 'maintenance', 'repair', 'diagnostic')"),
+  }),
+  execute: async (params: { search?: string; category?: string }, _ctx: unknown) => {
+    let query = db
+      .select({
+        id: schema.services.id,
+        name: schema.services.name,
+        description: schema.services.description,
+        laborHours: schema.services.laborHours,
+        category: schema.services.category,
+      })
+      .from(schema.services)
+      .where(eq(schema.services.isActive, true))
+      .$dynamic();
+
+    if (params.category) {
+      query = query.where(eq(schema.services.category, params.category));
+    }
+
+    if (params.search) {
+      query = query.where(
+        or(
+          ilike(schema.services.name, `%${params.search}%`),
+          ilike(schema.services.description, `%${params.search}%`)
+        )
+      );
+    }
+
+    const services = await query.limit(20);
+
+    return {
+      services: services.map((s) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        laborHours: Number(s.laborHours),
+        category: s.category,
+      })),
+      count: services.length,
+      note: "Use serviceId when creating estimates for consistent pricing based on labor hours",
+    };
+  },
+};
 
 export const createEstimateTool = {
   name: "create_estimate",
   description:
     "Generate a downloadable PDF estimate for a customer. Requires existing customer with vehicle info. Returns download and shareable URLs.",
-  parameters: z.object({
+  schema: z.object({
     customerId: z.number().describe("Customer ID from database"),
     services: z
       .array(
@@ -51,7 +107,7 @@ export const createEstimateTool = {
     validDays?: number;
     isRush?: boolean;
     isAfterHours?: boolean;
-  }): Promise<EstimateResult | { success: false; error: string }> => {
+  }, _ctx: unknown): Promise<EstimateResult | { success: false; error: string }> => {
     // 1. Get customer with vehicle info
     const [customer] = await db
       .select()
@@ -155,10 +211,10 @@ export const createEstimateTool = {
 export const getEstimateTool = {
   name: "get_estimate",
   description: "Retrieve an existing estimate by ID to check status or details",
-  parameters: z.object({
+  schema: z.object({
     estimateId: z.number().describe("Estimate ID from database"),
   }),
-  execute: async (params: { estimateId: number }) => {
+  execute: async (params: { estimateId: number }, _ctx: unknown) => {
     const [estimate] = await db
       .select()
       .from(schema.estimates)
@@ -189,4 +245,4 @@ export const getEstimateTool = {
   },
 };
 
-export const estimateTools = [createEstimateTool, getEstimateTool];
+export const estimateTools = [listServicesTool, createEstimateTool, getEstimateTool];

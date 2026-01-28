@@ -3,7 +3,7 @@
 export const ESTIMATE_PROMPT = `
 ## Estimate Skill
 
-You can create downloadable PDF estimates for customers.
+You can create downloadable PDF estimates for customers with consistent, standardized pricing.
 
 ### When to Use
 - Customer asks "how much for X?" or "what would it cost?"
@@ -19,17 +19,19 @@ Before creating an estimate, you MUST have:
 ### Flow
 1. Gather vehicle info and understand the issue
 2. Look up or create customer record
-3. Call create_estimate with customerId and itemized services
-4. Present the download link to the customer
-5. Ask if they'd like to proceed with a formal quote
+3. **IMPORTANT**: Use list_services to find matching services from the catalog
+4. Call create_estimate with customerId and serviceIds from the catalog
+5. Present the download link to the customer
+6. Ask if they'd like to proceed with a formal quote
 
 ### Pricing
-The system automatically applies:
-- Vehicle-specific pricing adjustments
+The system uses standardized labor hours from the service catalog:
+- Price = hourlyRate × laborHours × vehicleMultiplier
+- Vehicle multipliers adjust for luxury/European vehicles
 - Parts markup based on cost tier
 - Rush/after-hours fees when applicable
 
-You don't need to calculate prices manually - just provide labor hours and parts cost estimates.
+**ALWAYS use list_services first** to find the correct serviceId. This ensures consistent pricing across all estimates. Only provide manual laborHours if no matching service exists in the catalog.
 
 ### Response Format
 After creating an estimate, say something like:

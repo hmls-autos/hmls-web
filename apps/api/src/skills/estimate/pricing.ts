@@ -4,6 +4,34 @@ import { db, schema } from "../../db/client.ts";
 import { eq, and, isNull } from "drizzle-orm";
 import type { PricingConfig, ServiceInput, LineItem } from "./types.ts";
 
+interface ServiceCatalogEntry {
+  id: number;
+  name: string;
+  description: string;
+  laborHours: number;
+}
+
+export async function getServiceById(
+  serviceId: number
+): Promise<ServiceCatalogEntry | null> {
+  const [service] = await db
+    .select()
+    .from(schema.services)
+    .where(eq(schema.services.id, serviceId))
+    .limit(1);
+
+  if (!service || !service.isActive) {
+    return null;
+  }
+
+  return {
+    id: service.id,
+    name: service.name,
+    description: service.description,
+    laborHours: Number(service.laborHours),
+  };
+}
+
 let cachedConfig: PricingConfig | null = null;
 
 export async function getPricingConfig(): Promise<PricingConfig> {
@@ -80,15 +108,21 @@ export async function calculatePrice(
   let laborCost = 0;
   let partsCost = 0;
 
-  // Labor calculation
-  if (service.laborHours) {
-    // Hourly service: rate × hours × vehicle multiplier
+  // Labor calculation: hourlyRate × laborHours × vehicleMultiplier
+  let laborHours = service.laborHours;
+
+  // If serviceId provided, use standardized labor hours from catalog
+  if (service.serviceId) {
+    const catalogService = await getServiceById(service.serviceId);
+    if (catalogService) {
+      laborHours = catalogService.laborHours;
+    }
+  }
+
+  if (laborHours) {
     laborCost = Math.round(
-      config.hourlyRate * service.laborHours * vehicleMultiplier
+      config.hourlyRate * laborHours * vehicleMultiplier
     );
-  } else if (service.serviceId) {
-    // Flat-rate from catalog - would need service lookup
-    // For now, skip if no laborHours provided
   }
 
   // Parts markup (tiered on OEM cost)
