@@ -26,8 +26,8 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
   const agent = await createZypherAgent({
     model: anthropic(modelId, { apiKey: env.ANTHROPIC_API_KEY }),
     tools: [...serviceTools, ...estimateTools, ...stripeTools, ...calcomTools],
-    // Disable file system storage for Deno Deploy (read-only filesystem)
-    contextDir: false,
+    // Use /tmp for Deno Deploy (source dir is read-only)
+    contextDir: Deno.env.get("DENO_DEPLOYMENT_ID") ? "/tmp/.zypher" : undefined,
     overrides: {
       systemPromptLoader: async () => systemPrompt,
     },
