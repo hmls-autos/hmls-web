@@ -177,5 +177,12 @@ app.post("/task", async (c) => {
 });
 
 // Start server
-Deno.serve({ port: env.HTTP_PORT }, app.fetch);
-console.log(`[server] HMLS Agent running on http://localhost:${env.HTTP_PORT}`);
+// Deno Deploy manages its own port, only specify port for local dev
+const isDenoDeploy = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
+if (isDenoDeploy) {
+  Deno.serve(app.fetch);
+  console.log(`[server] HMLS Agent running on Deno Deploy`);
+} else {
+  Deno.serve({ port: env.HTTP_PORT }, app.fetch);
+  console.log(`[server] HMLS Agent running on http://localhost:${env.HTTP_PORT}`);
+}
