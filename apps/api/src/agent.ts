@@ -23,11 +23,13 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
     ? `${SYSTEM_PROMPT}\n\n${formatUserContext(options.userContext)}`
     : SYSTEM_PROMPT;
 
+  const isDenoDeploy = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
+
   const agent = await createZypherAgent({
     model: anthropic(modelId, { apiKey: env.ANTHROPIC_API_KEY }),
     tools: [...serviceTools, ...estimateTools, ...stripeTools, ...calcomTools],
     // Use /tmp for Deno Deploy (source dir is read-only)
-    contextDir: Deno.env.get("DENO_DEPLOYMENT_ID") ? "/tmp/.zypher" : undefined,
+    context: isDenoDeploy ? { zypherDir: "/tmp/.zypher" } : undefined,
     overrides: {
       systemPromptLoader: async () => systemPrompt,
     },

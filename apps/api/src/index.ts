@@ -40,7 +40,7 @@ app.use("*", logger());
 app.onError((err, c) => {
   if (err instanceof AppError) {
     console.error(`[error] ${err.code}: ${err.message}`);
-    return c.json(err.toJSON(), err.status);
+    return c.json(err.toJSON(), err.status as 400 | 401 | 403 | 404 | 422 | 500 | 502);
   }
   console.error(`[error] Unhandled:`, err);
   return c.json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } }, 500);

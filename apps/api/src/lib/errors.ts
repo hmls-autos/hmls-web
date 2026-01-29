@@ -37,13 +37,14 @@ export class AppError extends Error {
   }
 
   toJSON() {
-    return {
-      error: {
-        code: this.code,
-        message: this.message,
-        ...(this.details && { details: this.details }),
-      },
+    const error: { code: ErrorCode; message: string; details?: unknown } = {
+      code: this.code,
+      message: this.message,
     };
+    if (this.details !== undefined) {
+      error.details = this.details;
+    }
+    return { error };
   }
 }
 

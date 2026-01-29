@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { db, schema } from "../db/client.ts";
 import { eq } from "drizzle-orm";
+import { toolResult } from "../lib/tool-result.ts";
 
 export const getServicesTool = {
   name: "get_services",
   description:
-    "Get the list of available services with descriptions and pricing from the database.",
+    "Get the list of available services with descriptions and labor hours from the database.",
   schema: z.object({}),
   execute: async (_params: Record<string, never>, _ctx: unknown) => {
     const servicesList = await db
@@ -14,15 +15,12 @@ export const getServicesTool = {
       .where(eq(schema.services.isActive, true))
       .orderBy(schema.services.name);
 
-    return JSON.stringify({
+    return toolResult({
       services: servicesList.map((s) => ({
         id: s.id,
         name: s.name,
         description: s.description,
-        minPrice: s.minPrice / 100,
-        maxPrice: s.maxPrice / 100,
-        priceRange: `$${s.minPrice / 100}-${s.maxPrice / 100}`,
-        duration: s.duration,
+        laborHours: Number(s.laborHours),
         category: s.category,
       })),
     });

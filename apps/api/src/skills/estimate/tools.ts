@@ -5,7 +5,7 @@ import { nanoid } from "npm:nanoid";
 import { db, schema } from "../../db/client.ts";
 import { eq, ilike, or } from "drizzle-orm";
 import { calculatePrice, getVehicleMultiplier, getPricingConfig } from "./pricing.ts";
-import type { EstimateResult } from "./types.ts";
+import { toolResult } from "../../lib/tool-result.ts";
 
 export const listServicesTool = {
   name: "list_services",
@@ -49,7 +49,7 @@ export const listServicesTool = {
 
     const services = await query.limit(20);
 
-    return {
+    return toolResult({
       services: services.map((s) => ({
         id: s.id,
         name: s.name,
@@ -59,7 +59,7 @@ export const listServicesTool = {
       })),
       count: services.length,
       note: "Use serviceId when creating estimates for consistent pricing based on labor hours",
-    };
+    });
   },
 };
 
@@ -107,7 +107,7 @@ export const createEstimateTool = {
     validDays?: number;
     isRush?: boolean;
     isAfterHours?: boolean;
-  }, _ctx: unknown): Promise<EstimateResult | { success: false; error: string }> => {
+  }, _ctx: unknown) => {
     // 1. Get customer with vehicle info
     const [customer] = await db
       .select()
@@ -116,7 +116,7 @@ export const createEstimateTool = {
       .limit(1);
 
     if (!customer) {
-      return { success: false, error: "Customer not found" };
+      return toolResult({ success: false, error: "Customer not found" });
     }
 
     const vehicleInfo = customer.vehicleInfo as {
@@ -126,10 +126,10 @@ export const createEstimateTool = {
     } | null;
 
     if (!vehicleInfo?.make) {
-      return {
+      return toolResult({
         success: false,
         error: "Vehicle info required. Please add vehicle make/model first.",
-      };
+      });
     }
 
     // 2. Get vehicle multiplier
@@ -196,7 +196,7 @@ export const createEstimateTool = {
     // 8. Return result with download links
     const baseUrl = "/api/estimates";
 
-    return {
+    return toolResult({
       success: true,
       estimateId: estimate.id,
       downloadUrl: `${baseUrl}/${estimate.id}/pdf`,
@@ -204,7 +204,7 @@ export const createEstimateTool = {
       subtotal: subtotal / 100,
       priceRange: `$${(rangeLow / 100).toFixed(2)} - $${(rangeHigh / 100).toFixed(2)}`,
       expiresAt,
-    };
+    });
   },
 };
 
@@ -222,12 +222,12 @@ export const getEstimateTool = {
       .limit(1);
 
     if (!estimate) {
-      return { found: false, message: "Estimate not found" };
+      return toolResult({ found: false, message: "Estimate not found" });
     }
 
     const isExpired = new Date() > estimate.expiresAt;
 
-    return {
+    return toolResult({
       found: true,
       estimate: {
         id: estimate.id,
@@ -241,7 +241,7 @@ export const getEstimateTool = {
         downloadUrl: `/api/estimates/${estimate.id}/pdf`,
         shareUrl: `/api/estimates/${estimate.id}/pdf?token=${estimate.shareToken}`,
       },
-    };
+    });
   },
 };
 

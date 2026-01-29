@@ -5,8 +5,8 @@
   "nodeModulesDir": "auto",
   "imports": {
     "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@0.71.2",
-    "@corespeed/zypher": "jsr:@zypher/agent",
-    "@zypher/agui": "jsr:@zypher/agui",
+    "@corespeed/zypher": "jsr:@zypher/agent@0.9.1",
+    "@zypher/agui": "jsr:@zypher/agui@0.3.0",
     "hono": "npm:hono@^4.7.10",
     "zod": "npm:zod@^4.3.5",
     "stripe": "npm:stripe@^20.2.0",

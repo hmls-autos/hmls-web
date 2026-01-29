@@ -4,6 +4,7 @@ import { db, schema } from "../db/client.ts";
 import { eq } from "drizzle-orm";
 import { env } from "../env.ts";
 import { Errors } from "../lib/errors.ts";
+import { toolResult } from "../lib/tool-result.ts";
 
 // Initialize Stripe SDK with validated API key
 const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
@@ -140,7 +141,7 @@ export const createQuoteTool = {
       })
       .returning();
 
-    return JSON.stringify({
+    return toolResult({
       success: true,
       quoteId: dbQuote.id,
       stripeQuoteId: finalizedQuote.id,
@@ -168,7 +169,7 @@ export const getQuoteStatusTool = {
       .limit(1);
 
     if (!quote) {
-      return JSON.stringify({ found: false, message: "Quote not found" });
+      return toolResult({ found: false, message: "Quote not found" });
     }
 
     if (quote.stripeQuoteId) {
@@ -181,7 +182,7 @@ export const getQuoteStatusTool = {
           .where(eq(schema.quotes.id, params.quoteId));
       }
 
-      return JSON.stringify({
+      return toolResult({
         found: true,
         quoteId: quote.id,
         status: stripeQuote.status,
@@ -191,7 +192,7 @@ export const getQuoteStatusTool = {
       });
     }
 
-    return JSON.stringify({
+    return toolResult({
       found: true,
       quoteId: quote.id,
       status: quote.status,

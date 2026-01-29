@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { env } from "../env.ts";
 import { Errors } from "../lib/errors.ts";
+import { toolResult } from "../lib/tool-result.ts";
 
 const CALCOM_API_BASE = "https://api.cal.com/v1";
 
@@ -52,7 +53,7 @@ export const getAvailabilityTool = {
       `/availability?eventTypeId=${env.CALCOM_EVENT_TYPE_ID}&startTime=${start}&endTime=${end}`
     );
 
-    return JSON.stringify({
+    return toolResult({
       availableSlots: data.slots || [],
       dateRange: { start, end },
     });
@@ -113,7 +114,7 @@ export const createBookingTool = {
 
     console.log(`[calcom] Booking created: ${booking.uid} for ${params.name}`);
 
-    return JSON.stringify({
+    return toolResult({
       success: true,
       bookingId: booking.id,
       confirmationNumber: booking.uid,
