@@ -11,6 +11,7 @@
     "dev": "turbo dev",
     "dev:web": "turbo dev --filter=hmls-web",
     "dev:api": "cd apps/api && deno task dev",
+    "dev:diagnostic": "cd apps/diagnostic-agent && deno task dev",
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
