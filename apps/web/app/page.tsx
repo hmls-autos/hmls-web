@@ -1,12 +1,12 @@
-import NavbarNew from "@/components/NavbarNew";
 import FooterNew from "@/components/FooterNew";
-import HeroNew from "@/components/sections/HeroNew";
-import TrustBar from "@/components/sections/TrustBar";
-import HowItWorks from "@/components/sections/HowItWorks";
-import ServicesNew from "@/components/sections/ServicesNew";
+import NavbarNew from "@/components/NavbarNew";
 import AboutNew from "@/components/sections/AboutNew";
-import ServiceAreaNew from "@/components/sections/ServiceAreaNew";
 import CTANew from "@/components/sections/CTANew";
+import HeroNew from "@/components/sections/HeroNew";
+import HowItWorks from "@/components/sections/HowItWorks";
+import ServiceAreaNew from "@/components/sections/ServiceAreaNew";
+import ServicesNew from "@/components/sections/ServicesNew";
+import TrustBar from "@/components/sections/TrustBar";
 
 export default function Home() {
   return (

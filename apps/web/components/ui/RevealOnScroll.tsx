@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 interface RevealOnScrollProps {
   children: ReactNode;
@@ -26,7 +26,7 @@ export default function RevealOnScroll({
           observer.unobserve(element);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     observer.observe(element);

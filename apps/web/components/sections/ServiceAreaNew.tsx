@@ -1,8 +1,10 @@
+"use client";
+
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import RevealOnScroll from "@/components/ui/RevealOnScroll";
 
-const Map = dynamic(() => import("@/components/ui/RealMap"), {
+const ServiceMap = dynamic(() => import("@/components/ui/RealMap"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full bg-cream-200 animate-pulse rounded-xl" />
@@ -36,7 +38,7 @@ export default function ServiceAreaNew() {
                 <div className="w-full h-full bg-cream-200 animate-pulse" />
               }
             >
-              <Map className="w-full h-full" />
+              <ServiceMap className="w-full h-full" />
             </Suspense>
           </div>
         </RevealOnScroll>

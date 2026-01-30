@@ -36,9 +36,7 @@ export default function HowItWorks() {
                 <h3 className="text-xl font-medium text-charcoal mb-2">
                   {step.title}
                 </h3>
-                <p className="text-charcoal-light">
-                  {step.description}
-                </p>
+                <p className="text-charcoal-light">{step.description}</p>
               </div>
             </RevealOnScroll>
           ))}

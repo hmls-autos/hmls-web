@@ -9,25 +9,38 @@ export default function FooterNew() {
             <div className="text-lg font-serif text-charcoal mb-1">
               HMLS Mobile Mechanic
             </div>
-            <div className="text-sm text-charcoal-light">
-              Orange County, CA
-            </div>
+            <div className="text-sm text-charcoal-light">Orange County, CA</div>
           </div>
 
           <div className="flex flex-wrap gap-6 text-sm text-charcoal-light">
-            <Link href="#services" className="hover:text-charcoal transition-colors">
+            <Link
+              href="#services"
+              className="hover:text-charcoal transition-colors"
+            >
               Services
             </Link>
-            <Link href="#about" className="hover:text-charcoal transition-colors">
+            <Link
+              href="#about"
+              className="hover:text-charcoal transition-colors"
+            >
               About
             </Link>
-            <Link href="/contact" className="hover:text-charcoal transition-colors">
+            <Link
+              href="/contact"
+              className="hover:text-charcoal transition-colors"
+            >
               Contact
             </Link>
-            <Link href="/terms" className="hover:text-charcoal transition-colors">
+            <Link
+              href="/terms"
+              className="hover:text-charcoal transition-colors"
+            >
               Terms
             </Link>
-            <Link href="/privacy" className="hover:text-charcoal transition-colors">
+            <Link
+              href="/privacy"
+              className="hover:text-charcoal transition-colors"
+            >
               Privacy
             </Link>
           </div>

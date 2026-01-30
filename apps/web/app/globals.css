@@ -2,9 +2,9 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #FAF9F7;
-  --foreground: #1A1A1A;
-  --primary: #1A1A1A;
+  --background: #faf9f7;
+  --foreground: #1a1a1a;
+  --primary: #1a1a1a;
 }
 
 @theme inline {
@@ -15,12 +15,12 @@
   --color-primary: var(--primary);
 
   /* Neutral luxury palette */
-  --color-cream-50: #FAF9F7;
-  --color-cream-100: #F5F4F2;
-  --color-cream-200: #E8E6E3;
-  --color-charcoal: #1A1A1A;
-  --color-charcoal-light: #6B6560;
-  --color-charcoal-dark: #2C2C2C;
+  --color-cream-50: #faf9f7;
+  --color-cream-100: #f5f4f2;
+  --color-cream-200: #e8e6e3;
+  --color-charcoal: #1a1a1a;
+  --color-charcoal-light: #6b6560;
+  --color-charcoal-dark: #2c2c2c;
 }
 
 body {
@@ -53,7 +53,9 @@ body {
 .reveal {
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
 }
 
 .reveal.visible {
@@ -62,13 +64,22 @@ body {
 }
 
 /* Stagger delays */
-.reveal-delay-1 { transition-delay: 0.1s; }
-.reveal-delay-2 { transition-delay: 0.2s; }
-.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-1 {
+  transition-delay: 0.1s;
+}
+.reveal-delay-2 {
+  transition-delay: 0.2s;
+}
+.reveal-delay-3 {
+  transition-delay: 0.3s;
+}
 
 /* Hover lift effect for cards */
 .card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .card-hover:hover {

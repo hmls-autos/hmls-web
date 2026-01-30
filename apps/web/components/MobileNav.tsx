@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,6 +10,7 @@ export default function MobileNav() {
   return (
     <div className="md:hidden">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 text-charcoal"
         aria-label="Toggle menu"
