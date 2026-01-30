@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getMedia, uploadMedia } from "../lib/r2.ts";
+import { toolResult } from "../lib/tool-result.ts";
 
 const extractVideoFramesSchema = z.object({
   r2Key: z.string().describe("R2 storage key for the video file"),
@@ -13,7 +14,7 @@ const extractVideoFramesSchema = z.object({
 export const extractVideoFramesTool = {
   name: "extractVideoFrames",
   description: "Extract key frames from a video for visual analysis",
-  parameters: extractVideoFramesSchema,
+  schema: extractVideoFramesSchema,
   execute: async (params: z.infer<typeof extractVideoFramesSchema>) => {
     const { r2Key, sessionId, frameCount } = params;
 
@@ -64,11 +65,11 @@ export const extractVideoFramesTool = {
         }
       }
 
-      return {
+      return toolResult({
         frameCount: frameKeys.length,
         frameKeys,
         message: `Extracted ${frameKeys.length} frames from video`,
-      };
+      });
     } finally {
       // Cleanup temp files
       await Deno.remove(tempInput);

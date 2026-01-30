@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { toolResult } from "../lib/tool-result.ts";
 
 const lookupObdCodeSchema = z.object({
   code: z.string().describe("OBD-II code to look up (e.g., P0301)"),
@@ -55,7 +56,7 @@ const OBD_CODES: Record<string, { description: string; system: string }> = {
 export const lookupObdCodeTool = {
   name: "lookupObdCode",
   description: "Look up OBD-II diagnostic trouble code description and system",
-  parameters: lookupObdCodeSchema,
+  schema: lookupObdCodeSchema,
   execute: async (params: z.infer<typeof lookupObdCodeSchema>) => {
     const { code } = params;
     const upperCode = code.toUpperCase().trim();
@@ -63,12 +64,12 @@ export const lookupObdCodeTool = {
     const info = OBD_CODES[upperCode];
 
     if (info) {
-      return {
+      return toolResult({
         code: upperCode,
         description: info.description,
         system: info.system,
         found: true,
-      };
+      });
     }
 
     // Parse code structure for unknown codes
@@ -80,12 +81,12 @@ export const lookupObdCodeTool = {
       U: "Network",
     };
 
-    return {
+    return toolResult({
       code: upperCode,
       description: "Code not in reference database",
       system: typeMap[codeType] || "Unknown",
       found: false,
       note: "Manufacturer-specific code or not in common database. Agent will interpret based on context.",
-    };
+    });
   },
 };

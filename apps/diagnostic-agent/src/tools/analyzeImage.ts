@@ -12,7 +12,7 @@ export const analyzeImageTool = {
   name: "analyzeImage",
   description:
     "Analyze a vehicle photo for damage, wear, fluid leaks, and mechanical issues",
-  parameters: analyzeImageSchema,
+  schema: analyzeImageSchema,
   execute: async (params: z.infer<typeof analyzeImageSchema>) => {
     const { imageUrl, context } = params;
 

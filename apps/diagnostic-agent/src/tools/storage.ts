@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { uploadMedia, getMedia } from "../lib/r2.ts";
+import { toolResult } from "../lib/tool-result.ts";
 
 const saveMediaSchema = z.object({
   data: z.string().describe("Base64-encoded media data"),
@@ -15,7 +16,7 @@ const getMediaSchema = z.object({
 export const saveMediaTool = {
   name: "saveMedia",
   description: "Save uploaded media (photo, audio, video) to cloud storage",
-  parameters: saveMediaSchema,
+  schema: saveMediaSchema,
   execute: async (params: z.infer<typeof saveMediaSchema>) => {
     const { data, filename, contentType, sessionId } = params;
 
@@ -24,27 +25,27 @@ export const saveMediaTool = {
 
     const result = await uploadMedia(binaryData, filename, contentType, sessionId);
 
-    return {
+    return toolResult({
       success: true,
       r2Key: result.key,
       url: result.url,
-    };
+    });
   },
 };
 
 export const getMediaTool = {
   name: "getMedia",
   description: "Retrieve media from cloud storage",
-  parameters: getMediaSchema,
+  schema: getMediaSchema,
   execute: async (params: z.infer<typeof getMediaSchema>) => {
     const { r2Key } = params;
 
     const data = await getMedia(r2Key);
 
-    return {
+    return toolResult({
       success: true,
       data: btoa(String.fromCharCode(...data)),
       size: data.length,
-    };
+    });
   },
 };
