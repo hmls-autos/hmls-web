@@ -9,8 +9,8 @@ export default function AboutNew() {
           <RevealOnScroll>
             <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
               <Image
-                src="/images/founder.jpg"
-                alt="HMLS Founder"
+                src="/images/engine-bay.png"
+                alt="Engine bay detail"
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 50vw"

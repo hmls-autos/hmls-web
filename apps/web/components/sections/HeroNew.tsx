@@ -39,8 +39,8 @@ export default function HeroNew() {
         {/* Hero Image */}
         <div className="relative w-full aspect-[21/9] rounded-2xl overflow-hidden shadow-lg">
           <Image
-            src="/images/hero-mechanic.jpg"
-            alt="Mechanic working on car in driveway"
+            src="/images/engine-bay-mercedes.png"
+            alt="Mercedes engine bay"
             fill
             priority
             className="object-cover"
