@@ -18,6 +18,7 @@ import type { InputType } from "./lib/stripe.ts";
 import { createAguiEventStream, parseRunAgentInput } from "@zypher/agui";
 
 const PORT = parseInt(Deno.env.get("PORT") || "8001");
+const DEV_MODE = Deno.env.get("DEV_MODE") === "true";
 
 // Agent singleton
 let agent: Awaited<ReturnType<typeof createDiagnosticAgent>> | null = null;
@@ -55,6 +56,12 @@ app.use("/diagnostics/*", async (c, next) => {
 });
 
 app.use("/task", async (c, next) => {
+  // Skip auth in dev mode for testing
+  if (DEV_MODE) {
+    console.log("[diagnostic-agent] DEV_MODE: skipping auth");
+    await next();
+    return;
+  }
   const authResult = await authenticateRequest(c.req.raw);
   if (authResult instanceof Response) {
     return authResult;
@@ -267,4 +274,7 @@ if (isDenoDeploy) {
 } else {
   Deno.serve({ port: PORT }, app.fetch);
   console.log(`[diagnostic-agent] Running on http://localhost:${PORT}`);
+  if (DEV_MODE) {
+    console.log(`[diagnostic-agent] DEV_MODE enabled - /task endpoint auth bypassed`);
+  }
 }
