@@ -69,8 +69,7 @@ export default function RealMap({ className = "" }: MapProps) {
   const createCustomIcon = () => {
     return Leaflet.divIcon({
       className: "custom-map-marker",
-      html:
-        `<div class="w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.6)] animate-pulse"></div>`,
+      html: `<div class="w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.6)] animate-pulse"></div>`,
       iconSize: [12, 12],
       iconAnchor: [6, 6],
     });

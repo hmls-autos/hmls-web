@@ -245,18 +245,16 @@ export default function ChatPage() {
                     : "bg-zinc-800 text-zinc-100 rounded-bl-md"
                 }`}
               >
-                {msg.role === "user"
-                  ? (
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {msg.content}
-                    </p>
-                  )
-                  : (
-                    <Markdown
-                      content={msg.content}
-                      className="text-sm leading-relaxed"
-                    />
-                  )}
+                {msg.role === "user" ? (
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                    {msg.content}
+                  </p>
+                ) : (
+                  <Markdown
+                    content={msg.content}
+                    className="text-sm leading-relaxed"
+                  />
+                )}
               </motion.div>
             </motion.div>
           ))}
@@ -285,21 +283,21 @@ export default function ChatPage() {
             {isLoading &&
               !currentTool &&
               messages[messages.length - 1]?.role === "user" && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="flex justify-start"
-              >
-                <div className="bg-zinc-800 px-5 py-3 rounded-2xl rounded-bl-md">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" />
-                    <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0.1s]" />
-                    <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="flex justify-start"
+                >
+                  <div className="bg-zinc-800 px-5 py-3 rounded-2xl rounded-bl-md">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" />
+                      <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0.1s]" />
+                      <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            )}
+                </motion.div>
+              )}
           </AnimatePresence>
 
           <div ref={messagesEndRef} />

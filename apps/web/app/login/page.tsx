@@ -207,20 +207,20 @@ export default function LoginPage() {
                   <li
                     className={password.length >= 8 ? "text-emerald-400" : ""}
                   >
-                    {password.length >= 8 ? "\u2713" : "\u2022"}{" "}
-                    At least 8 characters
+                    {password.length >= 8 ? "\u2713" : "\u2022"} At least 8
+                    characters
                   </li>
                   <li
                     className={/[A-Z]/.test(password) ? "text-emerald-400" : ""}
                   >
-                    {/[A-Z]/.test(password) ? "\u2713" : "\u2022"}{" "}
-                    One uppercase letter
+                    {/[A-Z]/.test(password) ? "\u2713" : "\u2022"} One uppercase
+                    letter
                   </li>
                   <li
                     className={/[a-z]/.test(password) ? "text-emerald-400" : ""}
                   >
-                    {/[a-z]/.test(password) ? "\u2713" : "\u2022"}{" "}
-                    One lowercase letter
+                    {/[a-z]/.test(password) ? "\u2713" : "\u2022"} One lowercase
+                    letter
                   </li>
                   <li
                     className={/[0-9]/.test(password) ? "text-emerald-400" : ""}
@@ -276,7 +276,9 @@ export default function LoginPage() {
               whileTap={{ scale: 0.98 }}
               className="w-full bg-emerald-500 text-white font-medium py-3 rounded-xl hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
                 <>
                   <LogIn className="w-5 h-5" />
                   {mode === "login" ? "Sign In" : "Sign Up"}
@@ -286,31 +288,29 @@ export default function LoginPage() {
           </motion.form>
 
           <p className="text-center text-zinc-400 text-sm mt-6">
-            {mode === "login"
-              ? (
-                <>
-                  Don&apos;t have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setMode("signup")}
-                    className="text-emerald-400 hover:text-emerald-300 transition-colors"
-                  >
-                    Sign up
-                  </button>
-                </>
-              )
-              : (
-                <>
-                  Already have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setMode("login")}
-                    className="text-emerald-400 hover:text-emerald-300 transition-colors"
-                  >
-                    Sign in
-                  </button>
-                </>
-              )}
+            {mode === "login" ? (
+              <>
+                Don&apos;t have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("signup")}
+                  className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  Sign up
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("login")}
+                  className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  Sign in
+                </button>
+              </>
+            )}
           </p>
         </motion.div>
       </div>
