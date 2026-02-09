@@ -8,7 +8,7 @@ import { toolResult } from "../lib/tool-result.ts";
 
 // Initialize Stripe SDK with validated API key
 const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-  apiVersion: "2025-12-15.clover",
+  apiVersion: "2026-01-28.clover",
 });
 
 async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
@@ -153,12 +153,10 @@ export const createQuoteTool = {
       quoteId: dbQuote.id,
       stripeQuoteId: finalizedQuote.id,
       totalAmount: centsToDollars(totalAmount),
-      // @ts-ignore - Stripe API types have changed
-      hostedUrl: finalizedQuote.hosted_quote_url,
-      // @ts-ignore - Stripe API types have changed
+      hostedUrl: (finalizedQuote as unknown as Record<string, unknown>).hosted_quote_url as string,
       message: `Quote created for $${
         centsToDollars(totalAmount).toFixed(2)
-      }. Customer can view and accept at: ${finalizedQuote.hosted_quote_url}`,
+      }. Customer can view and accept at: ${(finalizedQuote as unknown as Record<string, unknown>).hosted_quote_url}`,
     });
   },
 };

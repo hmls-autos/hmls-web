@@ -54,7 +54,7 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
       {
         tools: allTools,
         overrides: {
-          systemPromptLoader: () => systemPrompt,
+          systemPromptLoader: async () => systemPrompt,
         },
       },
     );
@@ -68,7 +68,7 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
     model: anthropic(modelId, { apiKey: env.ANTHROPIC_API_KEY }),
     tools: allTools,
     overrides: {
-      systemPromptLoader: () => systemPrompt,
+      systemPromptLoader: async () => systemPrompt,
     },
   });
 

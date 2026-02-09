@@ -30,11 +30,11 @@ export async function createDiagnosticAgent() {
 
   const agent = await createZypherAgent({
     model: anthropic(modelId, { apiKey }),
-    tools: allTools,
+    tools: allTools as never[],
     // Use /tmp for Deno Deploy (source dir is read-only)
     context: isDenoDeploy ? { zypherDir: "/tmp/.zypher" } : undefined,
     overrides: {
-      systemPromptLoader: () => SYSTEM_PROMPT,
+      systemPromptLoader: async () => SYSTEM_PROMPT,
     },
   });
 

@@ -1,6 +1,6 @@
 // apps/agent/src/pdf/EstimatePdf.tsx
 
-import type React from "react";
+import React from "react";
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
