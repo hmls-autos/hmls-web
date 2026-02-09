@@ -1,0 +1,149 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('apps/web/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install web dependencies
+        run: cd apps/web && bun install --frozen-lockfile
+
+      - name: Lint
+        run: deno task lint:web
+
+      - name: Type Check
+        run: deno task typecheck:web
+
+      - name: Check API
+        run: deno task check:api
+
+      - name: Check Diagnostic Agent
+        run: deno task check:diagnostic
+
+  deploy-api:
+    name: Deploy API
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install deployctl
+        run: deno install -gArf jsr:@deno/deployctl
+
+      - name: Deploy to Deno Deploy
+        run: |
+          deployctl deploy --project=${{ secrets.DENO_DEPLOY_PROJECT_API }} --prod \
+            --token=${{ secrets.DENO_DEPLOY_TOKEN }} \
+            --include=apps/api/src --include=apps/api/deno.json \
+            --include=deno.json --include=deno.lock \
+            --entrypoint=apps/api/src/index.ts
+
+  deploy-diagnostic:
+    name: Deploy Diagnostic Agent
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Install deployctl
+        run: deno install -gArf jsr:@deno/deployctl
+
+      - name: Deploy to Deno Deploy
+        run: |
+          deployctl deploy --project=${{ secrets.DENO_DEPLOY_PROJECT_DIAGNOSTIC }} --prod \
+            --token=${{ secrets.DENO_DEPLOY_TOKEN }} \
+            --include=apps/diagnostic-agent/src --include=apps/diagnostic-agent/deno.json \
+            --include=deno.json --include=deno.lock \
+            --entrypoint=apps/diagnostic-agent/src/main.ts
+
+  deploy-web:
+    name: Deploy Web
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('apps/web/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: cd apps/web && bun install --frozen-lockfile
+
+      - name: Build Next.js
+        run: cd apps/web && bun run build
+        env:
+          NEXT_PUBLIC_AGENT_URL: ${{ secrets.NEXT_PUBLIC_AGENT_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Prepare standalone output
+        run: |
+          cp -r apps/web/public/* apps/web/.next/standalone/apps/web/public/ 2>/dev/null || true
+          cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+          mv apps/web/.next/standalone/apps/web/server.js apps/web/.next/standalone/apps/web/server.cjs
+
+      - name: Install deployctl
+        run: deno install -gArf jsr:@deno/deployctl
+
+      - name: Deploy to Deno Deploy
+        run: |
+          deployctl deploy --project=${{ secrets.DENO_DEPLOY_PROJECT_WEB }} --prod \
+            --token=${{ secrets.DENO_DEPLOY_TOKEN }} \
+            --include=apps/web/.next/standalone \
+            --entrypoint=apps/web/.next/standalone/apps/web/server.cjs
