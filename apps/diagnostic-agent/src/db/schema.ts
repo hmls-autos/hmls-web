@@ -1,13 +1,13 @@
 import {
-  pgTable,
-  serial,
+  index,
   integer,
-  text,
-  timestamp,
   jsonb,
   pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
   varchar,
-  index,
 } from "drizzle-orm/pg-core";
 
 // Reference existing customers table (defined in apps/api)
@@ -61,7 +61,7 @@ export const diagnosticSessions = pgTable(
     completedAt: timestamp("completed_at"),
     result: jsonb("result"),
   },
-  (table) => [index("idx_diagnostic_sessions_customer").on(table.customerId)]
+  (table) => [index("idx_diagnostic_sessions_customer").on(table.customerId)],
 );
 
 // Diagnostic Media
@@ -82,7 +82,7 @@ export const diagnosticMedia = pgTable(
     transcription: text("transcription"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [index("idx_diagnostic_media_session").on(table.sessionId)]
+  (table) => [index("idx_diagnostic_media_session").on(table.sessionId)],
 );
 
 // OBD Codes
@@ -97,7 +97,7 @@ export const obdCodes = pgTable(
     source: obdSourceEnum("source").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [index("idx_diagnostic_obd_codes_session").on(table.sessionId)]
+  (table) => [index("idx_diagnostic_obd_codes_session").on(table.sessionId)],
 );
 
 // Types

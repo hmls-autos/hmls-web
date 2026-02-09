@@ -96,26 +96,26 @@ hmls/
 
 ## Available Scripts
 
-| Command | Description |
-|---------|-------------|
-| `bun run dev` | Start all services in development mode |
-| `bun run dev:web` | Start web app only |
-| `bun run dev:api` | Start API server only |
-| `bun run build` | Build all packages |
-| `bun run lint` | Run linter |
-| `bun run typecheck` | Run type checking |
-| `bun run db:push` | Push database schema changes |
-| `bun run db:studio` | Open database studio |
-| `bun run version:sync` | Sync versions across packages |
-| `bun run version:check` | Check version sync (CI) |
+| Command                 | Description                            |
+| ----------------------- | -------------------------------------- |
+| `bun run dev`           | Start all services in development mode |
+| `bun run dev:web`       | Start web app only                     |
+| `bun run dev:api`       | Start API server only                  |
+| `bun run build`         | Build all packages                     |
+| `bun run lint`          | Run linter                             |
+| `bun run typecheck`     | Run type checking                      |
+| `bun run db:push`       | Push database schema changes           |
+| `bun run db:studio`     | Open database studio                   |
+| `bun run version:sync`  | Sync versions across packages          |
+| `bun run version:check` | Check version sync (CI)                |
 
 ## Ports
 
-| Service | Port |
-|---------|------|
-| Web App | 3000 |
-| API | 8080 |
-| Agent | 8001 |
+| Service    | Port |
+| ---------- | ---- |
+| Web App    | 3000 |
+| API        | 8080 |
+| Agent      | 8001 |
 | PostgreSQL | 5432 |
 
 ## Troubleshooting

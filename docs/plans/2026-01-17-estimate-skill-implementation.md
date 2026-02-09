@@ -1,12 +1,17 @@
 # Estimate Skill Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
+> implement this plan task-by-task.
 
-**Goal:** Build a comprehensive estimate skill for the HMLS agent that generates downloadable PDF estimates with vehicle-based pricing.
+**Goal:** Build a comprehensive estimate skill for the HMLS agent that generates
+downloadable PDF estimates with vehicle-based pricing.
 
-**Architecture:** Modular skill pattern exporting tools + prompt. Server-side PDF generation via React-PDF. Dual-access API (authenticated + shareable tokens). Pricing engine with make/model multipliers and tiered parts markup.
+**Architecture:** Modular skill pattern exporting tools + prompt. Server-side
+PDF generation via React-PDF. Dual-access API (authenticated + shareable
+tokens). Pricing engine with make/model multipliers and tiered parts markup.
 
-**Tech Stack:** Deno/TypeScript (agent), Hono (API), React-PDF, Drizzle ORM, PostgreSQL
+**Tech Stack:** Deno/TypeScript (agent), Hono (API), React-PDF, Drizzle ORM,
+PostgreSQL
 
 **Design Document:** `docs/plans/2026-01-17-estimate-skill-design.md`
 
@@ -15,6 +20,7 @@
 ## Task 1: Database Schema - Pricing Config
 
 **Files:**
+
 - Modify: `apps/api/src/db/schema.ts`
 
 **Step 1: Add pricing_config table to schema**
@@ -31,8 +37,7 @@ export const pricingConfig = pgTable("pricing_config", {
 
 **Step 2: Run typecheck on schema file**
 
-Run: `cd apps/api && deno check src/db/schema.ts`
-Expected: No errors
+Run: `cd apps/api && deno check src/db/schema.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -46,6 +51,7 @@ git commit -m "feat(db): add pricing_config table schema"
 ## Task 2: Database Schema - Vehicle Pricing
 
 **Files:**
+
 - Modify: `apps/api/src/db/schema.ts`
 
 **Step 1: Add vehicle_pricing table to schema**
@@ -57,7 +63,8 @@ export const vehiclePricing = pgTable("vehicle_pricing", {
   id: serial("id").primaryKey(),
   make: varchar("make", { length: 50 }).notNull(),
   model: varchar("model", { length: 50 }),
-  multiplier: numeric("multiplier", { precision: 3, scale: 2 }).notNull().default("1.00"),
+  multiplier: numeric("multiplier", { precision: 3, scale: 2 }).notNull()
+    .default("1.00"),
   notes: text("notes"),
 }, (table) => ({
   uniqueMakeModel: unique().on(table.make, table.model),
@@ -66,8 +73,7 @@ export const vehiclePricing = pgTable("vehicle_pricing", {
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/api && deno check src/db/schema.ts`
-Expected: No errors
+Run: `cd apps/api && deno check src/db/schema.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -81,6 +87,7 @@ git commit -m "feat(db): add vehicle_pricing table schema"
 ## Task 3: Database Schema - Estimates Table
 
 **Files:**
+
 - Modify: `apps/api/src/db/schema.ts`
 
 **Step 1: Add estimates table to schema**
@@ -99,7 +106,9 @@ export const estimates = pgTable("estimates", {
   shareToken: varchar("share_token", { length: 32 }).unique(),
   validDays: integer("valid_days").notNull().default(14),
   expiresAt: timestamp("expires_at").notNull(),
-  convertedToQuoteId: integer("converted_to_quote_id").references(() => quotes.id),
+  convertedToQuoteId: integer("converted_to_quote_id").references(() =>
+    quotes.id
+  ),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -117,8 +126,7 @@ export const estimatesRelations = relations(estimates, ({ one }) => ({
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/api && deno check src/db/schema.ts`
-Expected: No errors
+Run: `cd apps/api && deno check src/db/schema.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -132,12 +140,13 @@ git commit -m "feat(db): add estimates table schema"
 ## Task 4: Database Migration
 
 **Files:**
+
 - Run migration command
 
 **Step 1: Push schema to database**
 
-Run: `bun run db:push`
-Expected: Tables created successfully (pricing_config, vehicle_pricing, estimates)
+Run: `bun run db:push` Expected: Tables created successfully (pricing_config,
+vehicle_pricing, estimates)
 
 **Step 2: Seed pricing config**
 
@@ -191,6 +200,7 @@ git commit --allow-empty -m "chore(db): run migration and seed pricing data"
 ## Task 5: Create Skill Directory Structure
 
 **Files:**
+
 - Create: `apps/agent/src/skills/estimate/index.ts`
 - Create: `apps/agent/src/skills/estimate/types.ts`
 
@@ -248,8 +258,8 @@ export const estimateSkill = {
 
 **Step 3: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/types.ts`
-Expected: No errors
+Run: `cd apps/agent && deno check src/skills/estimate/types.ts` Expected: No
+errors
 
 **Step 4: Commit**
 
@@ -263,6 +273,7 @@ git commit -m "feat(agent): create estimate skill directory structure"
 ## Task 6: Pricing Engine - Config Loader
 
 **Files:**
+
 - Create: `apps/agent/src/skills/estimate/pricing.ts`
 
 **Step 1: Create pricing module with config loader**
@@ -271,8 +282,8 @@ git commit -m "feat(agent): create estimate skill directory structure"
 // apps/agent/src/skills/estimate/pricing.ts
 
 import { db, schema } from "../../db/client.ts";
-import { eq, and, isNull } from "drizzle-orm";
-import type { PricingConfig, ServiceInput, LineItem } from "./types.ts";
+import { and, eq, isNull } from "drizzle-orm";
+import type { LineItem, PricingConfig, ServiceInput } from "./types.ts";
 
 let cachedConfig: PricingConfig | null = null;
 
@@ -302,8 +313,8 @@ export function clearConfigCache(): void {
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts`
-Expected: No errors
+Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -317,6 +328,7 @@ git commit -m "feat(agent): add pricing config loader"
 ## Task 7: Pricing Engine - Vehicle Multiplier
 
 **Files:**
+
 - Modify: `apps/agent/src/skills/estimate/pricing.ts`
 
 **Step 1: Add vehicle multiplier lookup function**
@@ -326,7 +338,7 @@ git commit -m "feat(agent): add pricing config loader"
 
 export async function getVehicleMultiplier(
   make: string,
-  model?: string | null
+  model?: string | null,
 ): Promise<number> {
   // Try exact make + model match first
   if (model) {
@@ -336,8 +348,8 @@ export async function getVehicleMultiplier(
       .where(
         and(
           eq(schema.vehiclePricing.make, make),
-          eq(schema.vehiclePricing.model, model)
-        )
+          eq(schema.vehiclePricing.model, model),
+        ),
       )
       .limit(1);
 
@@ -353,8 +365,8 @@ export async function getVehicleMultiplier(
     .where(
       and(
         eq(schema.vehiclePricing.make, make),
-        isNull(schema.vehiclePricing.model)
-      )
+        isNull(schema.vehiclePricing.model),
+      ),
     )
     .limit(1);
 
@@ -369,8 +381,8 @@ export async function getVehicleMultiplier(
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts`
-Expected: No errors
+Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -384,6 +396,7 @@ git commit -m "feat(agent): add vehicle multiplier lookup"
 ## Task 8: Pricing Engine - Price Calculator
 
 **Files:**
+
 - Modify: `apps/agent/src/skills/estimate/pricing.ts`
 
 **Step 1: Add price calculation function**
@@ -393,7 +406,7 @@ git commit -m "feat(agent): add vehicle multiplier lookup"
 
 export async function calculatePrice(
   service: ServiceInput,
-  vehicleMultiplier: number
+  vehicleMultiplier: number,
 ): Promise<LineItem> {
   const config = await getPricingConfig();
 
@@ -404,7 +417,7 @@ export async function calculatePrice(
   if (service.laborHours) {
     // Hourly service: rate × hours × vehicle multiplier
     laborCost = Math.round(
-      config.hourlyRate * service.laborHours * vehicleMultiplier
+      config.hourlyRate * service.laborHours * vehicleMultiplier,
     );
   } else if (service.serviceId) {
     // Flat-rate from catalog - would need service lookup
@@ -440,8 +453,8 @@ export async function calculatePrice(
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts`
-Expected: No errors
+Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -455,6 +468,7 @@ git commit -m "feat(agent): add price calculator with parts markup"
 ## Task 9: Create Estimate Tool
 
 **Files:**
+
 - Create: `apps/agent/src/skills/estimate/tools.ts`
 
 **Step 1: Create the create_estimate tool**
@@ -466,7 +480,11 @@ import { z } from "zod";
 import { nanoid } from "npm:nanoid";
 import { db, schema } from "../../db/client.ts";
 import { eq } from "drizzle-orm";
-import { calculatePrice, getVehicleMultiplier, getPricingConfig } from "./pricing.ts";
+import {
+  calculatePrice,
+  getPricingConfig,
+  getVehicleMultiplier,
+} from "./pricing.ts";
 import type { EstimateResult } from "./types.ts";
 
 export const createEstimateTool = {
@@ -489,7 +507,7 @@ export const createEstimateTool = {
             .number()
             .optional()
             .describe("Estimated parts cost in dollars"),
-        })
+        }),
       )
       .describe("List of services to include in estimate"),
     notes: z.string().optional().describe("Additional notes for the estimate"),
@@ -541,12 +559,12 @@ export const createEstimateTool = {
     // 2. Get vehicle multiplier
     const multiplier = await getVehicleMultiplier(
       vehicleInfo.make,
-      vehicleInfo.model
+      vehicleInfo.model,
     );
 
     // 3. Calculate pricing for each service
     const items = await Promise.all(
-      params.services.map((s) => calculatePrice(s, multiplier))
+      params.services.map((s) => calculatePrice(s, multiplier)),
     );
 
     // 4. Add fees
@@ -580,7 +598,7 @@ export const createEstimateTool = {
     const shareToken = nanoid(32);
     const validDays = params.validDays ?? 14;
     const expiresAt = new Date(
-      Date.now() + validDays * 24 * 60 * 60 * 1000
+      Date.now() + validDays * 24 * 60 * 60 * 1000,
     );
 
     // 7. Create estimate record
@@ -608,7 +626,9 @@ export const createEstimateTool = {
       downloadUrl: `${baseUrl}/${estimate.id}/pdf`,
       shareUrl: `${baseUrl}/${estimate.id}/pdf?token=${shareToken}`,
       subtotal: subtotal / 100,
-      priceRange: `$${(rangeLow / 100).toFixed(2)} - $${(rangeHigh / 100).toFixed(2)}`,
+      priceRange: `$${(rangeLow / 100).toFixed(2)} - $${
+        (rangeHigh / 100).toFixed(2)
+      }`,
       expiresAt,
     };
   },
@@ -617,8 +637,8 @@ export const createEstimateTool = {
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/tools.ts`
-Expected: No errors
+Run: `cd apps/agent && deno check src/skills/estimate/tools.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -632,6 +652,7 @@ git commit -m "feat(agent): add create_estimate tool"
 ## Task 10: Get Estimate Tool
 
 **Files:**
+
 - Modify: `apps/agent/src/skills/estimate/tools.ts`
 
 **Step 1: Add get_estimate tool**
@@ -664,13 +685,16 @@ export const getEstimateTool = {
         id: estimate.id,
         items: estimate.items,
         subtotal: estimate.subtotal / 100,
-        priceRange: `$${(estimate.priceRangeLow / 100).toFixed(2)} - $${(estimate.priceRangeHigh / 100).toFixed(2)}`,
+        priceRange: `$${(estimate.priceRangeLow / 100).toFixed(2)} - $${
+          (estimate.priceRangeHigh / 100).toFixed(2)
+        }`,
         notes: estimate.notes,
         expiresAt: estimate.expiresAt,
         isExpired,
         convertedToQuote: estimate.convertedToQuoteId !== null,
         downloadUrl: `/api/estimates/${estimate.id}/pdf`,
-        shareUrl: `/api/estimates/${estimate.id}/pdf?token=${estimate.shareToken}`,
+        shareUrl:
+          `/api/estimates/${estimate.id}/pdf?token=${estimate.shareToken}`,
       },
     };
   },
@@ -679,8 +703,8 @@ export const getEstimateTool = {
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/tools.ts`
-Expected: No errors
+Run: `cd apps/agent && deno check src/skills/estimate/tools.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -694,6 +718,7 @@ git commit -m "feat(agent): add get_estimate tool"
 ## Task 11: Estimate Skill Prompt
 
 **Files:**
+
 - Create: `apps/agent/src/skills/estimate/prompt.ts`
 
 **Step 1: Create the skill prompt**
@@ -749,8 +774,8 @@ This estimate is valid for 14 days. Would you like me to send you a formal quote
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/prompt.ts`
-Expected: No errors
+Run: `cd apps/agent && deno check src/skills/estimate/prompt.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -764,6 +789,7 @@ git commit -m "feat(agent): add estimate skill prompt"
 ## Task 12: Assemble Estimate Skill
 
 **Files:**
+
 - Modify: `apps/agent/src/skills/estimate/index.ts`
 
 **Step 1: Export complete skill**
@@ -790,8 +816,8 @@ export * from "./pricing.ts";
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/index.ts`
-Expected: No errors
+Run: `cd apps/agent && deno check src/skills/estimate/index.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -805,6 +831,7 @@ git commit -m "feat(agent): assemble estimate skill exports"
 ## Task 13: Integrate Skill into Agent
 
 **Files:**
+
 - Modify: `apps/agent/src/agent.ts`
 - Modify: `apps/agent/src/system-prompt.ts`
 
@@ -841,8 +868,7 @@ overrides: {
 
 **Step 3: Run typecheck**
 
-Run: `cd apps/agent && deno check src/agent.ts`
-Expected: No errors
+Run: `cd apps/agent && deno check src/agent.ts` Expected: No errors
 
 **Step 4: Commit**
 
@@ -856,6 +882,7 @@ git commit -m "feat(agent): integrate estimate skill into agent"
 ## Task 14: Install React-PDF in API
 
 **Files:**
+
 - Modify: `apps/api/package.json`
 
 **Step 1: Add @react-pdf/renderer dependency**
@@ -864,8 +891,7 @@ Run: `cd apps/api && bun add @react-pdf/renderer`
 
 **Step 2: Verify installation**
 
-Run: `cd apps/api && bun run build`
-Expected: Build succeeds
+Run: `cd apps/api && bun run build` Expected: Build succeeds
 
 **Step 3: Commit**
 
@@ -879,6 +905,7 @@ git commit -m "chore(api): add @react-pdf/renderer dependency"
 ## Task 15: PDF Template Component
 
 **Files:**
+
 - Create: `apps/api/src/pdf/EstimatePdf.tsx`
 
 **Step 1: Create the PDF template**
@@ -886,13 +913,7 @@ git commit -m "chore(api): add @react-pdf/renderer dependency"
 ```typescript
 // apps/api/src/pdf/EstimatePdf.tsx
 
-import {
-  Document,
-  Page,
-  View,
-  Text,
-  StyleSheet,
-} from "@react-pdf/renderer";
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
   page: {
@@ -1095,7 +1116,7 @@ function formatDate(date: Date): string {
 function formatVehicle(vehicleInfo: Customer["vehicleInfo"]): string {
   if (!vehicleInfo) return "Not specified";
   const parts = [vehicleInfo.year, vehicleInfo.make, vehicleInfo.model].filter(
-    Boolean
+    Boolean,
   );
   return parts.join(" ") || "Not specified";
 }
@@ -1125,7 +1146,9 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Prepared For</Text>
           <View style={styles.customerInfo}>
-            <Text style={styles.customerName}>{customer.name || "Customer"}</Text>
+            <Text style={styles.customerName}>
+              {customer.name || "Customer"}
+            </Text>
             {customer.phone && (
               <Text style={styles.customerDetail}>{customer.phone}</Text>
             )}
@@ -1190,9 +1213,10 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.disclaimer}>
-            This estimate is valid until {formatDate(estimate.expiresAt)}. Final
-            price may vary based on actual conditions found during service.
-            Payment is due upon completion of service.
+            This estimate is valid until{" "}
+            {formatDate(estimate.expiresAt)}. Final price may vary based on
+            actual conditions found during service. Payment is due upon
+            completion of service.
           </Text>
           <Text style={styles.cta}>
             Ready to proceed? Reply in chat or call us to schedule your service.
@@ -1209,8 +1233,8 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/api && bun run typecheck`
-Expected: No errors (or pre-existing bun-types error only)
+Run: `cd apps/api && bun run typecheck` Expected: No errors (or pre-existing
+bun-types error only)
 
 **Step 3: Commit**
 
@@ -1224,6 +1248,7 @@ git commit -m "feat(api): add EstimatePdf template component"
 ## Task 16: Estimate PDF API Route
 
 **Files:**
+
 - Create: `apps/api/src/routes/estimates.ts`
 
 **Step 1: Create the estimates route**
@@ -1234,7 +1259,7 @@ git commit -m "feat(api): add EstimatePdf template component"
 import { Hono } from "hono";
 import { renderToStream } from "@react-pdf/renderer";
 import { db, schema } from "../db/client.ts";
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { EstimatePdf } from "../pdf/EstimatePdf.tsx";
 
 const estimates = new Hono();
@@ -1258,8 +1283,8 @@ estimates.get("/:id/pdf", async (c) => {
       .where(
         and(
           eq(schema.estimates.id, id),
-          eq(schema.estimates.shareToken, token)
-        )
+          eq(schema.estimates.shareToken, token),
+        ),
       )
       .limit(1);
     estimate = result;
@@ -1303,14 +1328,14 @@ estimates.get("/:id/pdf", async (c) => {
         address: customer.address,
         vehicleInfo: customer.vehicleInfo as any,
       }}
-    />
+    />,
   );
 
   // Set response headers
   c.header("Content-Type", "application/pdf");
   c.header(
     "Content-Disposition",
-    `attachment; filename="HMLS-Estimate-${id}.pdf"`
+    `attachment; filename="HMLS-Estimate-${id}.pdf"`,
   );
 
   // Return stream
@@ -1327,8 +1352,8 @@ export default estimates;
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/api && bun run typecheck`
-Expected: No errors (or pre-existing errors only)
+Run: `cd apps/api && bun run typecheck` Expected: No errors (or pre-existing
+errors only)
 
 **Step 3: Commit**
 
@@ -1342,6 +1367,7 @@ git commit -m "feat(api): add estimate PDF download route"
 ## Task 17: Register Estimates Route
 
 **Files:**
+
 - Modify: `apps/api/src/index.ts`
 
 **Step 1: Import and register the estimates route**
@@ -1356,13 +1382,13 @@ app.route("/api/estimates", estimates);
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/api && bun run typecheck`
-Expected: No errors (or pre-existing errors only)
+Run: `cd apps/api && bun run typecheck` Expected: No errors (or pre-existing
+errors only)
 
 **Step 3: Test the API starts**
 
-Run: `cd apps/api && timeout 5 bun run dev || true`
-Expected: Server starts without import errors
+Run: `cd apps/api && timeout 5 bun run dev || true` Expected: Server starts
+without import errors
 
 **Step 4: Commit**
 
@@ -1376,6 +1402,7 @@ git commit -m "feat(api): register estimates route"
 ## Task 18: Update Chat Tool Display Names
 
 **Files:**
+
 - Modify: `apps/web/app/chat/page.tsx`
 
 **Step 1: Add estimate tool display names**
@@ -1389,8 +1416,8 @@ const toolDisplayNames: Record<string, string> = {
   get_customer: "Looking up customer",
   create_customer: "Saving customer info",
   get_services: "Getting services",
-  create_estimate: "Preparing estimate",  // Updated
-  get_estimate: "Loading estimate",       // New
+  create_estimate: "Preparing estimate", // Updated
+  get_estimate: "Loading estimate", // New
   create_quote: "Creating quote",
   create_invoice: "Creating invoice",
   get_quote_status: "Checking quote status",
@@ -1399,8 +1426,7 @@ const toolDisplayNames: Record<string, string> = {
 
 **Step 2: Run build**
 
-Run: `bun run build`
-Expected: Build succeeds
+Run: `bun run build` Expected: Build succeeds
 
 **Step 3: Commit**
 
@@ -1416,13 +1442,15 @@ git commit -m "feat(web): update tool display names for estimates"
 **Step 1: Start all services**
 
 Run in separate terminals:
+
 - `bun run dev:api`
 - `bun run dev:web`
 
 **Step 2: Test estimate flow**
 
 1. Open chat at http://localhost:3000/chat
-2. Create a customer: "I need a quote for brake service. My name is John, phone 555-1234, I have a 2020 BMW M3"
+2. Create a customer: "I need a quote for brake service. My name is John, phone
+   555-1234, I have a 2020 BMW M3"
 3. Request estimate: "How much would front brake pads cost?"
 4. Verify agent calls create_estimate tool
 5. Verify download link is returned
@@ -1457,6 +1485,7 @@ git commit -m "feat: complete estimate skill implementation
 ## Summary
 
 **Files Created:**
+
 - `apps/agent/src/skills/estimate/index.ts`
 - `apps/agent/src/skills/estimate/types.ts`
 - `apps/agent/src/skills/estimate/tools.ts`
@@ -1466,15 +1495,18 @@ git commit -m "feat: complete estimate skill implementation
 - `apps/api/src/routes/estimates.ts`
 
 **Files Modified:**
+
 - `apps/api/src/db/schema.ts`
 - `apps/api/src/index.ts`
 - `apps/agent/src/agent.ts`
 - `apps/web/app/chat/page.tsx`
 
 **Dependencies Added:**
+
 - `@react-pdf/renderer` (API)
 
 **Database Changes:**
+
 - `pricing_config` table
 - `vehicle_pricing` table
 - `estimates` table

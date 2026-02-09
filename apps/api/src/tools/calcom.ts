@@ -7,7 +7,7 @@ const CALCOM_API_BASE = "https://api.cal.com/v1";
 
 async function calcomRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
   const url = `${CALCOM_API_BASE}${endpoint}`;
   console.log(`[calcom] ${options.method || "GET"} ${endpoint}`);
@@ -40,17 +40,21 @@ export const getAvailabilityTool = {
     endDate: z
       .string()
       .describe(
-        "End date in YYYY-MM-DD format (defaults to 7 days from start)"
+        "End date in YYYY-MM-DD format (defaults to 7 days from start)",
       ),
   }),
-  execute: async (params: { startDate?: string; endDate?: string }, _ctx: unknown) => {
+  execute: async (
+    params: { startDate?: string; endDate?: string },
+    _ctx: unknown,
+  ) => {
     const start = params.startDate || new Date().toISOString().split("T")[0];
-    const end =
-      params.endDate ||
-      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const end = params.endDate ||
+      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split(
+        "T",
+      )[0];
 
     const data = await calcomRequest<{ slots?: unknown[] }>(
-      `/availability?eventTypeId=${env.CALCOM_EVENT_TYPE_ID}&startTime=${start}&endTime=${end}`
+      `/availability?eventTypeId=${env.CALCOM_EVENT_TYPE_ID}&startTime=${start}&endTime=${end}`,
     );
 
     return toolResult({
@@ -74,7 +78,7 @@ export const createBookingTool = {
     duration: z
       .number()
       .describe(
-        "Appointment duration in minutes. Determine this based on the services the customer needs."
+        "Appointment duration in minutes. Determine this based on the services the customer needs.",
       ),
     serviceType: z.string().describe("Type of service requested"),
     location: z.string().describe("Service location/address"),
@@ -119,9 +123,11 @@ export const createBookingTool = {
       bookingId: booking.id,
       confirmationNumber: booking.uid,
       scheduledTime: params.startTime,
-      message: `Booking confirmed for ${params.name} on ${new Date(
-        params.startTime
-      ).toLocaleString()}`,
+      message: `Booking confirmed for ${params.name} on ${
+        new Date(
+          params.startTime,
+        ).toLocaleString()
+      }`,
     });
   },
 };

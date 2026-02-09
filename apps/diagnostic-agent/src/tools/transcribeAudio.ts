@@ -25,7 +25,8 @@ export const transcribeAudioTool = {
     return toolResult({
       transcription: result.text,
       durationSeconds: result.duration,
-      analysis: `Audio transcription: "${result.text}". Duration: ${result.duration} seconds.`,
+      analysis:
+        `Audio transcription: "${result.text}". Duration: ${result.duration} seconds.`,
     });
   },
 };

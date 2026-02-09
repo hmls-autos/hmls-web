@@ -36,7 +36,7 @@ export const CREDIT_COSTS = {
 export type InputType = keyof typeof CREDIT_COSTS;
 
 export async function getCustomerCredits(
-  stripeCustomerId: string
+  stripeCustomerId: string,
 ): Promise<number> {
   const customer = await stripe.customers.retrieve(stripeCustomerId);
   if (customer.deleted) {
@@ -49,7 +49,7 @@ export async function getCustomerCredits(
 export async function deductCredits(
   stripeCustomerId: string,
   amount: number,
-  description: string
+  description: string,
 ): Promise<void> {
   await stripe.customers.createBalanceTransaction(stripeCustomerId, {
     amount: amount, // Positive = deduct (increase balance owed)
@@ -61,7 +61,7 @@ export async function deductCredits(
 export async function addCredits(
   stripeCustomerId: string,
   amount: number,
-  description: string
+  description: string,
 ): Promise<void> {
   await stripe.customers.createBalanceTransaction(stripeCustomerId, {
     amount: -amount, // Negative = add credits (decrease balance owed)

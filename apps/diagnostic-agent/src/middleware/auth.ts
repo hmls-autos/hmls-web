@@ -1,4 +1,4 @@
-import { verifyToken, type AuthUser } from "../lib/supabase.ts";
+import { type AuthUser, verifyToken } from "../lib/supabase.ts";
 import { db } from "../db/client.ts";
 import { customers } from "../db/schema.ts";
 import { eq } from "drizzle-orm";
@@ -10,15 +10,18 @@ export interface AuthContext {
 }
 
 export async function authenticateRequest(
-  request: Request
+  request: Request,
 ): Promise<AuthContext | Response> {
   const authHeader = request.headers.get("Authorization");
 
   if (!authHeader?.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Missing authorization header" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Missing authorization header" }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   const token = authHeader.slice(7);
@@ -46,10 +49,13 @@ export async function authenticateRequest(
   }
 
   if (!customer.stripeCustomerId) {
-    return new Response(JSON.stringify({ error: "Customer has no billing account" }), {
-      status: 402,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Customer has no billing account" }),
+      {
+        status: 402,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   return {

@@ -26,7 +26,7 @@ export class AppError extends Error {
   constructor(
     public code: ErrorCode,
     message: string,
-    public details?: unknown
+    public details?: unknown,
   ) {
     super(message);
     this.name = "AppError";
@@ -51,7 +51,10 @@ export class AppError extends Error {
 // Convenience factories
 export const Errors = {
   notFound: (resource: string, id?: string | number) =>
-    new AppError(ErrorCode.NOT_FOUND, id ? `${resource} ${id} not found` : `${resource} not found`),
+    new AppError(
+      ErrorCode.NOT_FOUND,
+      id ? `${resource} ${id} not found` : `${resource} not found`,
+    ),
 
   badRequest: (message: string, details?: unknown) =>
     new AppError(ErrorCode.BAD_REQUEST, message, details),

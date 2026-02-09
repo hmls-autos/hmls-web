@@ -20,13 +20,13 @@ export interface TranscriptionResult {
 
 export async function transcribeAudio(
   audioData: Uint8Array,
-  filename: string
+  filename: string,
 ): Promise<TranscriptionResult> {
   // Create a File object from the audio data
   // Copy to a new ArrayBuffer to ensure compatibility
   const buffer = audioData.buffer.slice(
     audioData.byteOffset,
-    audioData.byteOffset + audioData.byteLength
+    audioData.byteOffset + audioData.byteLength,
   ) as ArrayBuffer;
   const file = new File([buffer], filename, { type: "audio/webm" });
 

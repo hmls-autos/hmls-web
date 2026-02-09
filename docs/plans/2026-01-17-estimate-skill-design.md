@@ -2,7 +2,9 @@
 
 ## Overview
 
-A comprehensive estimate skill for the HMLS agent that generates downloadable PDF estimates for customers. The skill includes a pricing engine with vehicle-based multipliers, tiered parts markup, and dynamic fees.
+A comprehensive estimate skill for the HMLS agent that generates downloadable
+PDF estimates for customers. The skill includes a pricing engine with
+vehicle-based multipliers, tiered parts markup, and dynamic fees.
 
 ## Architecture
 
@@ -41,8 +43,7 @@ import { estimateSkill } from "./skills/estimate/index.ts";
 const agent = await createZypherAgent({
   tools: [...estimateSkill.tools, ...otherTools],
   overrides: {
-    systemPromptLoader: async () =>
-      BASE_PROMPT + "\n\n" + estimateSkill.prompt,
+    systemPromptLoader: async () => BASE_PROMPT + "\n\n" + estimateSkill.prompt,
   },
 });
 ```
@@ -54,7 +55,8 @@ const agent = await createZypherAgent({
 ### Base Rates
 
 - **Labor rate:** $140/hr (for hourly services)
-- **Diagnostic fee:** $95 (complex electrical/computer only, waived if repair proceeds)
+- **Diagnostic fee:** $95 (complex electrical/computer only, waived if repair
+  proceeds)
 
 ### Vehicle Multipliers
 
@@ -65,20 +67,22 @@ Per-make pricing with model-level overrides:
 - If still not found, default to 1.0
 
 Examples:
-| Make | Model | Multiplier |
-|------|-------|------------|
-| Toyota | (default) | 1.0 |
-| Toyota | Supra | 1.30 |
-| Honda | S2000 | 1.20 |
-| BMW | (default) | 1.25 |
-| BMW | M3 | 1.40 |
-| BMW | M5 | 1.45 |
-| Porsche | (default) | 1.40 |
-| Audi | R8 | 1.50 |
+
+| Make    | Model     | Multiplier |
+| ------- | --------- | ---------- |
+| Toyota  | (default) | 1.0        |
+| Toyota  | Supra     | 1.30       |
+| Honda   | S2000     | 1.20       |
+| BMW     | (default) | 1.25       |
+| BMW     | M3        | 1.40       |
+| BMW     | M5        | 1.45       |
+| Porsche | (default) | 1.40       |
+| Audi    | R8        | 1.50       |
 
 ### Parts Markup (on OEM cost)
 
 Tiered markup structure:
+
 - Parts under $50: +40%
 - Parts $50-200: +30%
 - Parts over $200: +20%
@@ -177,28 +181,34 @@ INSERT INTO pricing_config (key, value, description) VALUES
 ### PDF Template Layout
 
 **Header Section:**
+
 - HMLS logo (left)
 - "ESTIMATE" title (right)
 - Estimate # and date
 - Valid until date
 
 **Customer Section:**
+
 - Customer name, phone, email
 - Service address
 - Vehicle: Year Make Model
 
 **Line Items Table:**
-| Service | Description | Price |
-|---------|-------------|-------|
-| Brake Pad Replacement | Front brake pads | $356.25 |
-| Brake Fluid Flush | Complete fluid replacement | $118.75 |
-| | **Subtotal** | $475.00 |
-| | **Estimated Range** | $427 - $523 |
 
-*Note: Prices shown are final. Vehicle adjustments and fees are applied internally but not displayed.*
+| Service               | Description                | Price       |
+| --------------------- | -------------------------- | ----------- |
+| Brake Pad Replacement | Front brake pads           | $356.25     |
+| Brake Fluid Flush     | Complete fluid replacement | $118.75     |
+|                       | **Subtotal**               | $475.00     |
+|                       | **Estimated Range**        | $427 - $523 |
+
+_Note: Prices shown are final. Vehicle adjustments and fees are applied
+internally but not displayed._
 
 **Footer Section:**
-- Disclaimer: "This estimate is valid for 14 days. Final price may vary based on conditions found during service."
+
+- Disclaimer: "This estimate is valid for 14 days. Final price may vary based on
+  conditions found during service."
 - Terms: Payment due upon completion, accepted methods
 - CTA: "Ready to proceed? Reply in chat or call (XXX) XXX-XXXX"
 - HMLS contact info and service area
@@ -226,29 +236,32 @@ export async function getEstimatePdf(req, res) {
     estimate = await db.query.estimates.findFirst({
       where: and(
         eq(schema.estimates.id, id),
-        eq(schema.estimates.shareToken, token)
+        eq(schema.estimates.shareToken, token),
       ),
-      with: { customer: true }
+      with: { customer: true },
     });
   } else if (req.user) {
     // Authenticated owner access
     estimate = await db.query.estimates.findFirst({
       where: and(
         eq(schema.estimates.id, id),
-        eq(schema.estimates.customerId, req.user.id)
+        eq(schema.estimates.customerId, req.user.id),
       ),
-      with: { customer: true }
+      with: { customer: true },
     });
   }
 
   if (!estimate) return res.status(404);
 
   const pdfStream = await renderToStream(
-    <EstimatePdf estimate={estimate} customer={estimate.customer} />
+    <EstimatePdf estimate={estimate} customer={estimate.customer} />,
   );
 
   res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename="HMLS-Estimate-${id}.pdf"`);
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="HMLS-Estimate-${id}.pdf"`,
+  );
   pdfStream.pipe(res);
 }
 ```
@@ -271,9 +284,13 @@ export const createEstimateTool = {
         serviceId: z.number().optional().describe("Service ID from catalog"),
         name: z.string().describe("Service name"),
         description: z.string().describe("Brief description"),
-        laborHours: z.number().optional().describe("Labor hours (for hourly services)"),
-        partsCost: z.number().optional().describe("Estimated parts cost in dollars"),
-      })
+        laborHours: z.number().optional().describe(
+          "Labor hours (for hourly services)",
+        ),
+        partsCost: z.number().optional().describe(
+          "Estimated parts cost in dollars",
+        ),
+      }),
     ),
     notes: z.string().optional(),
     validDays: z.number().default(14),
@@ -284,6 +301,7 @@ export const createEstimateTool = {
 ```
 
 **Returns:**
+
 ```typescript
 {
   success: true,
@@ -358,7 +376,7 @@ This includes [brief summary]. Valid for 14 days. Would you like me to send a fo
 // skills/estimate/pricing.ts
 export async function calculatePrice(
   service: ServiceInput,
-  vehicleMultiplier: number
+  vehicleMultiplier: number,
 ): Promise<LineItem> {
   const config = await getPricingConfig();
 
@@ -369,7 +387,7 @@ export async function calculatePrice(
   if (service.laborHours) {
     // Hourly service
     laborCost = Math.round(
-      config.hourlyRate * service.laborHours * vehicleMultiplier
+      config.hourlyRate * service.laborHours * vehicleMultiplier,
     );
   } else if (service.serviceId) {
     // Flat-rate from catalog
@@ -382,9 +400,9 @@ export async function calculatePrice(
     const costCents = service.partsCost * 100;
     let markupPct;
 
-    if (costCents < 5000) markupPct = config.partsMarkupTier1;      // 40%
+    if (costCents < 5000) markupPct = config.partsMarkupTier1; // 40%
     else if (costCents < 20000) markupPct = config.partsMarkupTier2; // 30%
-    else markupPct = config.partsMarkupTier3;                        // 20%
+    else markupPct = config.partsMarkupTier3; // 20%
 
     partsCost = Math.round(costCents * (1 + markupPct / 100));
   }
@@ -398,14 +416,14 @@ export async function calculatePrice(
 
 export async function getVehicleMultiplier(
   make: string,
-  model?: string
+  model?: string,
 ): Promise<number> {
   // Try exact make + model match
   if (model) {
     const exact = await db.query.vehiclePricing.findFirst({
       where: and(
         eq(schema.vehiclePricing.make, make),
-        eq(schema.vehiclePricing.model, model)
+        eq(schema.vehiclePricing.model, model),
       ),
     });
     if (exact) return exact.multiplier;
@@ -415,7 +433,7 @@ export async function getVehicleMultiplier(
   const makeDefault = await db.query.vehiclePricing.findFirst({
     where: and(
       eq(schema.vehiclePricing.make, make),
-      isNull(schema.vehiclePricing.model)
+      isNull(schema.vehiclePricing.model),
     ),
   });
   if (makeDefault) return makeDefault.multiplier;
@@ -430,6 +448,7 @@ export async function getVehicleMultiplier(
 ## Dependencies
 
 Add to `apps/api/package.json`:
+
 ```json
 {
   "@react-pdf/renderer": "^3.x"
@@ -441,6 +460,7 @@ Add to `apps/api/package.json`:
 ## Summary
 
 The estimate skill provides:
+
 - Modular skill architecture for the HMLS agent
 - Comprehensive pricing engine with vehicle multipliers and tiered parts markup
 - PDF generation with clean, professional template

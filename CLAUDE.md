@@ -1,30 +1,32 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with
+code in this repository.
 
 ## Build & Development Commands
 
 ```bash
-# Web (Next.js on port 3000)
-turbo dev                        # Start all turbo tasks
-bun run dev:web                  # Start web only
-
-# Deno services
-bun run dev:api                  # Start API agent (Deno on port 8080)
-bun run dev:diagnostic           # Start diagnostic agent
+# Dev servers (all via deno task)
+deno task dev:web                # Next.js on port 3000
+deno task dev:api                # API agent on port 8080
+deno task dev:diagnostic         # Diagnostic agent
 
 # Build & quality
-turbo build              # Build all packages
-turbo lint               # Lint with Biome
-turbo typecheck          # TypeScript type checking
+deno task build:web              # Build Next.js
+deno task lint:web               # Lint with Biome
+deno task typecheck:web          # TypeScript type checking
+deno task check:api              # Deno check API
+deno task check:diagnostic       # Deno check diagnostic agent
 
 # Database
-docker compose up -d postgres   # Start PostgreSQL
+deno task db:up                  # Start PostgreSQL
 ```
 
 ## Architecture
 
-Bun + Turbo monorepo for a mobile mechanic business with an AI-powered chat agent. All apps deploy to **Deno Deploy** via GitHub integration. Deno workspace is managed via `deno.jsonc`.
+Deno workspace monorepo for a mobile mechanic business with an AI-powered chat
+agent. All apps deploy to **Deno Deploy** via GitHub integration. Root config is
+`deno.jsonc`; web app uses Bun/Next.js internally.
 
 ```
 apps/
@@ -39,25 +41,31 @@ packages/
 
 ### Service Communication
 
-- **Web → Agent**: Direct AG-UI protocol connection via `@ag-ui/client` (port 8080)
+- **Web → Agent**: Direct AG-UI protocol connection via `@ag-ui/client`
+  (port 8080)
 - **Agent → DB**: Direct PostgreSQL connection for tools
 
 ### Key Patterns
 
-**Agent Tools** (`apps/agent/src/tools/`): Zod-validated functions the AI can call
+**Agent Tools** (`apps/agent/src/tools/`): Zod-validated functions the AI can
+call
+
 - `customerTools` - Customer CRUD
 - `stripeTools` - Payments/invoices
 - `calcomTools` - Scheduling
 - `estimateTools` - Estimate generation
 
 **Agent Skills** (`apps/agent/src/skills/`): Multi-tool workflows
+
 - `estimate` - Calculate prices, generate PDFs
 
 **Database Schema** (`apps/api/src/db/schema.ts`): Drizzle ORM
+
 - customers, conversations, messages, bookings, services, quotes, estimates
 - `pricingConfig` / `vehiclePricing` tables for dynamic pricing
 
-**PDF Generation** (`apps/api/src/pdf/`): React-PDF templates served by API routes
+**PDF Generation** (`apps/api/src/pdf/`): React-PDF templates served by API
+routes
 
 ## Code Style
 
@@ -68,6 +76,7 @@ packages/
 ## Environment Variables
 
 Required in `.env`:
+
 ```
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
 ANTHROPIC_API_KEY=sk-ant-...
@@ -77,6 +86,7 @@ CALCOM_EVENT_TYPE_ID=123456
 ```
 
 Optional in web (`.env.local`):
+
 ```
 NEXT_PUBLIC_AGENT_URL=http://localhost:8080  # defaults to localhost:8080
 ```

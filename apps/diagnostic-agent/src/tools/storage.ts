@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { uploadMedia, getMedia } from "../lib/r2.ts";
+import { getMedia, uploadMedia } from "../lib/r2.ts";
 import { toolResult } from "../lib/tool-result.ts";
 
 const saveMediaSchema = z.object({
@@ -23,7 +23,12 @@ export const saveMediaTool = {
     // Decode base64 to Uint8Array
     const binaryData = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
 
-    const result = await uploadMedia(binaryData, filename, contentType, sessionId);
+    const result = await uploadMedia(
+      binaryData,
+      filename,
+      contentType,
+      sessionId,
+    );
 
     return toolResult({
       success: true,

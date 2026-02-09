@@ -1,4 +1,4 @@
-import { assertEquals } from "jsr:@std/assert";
+import { assertEquals } from "@std/assert";
 
 const BASE_URL = Deno.env.get("TEST_BASE_URL") || "http://localhost:8001";
 
@@ -48,6 +48,6 @@ Deno.test("CORS preflight returns correct headers", async () => {
   assertEquals(response.headers.get("Access-Control-Allow-Origin"), "*");
   assertEquals(
     response.headers.get("Access-Control-Allow-Methods"),
-    "GET, POST, OPTIONS"
+    "GET, POST, OPTIONS",
   );
 });

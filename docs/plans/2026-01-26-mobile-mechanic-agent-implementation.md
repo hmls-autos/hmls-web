@@ -1,10 +1,14 @@
 # Mobile Mechanic Agent Redesign - Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
+> implement this plan task-by-task.
 
-**Goal:** Simplify the HMLS agent to be a customer-facing receptionist that handles service inquiries, estimates, quotes, and booking.
+**Goal:** Simplify the HMLS agent to be a customer-facing receptionist that
+handles service inquiries, estimates, quotes, and booking.
 
-**Architecture:** Remove customer CRUD tools (user info comes from session), remove invoice tool (owner handles post-service), keep estimate/quote/booking tools. Add session context injection for logged-in user info.
+**Architecture:** Remove customer CRUD tools (user info comes from session),
+remove invoice tool (owner handles post-service), keep estimate/quote/booking
+tools. Add session context injection for logged-in user info.
 
 **Tech Stack:** Deno, Hono, Zypher Agent Framework, Stripe, Cal.com
 
@@ -13,6 +17,7 @@
 ## Task 1: Remove Customer CRUD from customer.ts
 
 **Files:**
+
 - Modify: `apps/api/src/tools/customer.ts`
 
 **Step 1: Edit customer.ts to keep only get_services**
@@ -57,8 +62,8 @@ export const serviceTools = [getServicesTool];
 
 **Step 2: Run typecheck**
 
-Run: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api`
-Expected: May fail due to agent.ts still importing customerTools
+Run: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api` Expected: May
+fail due to agent.ts still importing customerTools
 
 **Step 3: Commit**
 
@@ -72,13 +77,16 @@ git commit -m "refactor(api): remove customer CRUD tools, keep only get_services
 ## Task 2: Remove create_invoice from stripe.ts
 
 **Files:**
+
 - Modify: `apps/api/src/tools/stripe.ts`
 
 **Step 1: Edit stripe.ts to remove createInvoiceTool**
 
-Remove the `createInvoiceTool` definition and its export. Keep `createQuoteTool` and `getQuoteStatusTool`.
+Remove the `createInvoiceTool` definition and its export. Keep `createQuoteTool`
+and `getQuoteStatusTool`.
 
-Remove lines 156-237 (the entire `createInvoiceTool` definition) and update the export:
+Remove lines 156-237 (the entire `createInvoiceTool` definition) and update the
+export:
 
 ```typescript
 export const stripeTools = [
@@ -99,12 +107,13 @@ git commit -m "refactor(api): remove create_invoice tool (owner handles post-ser
 ## Task 3: Update agent.ts imports
 
 **Files:**
+
 - Modify: `apps/api/src/agent.ts`
 
 **Step 1: Update imports and tool list**
 
 ```typescript
-import { createZypherAgent, anthropic } from "@corespeed/zypher";
+import { anthropic, createZypherAgent } from "@corespeed/zypher";
 import { env } from "./env.ts";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { calcomTools } from "./tools/calcom.ts";
@@ -130,7 +139,7 @@ export async function createHmlsAgent() {
   // Discover and log skills
   await agent.skills.discover();
   const skillNames = Array.from(agent.skills.skills.values()).map(
-    (s) => s.metadata.name
+    (s) => s.metadata.name,
   );
   if (skillNames.length > 0) {
     console.log(`[agent] Skills loaded: ${skillNames.join(", ")}`);
@@ -142,8 +151,7 @@ export async function createHmlsAgent() {
 
 **Step 2: Run typecheck**
 
-Run: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api`
-Expected: PASS
+Run: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api` Expected: PASS
 
 **Step 3: Commit**
 
@@ -157,6 +165,7 @@ git commit -m "refactor(api): update agent tool imports after cleanup"
 ## Task 4: Rewrite system-prompt.ts for receptionist role
 
 **Files:**
+
 - Modify: `apps/api/src/system-prompt.ts`
 
 **Step 1: Rewrite the system prompt**
@@ -229,6 +238,7 @@ git commit -m "refactor(api): rewrite system prompt for receptionist role"
 ## Task 5: Add user context type definition
 
 **Files:**
+
 - Create: `apps/api/src/types/user-context.ts`
 
 **Step 1: Create the type file**
@@ -258,7 +268,7 @@ export function formatUserContext(user: UserContext): string {
 
   if (user.vehicleInfo) {
     lines.push(
-      `- Vehicle: ${user.vehicleInfo.year} ${user.vehicleInfo.make} ${user.vehicleInfo.model}`
+      `- Vehicle: ${user.vehicleInfo.year} ${user.vehicleInfo.make} ${user.vehicleInfo.model}`,
     );
   } else {
     lines.push(`- Vehicle: Not specified`);
@@ -282,19 +292,20 @@ git commit -m "feat(api): add UserContext type and formatter"
 ## Task 6: Update agent to accept user context
 
 **Files:**
+
 - Modify: `apps/api/src/agent.ts`
 
 **Step 1: Update createHmlsAgent to accept user context**
 
 ```typescript
-import { createZypherAgent, anthropic } from "@corespeed/zypher";
+import { anthropic, createZypherAgent } from "@corespeed/zypher";
 import { env } from "./env.ts";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { calcomTools } from "./tools/calcom.ts";
 import { serviceTools } from "./tools/customer.ts";
 import { stripeTools } from "./tools/stripe.ts";
 import { estimateTools } from "./skills/estimate/tools.ts";
-import { type UserContext, formatUserContext } from "./types/user-context.ts";
+import { formatUserContext, type UserContext } from "./types/user-context.ts";
 
 // Default model, can be overridden via env
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
@@ -323,7 +334,7 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
   // Discover and log skills
   await agent.skills.discover();
   const skillNames = Array.from(agent.skills.skills.values()).map(
-    (s) => s.metadata.name
+    (s) => s.metadata.name,
   );
   if (skillNames.length > 0) {
     console.log(`[agent] Skills loaded: ${skillNames.join(", ")}`);
@@ -335,8 +346,7 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
 
 **Step 2: Run typecheck**
 
-Run: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api`
-Expected: PASS
+Run: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api` Expected: PASS
 
 **Step 3: Commit**
 
@@ -350,11 +360,14 @@ git commit -m "feat(api): add user context injection to agent"
 ## Task 7: Update index.ts to pass user context
 
 **Files:**
+
 - Modify: `apps/api/src/index.ts`
 
 **Step 1: Update the /task endpoint to extract and pass user context**
 
-The user context will come from a header (set by the web frontend after authentication). Update the agent creation to be per-request instead of singleton when user context is present.
+The user context will come from a header (set by the web frontend after
+authentication). Update the agent creation to be per-request instead of
+singleton when user context is present.
 
 ```typescript
 // Near the top, add import
@@ -362,7 +375,10 @@ import { type UserContext } from "./types/user-context.ts";
 
 // Replace the agent singleton section with:
 // Agent cache by user ID (or singleton for anonymous)
-const agentCache = new Map<string, Awaited<ReturnType<typeof createHmlsAgent>>>();
+const agentCache = new Map<
+  string,
+  Awaited<ReturnType<typeof createHmlsAgent>>
+>();
 
 async function getAgent(userContext?: UserContext) {
   const cacheKey = userContext ? `user:${userContext.id}` : "anonymous";
@@ -398,10 +414,19 @@ app.post("/task", async (c) => {
   }
 
   const { threadId, runId, messages } = input;
-  console.log(`[agent] threadId=${threadId}, messages=${messages.length}, user=${userContext?.id ?? "anonymous"}`);
+  console.log(
+    `[agent] threadId=${threadId}, messages=${messages.length}, user=${
+      userContext?.id ?? "anonymous"
+    }`,
+  );
 
   const agent = await getAgent(userContext);
-  const aguiStream = createAguiEventStream({ agent, messages, threadId, runId });
+  const aguiStream = createAguiEventStream({
+    agent,
+    messages,
+    threadId,
+    runId,
+  });
 
   return streamSSE(c, async (stream) => {
     try {
@@ -423,8 +448,7 @@ app.post("/task", async (c) => {
 
 **Step 2: Run typecheck**
 
-Run: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api`
-Expected: PASS
+Run: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api` Expected: PASS
 
 **Step 3: Commit**
 
@@ -439,13 +463,13 @@ git commit -m "feat(api): pass user context from header to agent"
 
 **Step 1: Start the dev server**
 
-Run: `cd /home/spenc/hmls/apps/api && deno task dev`
-Expected: Server starts without errors
+Run: `cd /home/spenc/hmls/apps/api && deno task dev` Expected: Server starts
+without errors
 
 **Step 2: Test health endpoint**
 
-Run: `curl http://localhost:8080/health`
-Expected: `{"status":"ok","timestamp":"..."}`
+Run: `curl http://localhost:8080/health` Expected:
+`{"status":"ok","timestamp":"..."}`
 
 **Step 3: Commit all changes**
 
@@ -465,7 +489,9 @@ git commit -m "feat(api): complete Mobile Mechanic Agent redesign
 ## Summary
 
 After completing all tasks, the agent will:
-1. Only expose 6 tools: `get_services`, `create_estimate`, `get_estimate`, `create_quote`, `get_quote_status`, `get_availability`, `create_booking`
+
+1. Only expose 6 tools: `get_services`, `create_estimate`, `get_estimate`,
+   `create_quote`, `get_quote_status`, `get_availability`, `create_booking`
 2. Receive logged-in user context via `X-User-Context` header
 3. Have a simplified receptionist-focused system prompt
 4. No longer handle customer creation or invoicing

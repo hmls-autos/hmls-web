@@ -1,8 +1,8 @@
 import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from "@aws-sdk/client-s3";
 
 let _r2: S3Client | null = null;
@@ -15,7 +15,7 @@ function getR2(): S3Client {
 
     if (!accountId || !accessKeyId || !secretAccessKey) {
       throw new Error(
-        "R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY are required"
+        "R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, and R2_SECRET_ACCESS_KEY are required",
       );
     }
 
@@ -52,7 +52,7 @@ export async function uploadMedia(
   file: Uint8Array,
   filename: string,
   contentType: string,
-  sessionId: string
+  sessionId: string,
 ): Promise<UploadResult> {
   const bucketName = getBucketName();
   const key = `sessions/${sessionId}/${Date.now()}-${filename}`;
@@ -63,12 +63,13 @@ export async function uploadMedia(
       Key: key,
       Body: file,
       ContentType: contentType,
-    })
+    }),
   );
 
   return {
     key,
-    url: `https://${bucketName}.${getAccountId()}.r2.cloudflarestorage.com/${key}`,
+    url:
+      `https://${bucketName}.${getAccountId()}.r2.cloudflarestorage.com/${key}`,
   };
 }
 
@@ -77,7 +78,7 @@ export async function getMedia(key: string): Promise<Uint8Array> {
     new GetObjectCommand({
       Bucket: getBucketName(),
       Key: key,
-    })
+    }),
   );
 
   return new Uint8Array(await response.Body!.transformToByteArray());
@@ -88,6 +89,6 @@ export async function deleteMedia(key: string): Promise<void> {
     new DeleteObjectCommand({
       Bucket: getBucketName(),
       Key: key,
-    })
+    }),
   );
 }

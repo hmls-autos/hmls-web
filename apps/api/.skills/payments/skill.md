@@ -26,6 +26,7 @@ Customer inquiry → Estimate (informal PDF) → Quote (formal Stripe)
 Use `create_quote` when customer wants to proceed after seeing an estimate.
 
 Required information:
+
 - `customerId` - Customer ID from the logged-in user context
 - `items` - List of services with:
   - `service` - Service name
@@ -38,6 +39,7 @@ The quote is emailed to the customer with a link to view and accept online.
 ## Checking Quote Status
 
 Use `get_quote_status` to check if a customer has:
+
 - Viewed the quote
 - Accepted it
 - Let it expire

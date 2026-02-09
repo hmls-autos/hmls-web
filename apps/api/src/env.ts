@@ -9,7 +9,7 @@ const envSchema = z.object({
     .string()
     .refine(
       (key) => key.startsWith("sk_test_") || key.startsWith("sk_live_"),
-      "STRIPE_SECRET_KEY must start with 'sk_test_' or 'sk_live_'"
+      "STRIPE_SECRET_KEY must start with 'sk_test_' or 'sk_live_'",
     ),
 
   // Cal.com API
@@ -27,7 +27,7 @@ const envSchema = z.object({
     .min(1, "DATABASE_URL is required")
     .refine(
       (url) => url.startsWith("postgres://") || url.startsWith("postgresql://"),
-      "DATABASE_URL must be a valid PostgreSQL connection string"
+      "DATABASE_URL must be a valid PostgreSQL connection string",
     ),
 
   // HTTP port (default 8080 for direct frontend access)

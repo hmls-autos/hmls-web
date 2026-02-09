@@ -2,7 +2,6 @@
   "name": "@hmls/api",
   "version": "0.3.0",
   "exports": "./src/index.ts",
-  "nodeModulesDir": "auto",
   "imports": {
     "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@0.71.2",
     "@corespeed/zypher": "jsr:@zypher/agent@0.9.1",
@@ -16,7 +15,8 @@
     "drizzle-orm/postgres-js": "npm:drizzle-orm@^0.45.1/postgres-js",
     "postgres": "npm:postgres@^3.4.8",
     "@react-pdf/renderer": "npm:@react-pdf/renderer@^4.3.2",
-    "react": "npm:react@^19.2.3"
+    "react": "npm:react@^19.2.3",
+    "nanoid": "npm:nanoid@^5.1.5"
   },
   "deploy": {
     "runtime": {

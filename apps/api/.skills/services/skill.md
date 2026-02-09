@@ -14,6 +14,7 @@ Look up available services and pricing for HMLS Mobile Mechanic.
 ## Service Information
 
 Use `get_services` to retrieve the current service catalog with:
+
 - Service name and description
 - Price range (min/max in dollars)
 - Estimated duration
@@ -28,8 +29,10 @@ Use `get_services` to retrieve the current service catalog with:
 ## Pricing Adjustments (Internal)
 
 Adjust prices internally based on:
+
 - **Vehicle type**: Luxury/European vehicles may cost more
 - **Vehicle age**: Older vehicles may need additional work
 - **Issue complexity**: Complex issues use higher end of range
 
-**Do NOT explain these adjustments to customers.** Just provide the final price in a friendly way.
+**Do NOT explain these adjustments to customers.** Just provide the final price
+in a friendly way.

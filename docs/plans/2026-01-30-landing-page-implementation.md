@@ -1,10 +1,14 @@
 # Landing Page Redesign Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
+> implement this plan task-by-task.
 
-**Goal:** Redesign the HMLS landing page with a premium neutral luxury aesthetic, SSR-first architecture, and CSS-only animations.
+**Goal:** Redesign the HMLS landing page with a premium neutral luxury
+aesthetic, SSR-first architecture, and CSS-only animations.
 
-**Architecture:** Replace Framer Motion animations with CSS transitions, convert all sections to React Server Components, use Tailwind for styling with new color tokens. Map component lazy-loaded with next/dynamic.
+**Architecture:** Replace Framer Motion animations with CSS transitions, convert
+all sections to React Server Components, use Tailwind for styling with new color
+tokens. Map component lazy-loaded with next/dynamic.
 
 **Tech Stack:** Next.js 16, React 19, Tailwind CSS 4, next/image, next/dynamic
 
@@ -15,6 +19,7 @@
 ### Task 1.1: Update Tailwind Config with New Colors
 
 **Files:**
+
 - Modify: `apps/web/tailwind.config.ts`
 
 **Step 1: Read current Tailwind config**
@@ -43,8 +48,7 @@ colors: {
 
 **Step 3: Verify Tailwind compiles**
 
-Run: `cd apps/web && bun run build`
-Expected: Build succeeds
+Run: `cd apps/web && bun run build` Expected: Build succeeds
 
 **Step 4: Commit**
 
@@ -58,6 +62,7 @@ git commit -m "feat(web): add neutral luxury color palette to Tailwind"
 ### Task 1.2: Add Serif Font
 
 **Files:**
+
 - Modify: `apps/web/app/layout.tsx`
 - Modify: `apps/web/tailwind.config.ts`
 
@@ -89,8 +94,7 @@ fontFamily: {
 
 **Step 3: Verify fonts load**
 
-Run: `cd apps/web && bun run dev`
-Expected: No errors, fonts load in browser
+Run: `cd apps/web && bun run dev` Expected: No errors, fonts load in browser
 
 **Step 4: Commit**
 
@@ -104,6 +108,7 @@ git commit -m "feat(web): add Playfair Display serif font"
 ### Task 1.3: Create CSS Animation Utilities
 
 **Files:**
+
 - Create: `apps/web/app/globals.css` (add to existing)
 
 **Step 1: Add reveal animation classes**
@@ -124,9 +129,15 @@ Add to `globals.css`:
 }
 
 /* Stagger delays */
-.reveal-delay-1 { transition-delay: 0.1s; }
-.reveal-delay-2 { transition-delay: 0.2s; }
-.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-1 {
+  transition-delay: 0.1s;
+}
+.reveal-delay-2 {
+  transition-delay: 0.2s;
+}
+.reveal-delay-3 {
+  transition-delay: 0.3s;
+}
 
 /* Hover lift effect for cards */
 .card-hover {
@@ -151,6 +162,7 @@ git commit -m "feat(web): add CSS reveal and card hover animations"
 ### Task 1.4: Create RevealOnScroll Client Component
 
 **Files:**
+
 - Create: `apps/web/components/ui/RevealOnScroll.tsx`
 
 **Step 1: Create minimal client component**
@@ -158,7 +170,7 @@ git commit -m "feat(web): add CSS reveal and card hover animations"
 ```typescript
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 interface RevealOnScrollProps {
   children: ReactNode;
@@ -184,7 +196,7 @@ export default function RevealOnScroll({
           observer.unobserve(element);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     observer.observe(element);
@@ -203,8 +215,7 @@ export default function RevealOnScroll({
 
 **Step 2: Verify component compiles**
 
-Run: `cd apps/web && bun run typecheck`
-Expected: No type errors
+Run: `cd apps/web && bun run typecheck` Expected: No type errors
 
 **Step 3: Commit**
 
@@ -220,6 +231,7 @@ git commit -m "feat(web): add RevealOnScroll client component with IntersectionO
 ### Task 2.1: Create New Navbar
 
 **Files:**
+
 - Create: `apps/web/components/NavbarNew.tsx`
 
 **Step 1: Create server component navbar**
@@ -284,6 +296,7 @@ git commit -m "feat(web): add new minimal navbar component"
 ### Task 2.2: Create Mobile Nav Client Component
 
 **Files:**
+
 - Create: `apps/web/components/MobileNav.tsx`
 
 **Step 1: Create mobile nav with toggle**
@@ -359,6 +372,7 @@ git commit -m "feat(web): add mobile nav toggle component"
 ### Task 2.3: Create New Footer
 
 **Files:**
+
 - Create: `apps/web/components/FooterNew.tsx`
 
 **Step 1: Create minimal footer**
@@ -381,19 +395,34 @@ export default function FooterNew() {
           </div>
 
           <div className="flex flex-wrap gap-6 text-sm text-charcoal-light">
-            <Link href="#services" className="hover:text-charcoal transition-colors">
+            <Link
+              href="#services"
+              className="hover:text-charcoal transition-colors"
+            >
               Services
             </Link>
-            <Link href="#about" className="hover:text-charcoal transition-colors">
+            <Link
+              href="#about"
+              className="hover:text-charcoal transition-colors"
+            >
               About
             </Link>
-            <Link href="/contact" className="hover:text-charcoal transition-colors">
+            <Link
+              href="/contact"
+              className="hover:text-charcoal transition-colors"
+            >
               Contact
             </Link>
-            <Link href="/terms" className="hover:text-charcoal transition-colors">
+            <Link
+              href="/terms"
+              className="hover:text-charcoal transition-colors"
+            >
               Terms
             </Link>
-            <Link href="/privacy" className="hover:text-charcoal transition-colors">
+            <Link
+              href="/privacy"
+              className="hover:text-charcoal transition-colors"
+            >
               Privacy
             </Link>
           </div>
@@ -422,6 +451,7 @@ git commit -m "feat(web): add new minimal footer component"
 ### Task 3.1: Create New Hero Component
 
 **Files:**
+
 - Create: `apps/web/components/sections/HeroNew.tsx`
 
 **Step 1: Create server component hero**
@@ -496,6 +526,7 @@ git commit -m "feat(web): add new hero section with SSR"
 ### Task 4.1: Create Trust Bar Component
 
 **Files:**
+
 - Create: `apps/web/components/sections/TrustBar.tsx`
 
 **Step 1: Create trust bar**
@@ -541,6 +572,7 @@ git commit -m "feat(web): add trust bar stats section"
 ### Task 4.2: Create How It Works Section
 
 **Files:**
+
 - Create: `apps/web/components/sections/HowItWorks.tsx`
 
 **Step 1: Create how it works section**
@@ -609,6 +641,7 @@ git commit -m "feat(web): add how it works section"
 ### Task 4.3: Create Service Card Component
 
 **Files:**
+
 - Create: `apps/web/components/ui/ServiceCard.tsx`
 
 **Step 1: Create reusable service card**
@@ -654,6 +687,7 @@ git commit -m "feat(web): add reusable service card component"
 ### Task 4.4: Create Services Section
 
 **Files:**
+
 - Create: `apps/web/components/sections/ServicesNew.tsx`
 
 **Step 1: Create services section**
@@ -744,6 +778,7 @@ git commit -m "feat(web): add services section with cards"
 ### Task 4.5: Create About Section
 
 **Files:**
+
 - Create: `apps/web/components/sections/AboutNew.tsx`
 
 **Step 1: Create about section**
@@ -808,6 +843,7 @@ git commit -m "feat(web): add about section"
 ### Task 4.6: Create Service Area Section
 
 **Files:**
+
 - Create: `apps/web/components/sections/ServiceAreaNew.tsx`
 
 **Step 1: Create service area with lazy-loaded map**
@@ -889,6 +925,7 @@ git commit -m "feat(web): add service area section with lazy-loaded map"
 ### Task 4.7: Create CTA Section
 
 **Files:**
+
 - Create: `apps/web/components/sections/CTANew.tsx`
 
 **Step 1: Create simple CTA**
@@ -935,6 +972,7 @@ git commit -m "feat(web): add CTA section"
 ### Task 5.1: Create New Landing Page
 
 **Files:**
+
 - Modify: `apps/web/app/page.tsx`
 
 **Step 1: Replace page content**
@@ -969,8 +1007,8 @@ export default function Home() {
 
 **Step 2: Verify page renders**
 
-Run: `cd apps/web && bun run dev`
-Expected: Page loads without errors, new design visible
+Run: `cd apps/web && bun run dev` Expected: Page loads without errors, new
+design visible
 
 **Step 3: Commit**
 
@@ -986,6 +1024,7 @@ git commit -m "feat(web): assemble new landing page with all sections"
 ### Task 6.1: Remove Old Components
 
 **Files:**
+
 - Delete: `apps/web/components/ui/Animations.tsx`
 - Delete: `apps/web/components/sections/HomeHero.tsx`
 - Delete: `apps/web/components/Background.tsx` (if exists)
@@ -999,8 +1038,7 @@ rm apps/web/components/sections/HomeHero.tsx
 
 **Step 2: Verify build still works**
 
-Run: `cd apps/web && bun run build`
-Expected: Build succeeds
+Run: `cd apps/web && bun run build` Expected: Build succeeds
 
 **Step 3: Commit**
 
@@ -1014,6 +1052,7 @@ git commit -m "chore(web): remove old Framer Motion animation components"
 ### Task 6.2: Remove Framer Motion Dependency
 
 **Files:**
+
 - Modify: `apps/web/package.json`
 
 **Step 1: Check if framer-motion is used elsewhere**
@@ -1030,8 +1069,7 @@ cd apps/web && bun remove framer-motion
 
 **Step 3: Verify build**
 
-Run: `bun run build`
-Expected: Build succeeds
+Run: `bun run build` Expected: Build succeeds
 
 **Step 4: Commit**
 
@@ -1045,12 +1083,14 @@ git commit -m "chore(web): remove framer-motion dependency"
 ### Task 6.3: Add Placeholder Images
 
 **Files:**
+
 - Add: `apps/web/public/images/hero-mechanic.jpg`
 - Add: `apps/web/public/images/founder.jpg`
 
 **Step 1: Create placeholder images or use existing**
 
-Check if suitable images exist in `public/images/`. If not, create placeholders or note that real images are needed.
+Check if suitable images exist in `public/images/`. If not, create placeholders
+or note that real images are needed.
 
 **Step 2: Commit if new images added**
 
@@ -1067,18 +1107,15 @@ git commit -m "chore(web): add placeholder images for redesign"
 
 **Step 1: Run typecheck**
 
-Run: `cd apps/web && bun run typecheck`
-Expected: No type errors
+Run: `cd apps/web && bun run typecheck` Expected: No type errors
 
 **Step 2: Run build**
 
-Run: `bun run build`
-Expected: Build succeeds
+Run: `bun run build` Expected: Build succeeds
 
 **Step 3: Run lint**
 
-Run: `turbo lint`
-Expected: No lint errors (or fix any that appear)
+Run: `turbo lint` Expected: No lint errors (or fix any that appear)
 
 ---
 
@@ -1114,14 +1151,14 @@ git commit -m "feat(web): complete landing page redesign"
 
 ## Summary
 
-| Phase | Tasks | Components |
-|-------|-------|------------|
-| 1 | 4 | Design system (colors, fonts, CSS animations) |
-| 2 | 3 | Layout (Navbar, MobileNav, Footer) |
-| 3 | 1 | Hero section |
-| 4 | 7 | Content sections (TrustBar, HowItWorks, Services, About, ServiceArea, CTA) |
-| 5 | 1 | Assemble page |
-| 6 | 3 | Cleanup (remove old components, framer-motion) |
-| 7 | 2 | Verification |
+| Phase | Tasks | Components                                                                 |
+| ----- | ----- | -------------------------------------------------------------------------- |
+| 1     | 4     | Design system (colors, fonts, CSS animations)                              |
+| 2     | 3     | Layout (Navbar, MobileNav, Footer)                                         |
+| 3     | 1     | Hero section                                                               |
+| 4     | 7     | Content sections (TrustBar, HowItWorks, Services, About, ServiceArea, CTA) |
+| 5     | 1     | Assemble page                                                              |
+| 6     | 3     | Cleanup (remove old components, framer-motion)                             |
+| 7     | 2     | Verification                                                               |
 
 **Total: 21 tasks**

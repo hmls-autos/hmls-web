@@ -1,12 +1,17 @@
 # Diagnostic Agent Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
+> implement this plan task-by-task.
 
-**Goal:** Build a standalone multimodal diagnostic agent that analyzes photos, audio, video, and OBD-II codes to diagnose vehicle issues.
+**Goal:** Build a standalone multimodal diagnostic agent that analyzes photos,
+audio, video, and OBD-II codes to diagnose vehicle issues.
 
-**Architecture:** Deno + Zypher agent deployed on Railway, with Supabase Auth, Stripe credits, Cloudflare R2 media storage, and shared PostgreSQL database. AG-UI protocol for conversational streaming.
+**Architecture:** Deno + Zypher agent deployed on Railway, with Supabase Auth,
+Stripe credits, Cloudflare R2 media storage, and shared PostgreSQL database.
+AG-UI protocol for conversational streaming.
 
-**Tech Stack:** Deno, Zypher framework, Claude Sonnet 4, OpenAI Whisper, Supabase Auth, Stripe, Cloudflare R2, Drizzle ORM, PostgreSQL
+**Tech Stack:** Deno, Zypher framework, Claude Sonnet 4, OpenAI Whisper,
+Supabase Auth, Stripe, Cloudflare R2, Drizzle ORM, PostgreSQL
 
 ---
 
@@ -15,6 +20,7 @@
 ### Task 1.1: Create App Directory Structure
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/deno.json`
 - Create: `apps/diagnostic-agent/src/main.ts`
 
@@ -62,8 +68,7 @@ console.log("Diagnostic Agent starting...");
 
 **Step 4: Verify setup**
 
-Run: `cd apps/diagnostic-agent && deno check src/main.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/main.ts` Expected: No errors
 
 **Step 5: Commit**
 
@@ -77,6 +82,7 @@ git commit -m "chore: scaffold diagnostic-agent app structure"
 ### Task 1.2: Create Environment Configuration
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/env.ts`
 - Create: `apps/diagnostic-agent/.env.example`
 
@@ -160,6 +166,7 @@ git commit -m "feat(diagnostic-agent): add environment configuration with Zod va
 ### Task 2.1: Create Drizzle Schema
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/db/schema.ts`
 - Create: `apps/diagnostic-agent/src/db/client.ts`
 
@@ -167,13 +174,13 @@ git commit -m "feat(diagnostic-agent): add environment configuration with Zod va
 
 ```typescript
 import {
-  pgTable,
-  uuid,
-  text,
-  timestamp,
   integer,
   jsonb,
   pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
 } from "drizzle-orm/pg-core";
 
 // Reference existing customers table
@@ -292,6 +299,7 @@ git commit -m "feat(diagnostic-agent): add Drizzle schema for diagnostic tables"
 ### Task 2.2: Create Database Migration
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/drizzle.config.ts`
 - Create: `apps/diagnostic-agent/migrations/0001_diagnostic_tables.sql`
 
@@ -372,6 +380,7 @@ git commit -m "feat(diagnostic-agent): add database migration for diagnostic tab
 ### Task 3.1: Create Supabase Auth Client
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/lib/supabase.ts`
 
 **Step 1: Create supabase.ts**
@@ -411,8 +420,8 @@ export async function verifyToken(token: string): Promise<AuthUser | null> {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/lib/supabase.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/lib/supabase.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -426,6 +435,7 @@ git commit -m "feat(diagnostic-agent): add Supabase auth client"
 ### Task 3.2: Create Stripe Client
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/lib/stripe.ts`
 
 **Step 1: Create stripe.ts**
@@ -448,7 +458,7 @@ export const CREDIT_COSTS = {
 export type InputType = keyof typeof CREDIT_COSTS;
 
 export async function getCustomerCredits(
-  stripeCustomerId: string
+  stripeCustomerId: string,
 ): Promise<number> {
   const customer = await stripe.customers.retrieve(stripeCustomerId);
   if (customer.deleted) {
@@ -461,7 +471,7 @@ export async function getCustomerCredits(
 export async function deductCredits(
   stripeCustomerId: string,
   amount: number,
-  description: string
+  description: string,
 ): Promise<void> {
   await stripe.customers.createBalanceTransaction(stripeCustomerId, {
     amount: amount, // Positive = deduct (increase balance owed)
@@ -473,7 +483,7 @@ export async function deductCredits(
 export async function addCredits(
   stripeCustomerId: string,
   amount: number,
-  description: string
+  description: string,
 ): Promise<void> {
   await stripe.customers.createBalanceTransaction(stripeCustomerId, {
     amount: -amount, // Negative = add credits (decrease balance owed)
@@ -493,8 +503,8 @@ export function calculateVideoCredits(durationSeconds: number): number {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/lib/stripe.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/lib/stripe.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -508,16 +518,17 @@ git commit -m "feat(diagnostic-agent): add Stripe client with credit management"
 ### Task 3.3: Create Cloudflare R2 Client
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/lib/r2.ts`
 
 **Step 1: Create r2.ts**
 
 ```typescript
 import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from "@aws-sdk/client-s3";
 import { env } from "../env.ts";
 
@@ -539,7 +550,7 @@ export async function uploadMedia(
   file: Uint8Array,
   filename: string,
   contentType: string,
-  sessionId: string
+  sessionId: string,
 ): Promise<UploadResult> {
   const key = `sessions/${sessionId}/${Date.now()}-${filename}`;
 
@@ -549,12 +560,13 @@ export async function uploadMedia(
       Key: key,
       Body: file,
       ContentType: contentType,
-    })
+    }),
   );
 
   return {
     key,
-    url: `https://${env.R2_BUCKET_NAME}.${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`,
+    url:
+      `https://${env.R2_BUCKET_NAME}.${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`,
   };
 }
 
@@ -563,7 +575,7 @@ export async function getMedia(key: string): Promise<Uint8Array> {
     new GetObjectCommand({
       Bucket: env.R2_BUCKET_NAME,
       Key: key,
-    })
+    }),
   );
 
   return new Uint8Array(await response.Body!.transformToByteArray());
@@ -574,15 +586,14 @@ export async function deleteMedia(key: string): Promise<void> {
     new DeleteObjectCommand({
       Bucket: env.R2_BUCKET_NAME,
       Key: key,
-    })
+    }),
   );
 }
 ```
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/lib/r2.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/lib/r2.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -596,6 +607,7 @@ git commit -m "feat(diagnostic-agent): add Cloudflare R2 storage client"
 ### Task 3.4: Create OpenAI Whisper Client
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/lib/whisper.ts`
 
 **Step 1: Create whisper.ts**
@@ -615,7 +627,7 @@ export interface TranscriptionResult {
 
 export async function transcribeAudio(
   audioData: Uint8Array,
-  filename: string
+  filename: string,
 ): Promise<TranscriptionResult> {
   // Create a File object from the audio data
   const file = new File([audioData], filename, { type: "audio/webm" });
@@ -635,8 +647,8 @@ export async function transcribeAudio(
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/lib/whisper.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/lib/whisper.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -652,6 +664,7 @@ git commit -m "feat(diagnostic-agent): add OpenAI Whisper client for audio trans
 ### Task 4.1: Create Image Analysis Tool
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/tools/analyzeImage.ts`
 
 **Step 1: Create analyzeImage.ts**
@@ -676,7 +689,8 @@ export const analyzeImageTool = {
   execute: async (params: z.infer<typeof analyzeImageSchema>) => {
     const { imageUrl, context } = params;
 
-    const prompt = `You are an expert automotive technician. Analyze this vehicle image and identify:
+    const prompt =
+      `You are an expert automotive technician. Analyze this vehicle image and identify:
 - Any visible damage or wear
 - Fluid leaks or stains
 - Component condition (tires, brakes, belts, hoses, etc.)
@@ -741,6 +755,7 @@ git commit -m "feat(diagnostic-agent): add image analysis tool with Claude visio
 ### Task 4.2: Create Audio Transcription Tool
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/tools/transcribeAudio.ts`
 
 **Step 1: Create transcribeAudio.ts**
@@ -772,7 +787,8 @@ export const transcribeAudioTool = {
     return {
       transcription: result.text,
       durationSeconds: result.duration,
-      analysis: `Audio transcription: "${result.text}". Duration: ${result.duration} seconds.`,
+      analysis:
+        `Audio transcription: "${result.text}". Duration: ${result.duration} seconds.`,
     };
   },
 };
@@ -795,6 +811,7 @@ git commit -m "feat(diagnostic-agent): add audio transcription tool with Whisper
 ### Task 4.3: Create Video Frame Extraction Tool
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/tools/extractVideoFrames.ts`
 
 **Step 1: Create extractVideoFrames.ts**
@@ -850,14 +867,16 @@ export const extractVideoFramesTool = {
       // Upload extracted frames to R2
       const frameKeys: string[] = [];
       for (let i = 1; i <= frameCount; i++) {
-        const framePath = `${tempOutput}/frame_${String(i).padStart(3, "0")}.jpg`;
+        const framePath = `${tempOutput}/frame_${
+          String(i).padStart(3, "0")
+        }.jpg`;
         try {
           const frameData = await Deno.readFile(framePath);
           const result = await uploadMedia(
             frameData,
             `frame_${i}.jpg`,
             "image/jpeg",
-            sessionId
+            sessionId,
           );
           frameKeys.push(result.key);
         } catch {
@@ -897,6 +916,7 @@ git commit -m "feat(diagnostic-agent): add video frame extraction tool with ffmp
 ### Task 4.4: Create OBD Code Lookup Tool
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/tools/lookupObdCode.ts`
 
 **Step 1: Create lookupObdCode.ts**
@@ -911,7 +931,10 @@ const lookupObdCodeSchema = z.object({
 // Common OBD-II code reference
 const OBD_CODES: Record<string, { description: string; system: string }> = {
   // Misfire codes
-  P0300: { description: "Random/Multiple Cylinder Misfire Detected", system: "Ignition" },
+  P0300: {
+    description: "Random/Multiple Cylinder Misfire Detected",
+    system: "Ignition",
+  },
   P0301: { description: "Cylinder 1 Misfire Detected", system: "Ignition" },
   P0302: { description: "Cylinder 2 Misfire Detected", system: "Ignition" },
   P0303: { description: "Cylinder 3 Misfire Detected", system: "Ignition" },
@@ -928,31 +951,85 @@ const OBD_CODES: Record<string, { description: string; system: string }> = {
   P0175: { description: "System Too Rich (Bank 2)", system: "Fuel" },
 
   // Emissions
-  P0420: { description: "Catalyst System Efficiency Below Threshold (Bank 1)", system: "Emissions" },
-  P0430: { description: "Catalyst System Efficiency Below Threshold (Bank 2)", system: "Emissions" },
-  P0440: { description: "Evaporative Emission Control System Malfunction", system: "EVAP" },
-  P0442: { description: "Evaporative Emission Control System Leak Detected (small leak)", system: "EVAP" },
-  P0455: { description: "Evaporative Emission Control System Leak Detected (gross leak)", system: "EVAP" },
-  P0456: { description: "Evaporative Emission Control System Leak Detected (very small leak)", system: "EVAP" },
+  P0420: {
+    description: "Catalyst System Efficiency Below Threshold (Bank 1)",
+    system: "Emissions",
+  },
+  P0430: {
+    description: "Catalyst System Efficiency Below Threshold (Bank 2)",
+    system: "Emissions",
+  },
+  P0440: {
+    description: "Evaporative Emission Control System Malfunction",
+    system: "EVAP",
+  },
+  P0442: {
+    description:
+      "Evaporative Emission Control System Leak Detected (small leak)",
+    system: "EVAP",
+  },
+  P0455: {
+    description:
+      "Evaporative Emission Control System Leak Detected (gross leak)",
+    system: "EVAP",
+  },
+  P0456: {
+    description:
+      "Evaporative Emission Control System Leak Detected (very small leak)",
+    system: "EVAP",
+  },
 
   // Engine
-  P0011: { description: "Intake Camshaft Position Timing Over-Advanced (Bank 1)", system: "Timing" },
-  P0012: { description: "Intake Camshaft Position Timing Over-Retarded (Bank 1)", system: "Timing" },
-  P0128: { description: "Coolant Thermostat Below Regulating Temperature", system: "Cooling" },
+  P0011: {
+    description: "Intake Camshaft Position Timing Over-Advanced (Bank 1)",
+    system: "Timing",
+  },
+  P0012: {
+    description: "Intake Camshaft Position Timing Over-Retarded (Bank 1)",
+    system: "Timing",
+  },
+  P0128: {
+    description: "Coolant Thermostat Below Regulating Temperature",
+    system: "Cooling",
+  },
 
   // Transmission
-  P0700: { description: "Transmission Control System Malfunction", system: "Transmission" },
-  P0715: { description: "Input/Turbine Speed Sensor Circuit Malfunction", system: "Transmission" },
+  P0700: {
+    description: "Transmission Control System Malfunction",
+    system: "Transmission",
+  },
+  P0715: {
+    description: "Input/Turbine Speed Sensor Circuit Malfunction",
+    system: "Transmission",
+  },
 
   // Sensors
-  P0101: { description: "Mass Air Flow Circuit Range/Performance Problem", system: "Sensors" },
+  P0101: {
+    description: "Mass Air Flow Circuit Range/Performance Problem",
+    system: "Sensors",
+  },
   P0102: { description: "Mass Air Flow Circuit Low Input", system: "Sensors" },
   P0103: { description: "Mass Air Flow Circuit High Input", system: "Sensors" },
-  P0113: { description: "Intake Air Temperature Circuit High Input", system: "Sensors" },
-  P0117: { description: "Engine Coolant Temperature Circuit Low Input", system: "Sensors" },
-  P0118: { description: "Engine Coolant Temperature Circuit High Input", system: "Sensors" },
-  P0131: { description: "O2 Sensor Circuit Low Voltage (Bank 1 Sensor 1)", system: "Sensors" },
-  P0134: { description: "O2 Sensor Circuit No Activity Detected (Bank 1 Sensor 1)", system: "Sensors" },
+  P0113: {
+    description: "Intake Air Temperature Circuit High Input",
+    system: "Sensors",
+  },
+  P0117: {
+    description: "Engine Coolant Temperature Circuit Low Input",
+    system: "Sensors",
+  },
+  P0118: {
+    description: "Engine Coolant Temperature Circuit High Input",
+    system: "Sensors",
+  },
+  P0131: {
+    description: "O2 Sensor Circuit Low Voltage (Bank 1 Sensor 1)",
+    system: "Sensors",
+  },
+  P0134: {
+    description: "O2 Sensor Circuit No Activity Detected (Bank 1 Sensor 1)",
+    system: "Sensors",
+  },
   P0500: { description: "Vehicle Speed Sensor Malfunction", system: "Sensors" },
 };
 
@@ -989,7 +1066,8 @@ export const lookupObdCodeTool = {
       description: "Code not in reference database",
       system: typeMap[codeType] || "Unknown",
       found: false,
-      note: "Manufacturer-specific code or not in common database. Agent will interpret based on context.",
+      note:
+        "Manufacturer-specific code or not in common database. Agent will interpret based on context.",
     };
   },
 };
@@ -1012,13 +1090,14 @@ git commit -m "feat(diagnostic-agent): add OBD-II code lookup tool"
 ### Task 4.5: Create Storage Tool
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/tools/storage.ts`
 
 **Step 1: Create storage.ts**
 
 ```typescript
 import { z } from "zod";
-import { uploadMedia, getMedia } from "../lib/r2.ts";
+import { getMedia, uploadMedia } from "../lib/r2.ts";
 
 const saveMediaSchema = z.object({
   data: z.string().describe("Base64-encoded media data"),
@@ -1041,7 +1120,12 @@ export const saveMediaTool = {
     // Decode base64 to Uint8Array
     const binaryData = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
 
-    const result = await uploadMedia(binaryData, filename, contentType, sessionId);
+    const result = await uploadMedia(
+      binaryData,
+      filename,
+      contentType,
+      sessionId,
+    );
 
     return {
       success: true,
@@ -1071,8 +1155,8 @@ export const getMediaTool = {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/tools/storage.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/tools/storage.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -1088,12 +1172,13 @@ git commit -m "feat(diagnostic-agent): add media storage tools for R2"
 ### Task 5.1: Create Auth Middleware
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/middleware/auth.ts`
 
 **Step 1: Create auth.ts**
 
 ```typescript
-import { verifyToken, type AuthUser } from "../lib/supabase.ts";
+import { type AuthUser, verifyToken } from "../lib/supabase.ts";
 import { db } from "../db/client.ts";
 import { customers } from "../db/schema.ts";
 import { eq } from "drizzle-orm";
@@ -1105,15 +1190,18 @@ export interface AuthContext {
 }
 
 export async function authenticateRequest(
-  request: Request
+  request: Request,
 ): Promise<AuthContext | Response> {
   const authHeader = request.headers.get("Authorization");
 
   if (!authHeader?.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Missing authorization header" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Missing authorization header" }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   const token = authHeader.slice(7);
@@ -1141,10 +1229,13 @@ export async function authenticateRequest(
   }
 
   if (!customer.stripeCustomerId) {
-    return new Response(JSON.stringify({ error: "Customer has no billing account" }), {
-      status: 402,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: "Customer has no billing account" }),
+      {
+        status: 402,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   return {
@@ -1157,8 +1248,8 @@ export async function authenticateRequest(
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/middleware/auth.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/middleware/auth.ts` Expected:
+No errors
 
 **Step 3: Commit**
 
@@ -1172,17 +1263,18 @@ git commit -m "feat(diagnostic-agent): add authentication middleware"
 ### Task 5.2: Create Credits Middleware
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/middleware/credits.ts`
 
 **Step 1: Create credits.ts**
 
 ```typescript
 import {
-  getCustomerCredits,
-  deductCredits,
-  CREDIT_COSTS,
   calculateAudioCredits,
   calculateVideoCredits,
+  CREDIT_COSTS,
+  deductCredits,
+  getCustomerCredits,
   type InputType,
 } from "../lib/stripe.ts";
 
@@ -1195,7 +1287,7 @@ export interface CreditCheck {
 export async function checkCredits(
   stripeCustomerId: string,
   inputType: InputType,
-  durationSeconds?: number
+  durationSeconds?: number,
 ): Promise<CreditCheck> {
   const balance = await getCustomerCredits(stripeCustomerId);
 
@@ -1222,9 +1314,13 @@ export async function processCredits(
   stripeCustomerId: string,
   inputType: InputType,
   sessionId: string,
-  durationSeconds?: number
+  durationSeconds?: number,
 ): Promise<{ charged: number } | Response> {
-  const check = await checkCredits(stripeCustomerId, inputType, durationSeconds);
+  const check = await checkCredits(
+    stripeCustomerId,
+    inputType,
+    durationSeconds,
+  );
 
   if (!check.hasEnough) {
     return new Response(
@@ -1237,14 +1333,14 @@ export async function processCredits(
       {
         status: 402,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 
   await deductCredits(
     stripeCustomerId,
     check.required,
-    `Diagnostic session ${sessionId}: ${inputType} analysis`
+    `Diagnostic session ${sessionId}: ${inputType} analysis`,
   );
 
   return { charged: check.required };
@@ -1270,12 +1366,14 @@ git commit -m "feat(diagnostic-agent): add credit check and deduction middleware
 ### Task 6.1: Create System Prompt
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/system-prompt.ts`
 
 **Step 1: Create system-prompt.ts**
 
 ```typescript
-export const SYSTEM_PROMPT = `You are an expert automotive diagnostic assistant. You help customers diagnose vehicle problems by analyzing photos, audio recordings, videos, and OBD-II diagnostic codes.
+export const SYSTEM_PROMPT =
+  `You are an expert automotive diagnostic assistant. You help customers diagnose vehicle problems by analyzing photos, audio recordings, videos, and OBD-II diagnostic codes.
 
 ## Your Capabilities
 
@@ -1317,8 +1415,8 @@ export const SYSTEM_PROMPT = `You are an expert automotive diagnostic assistant.
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/system-prompt.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/system-prompt.ts` Expected: No
+errors
 
 **Step 3: Commit**
 
@@ -1332,15 +1430,16 @@ git commit -m "feat(diagnostic-agent): add diagnostic agent system prompt"
 ### Task 6.2: Create Agent Definition
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/agent.ts`
 
 **Step 1: Create agent.ts**
 
 ```typescript
 import {
+  anthropic,
   createZypherAgent,
   ZypherAgent,
-  anthropic,
   type ZypherContext,
 } from "@corespeed/zypher";
 import { env } from "./env.ts";
@@ -1349,7 +1448,7 @@ import { analyzeImageTool } from "./tools/analyzeImage.ts";
 import { transcribeAudioTool } from "./tools/transcribeAudio.ts";
 import { extractVideoFramesTool } from "./tools/extractVideoFrames.ts";
 import { lookupObdCodeTool } from "./tools/lookupObdCode.ts";
-import { saveMediaTool, getMediaTool } from "./tools/storage.ts";
+import { getMediaTool, saveMediaTool } from "./tools/storage.ts";
 
 const MODEL = "claude-sonnet-4-20250514";
 
@@ -1383,7 +1482,7 @@ export async function createDiagnosticAgent(): Promise<ZypherAgent> {
         overrides: {
           systemPromptLoader: async () => SYSTEM_PROMPT,
         },
-      }
+      },
     );
   }
 
@@ -1399,7 +1498,7 @@ export async function createDiagnosticAgent(): Promise<ZypherAgent> {
   // Load skills
   await agent.skills.discover();
   const skillNames = Array.from(agent.skills.skills.values()).map(
-    (s) => s.metadata.name
+    (s) => s.metadata.name,
   );
   if (skillNames.length > 0) {
     console.log(`[diagnostic-agent] Skills loaded: ${skillNames.join(", ")}`);
@@ -1411,8 +1510,7 @@ export async function createDiagnosticAgent(): Promise<ZypherAgent> {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/agent.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/agent.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -1428,6 +1526,7 @@ git commit -m "feat(diagnostic-agent): add Zypher agent definition with tools"
 ### Task 7.1: Create Main Entry Point
 
 **Files:**
+
 - Modify: `apps/diagnostic-agent/src/main.ts`
 
 **Step 1: Update main.ts with full server**
@@ -1435,14 +1534,10 @@ git commit -m "feat(diagnostic-agent): add Zypher agent definition with tools"
 ```typescript
 import { env } from "./env.ts";
 import { createDiagnosticAgent } from "./agent.ts";
-import { authenticateRequest, type AuthContext } from "./middleware/auth.ts";
+import { type AuthContext, authenticateRequest } from "./middleware/auth.ts";
 import { processCredits } from "./middleware/credits.ts";
 import { db } from "./db/client.ts";
-import {
-  diagnosticSessions,
-  diagnosticMedia,
-  obdCodes,
-} from "./db/schema.ts";
+import { diagnosticMedia, diagnosticSessions, obdCodes } from "./db/schema.ts";
 import { eq } from "drizzle-orm";
 import { uploadMedia } from "./lib/r2.ts";
 import type { InputType } from "./lib/stripe.ts";
@@ -1494,7 +1589,7 @@ Deno.serve({ port: parseInt(env.PORT) }, async (request) => {
           status: session.status,
           message: "Diagnostic session started. Send inputs to analyze.",
         }),
-        { headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
@@ -1545,7 +1640,7 @@ Deno.serve({ port: parseInt(env.PORT) }, async (request) => {
 
         return new Response(
           JSON.stringify({ session, media, codes }),
-          { headers: { "Content-Type": "application/json", ...corsHeaders } }
+          { headers: { "Content-Type": "application/json", ...corsHeaders } },
         );
       }
 
@@ -1559,7 +1654,10 @@ Deno.serve({ port: parseInt(env.PORT) }, async (request) => {
         if (!validTypes.includes(type)) {
           return new Response(
             JSON.stringify({ error: "Invalid input type" }),
-            { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            {
+              status: 400,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            },
           );
         }
 
@@ -1568,7 +1666,7 @@ Deno.serve({ port: parseInt(env.PORT) }, async (request) => {
           auth.stripeCustomerId,
           type as InputType,
           sessionId,
-          durationSeconds
+          durationSeconds,
         );
         if (creditResult instanceof Response) {
           return creditResult;
@@ -1598,24 +1696,32 @@ Deno.serve({ port: parseInt(env.PORT) }, async (request) => {
           agentInput = `OBD-II Code: ${content}`;
         } else if (type === "photo" || type === "audio" || type === "video") {
           // Upload media to R2
-          const binaryData = Uint8Array.from(atob(content), (c) => c.charCodeAt(0));
+          const binaryData = Uint8Array.from(
+            atob(content),
+            (c) => c.charCodeAt(0),
+          );
           const uploadResult = await uploadMedia(
             binaryData,
             filename,
             contentType,
-            sessionId
+            sessionId,
           );
 
           // Store media record
           await db.insert(diagnosticMedia).values({
             sessionId,
-            type: type === "photo" ? "photo" : type === "audio" ? "audio" : "video",
+            type: type === "photo"
+              ? "photo"
+              : type === "audio"
+              ? "audio"
+              : "video",
             r2Key: uploadResult.key,
             creditCost: creditResult.charged,
             metadata: { filename, contentType, durationSeconds },
           });
 
-          agentInput = `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
+          agentInput =
+            `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
         } else {
           agentInput = content;
         }
@@ -1631,7 +1737,7 @@ Deno.serve({ port: parseInt(env.PORT) }, async (request) => {
             creditsCharged: creditResult.charged,
             sessionCreditsTotal: session.creditsCharged + creditResult.charged,
           }),
-          { headers: { "Content-Type": "application/json", ...corsHeaders } }
+          { headers: { "Content-Type": "application/json", ...corsHeaders } },
         );
       }
     }
@@ -1644,7 +1750,10 @@ Deno.serve({ port: parseInt(env.PORT) }, async (request) => {
     console.error("[diagnostic-agent] Error:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
     );
   }
 });
@@ -1652,8 +1761,7 @@ Deno.serve({ port: parseInt(env.PORT) }, async (request) => {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/main.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/main.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -1669,11 +1777,13 @@ git commit -m "feat(diagnostic-agent): add API server with session and input end
 ### Task 8.1: Create Photo Diagnosis Skill
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/.skills/photo-diagnosis/skill.md`
 
 **Step 1: Create skill file (use content from design document)**
 
-See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full content.
+See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full
+content.
 
 **Step 2: Commit**
 
@@ -1687,11 +1797,13 @@ git commit -m "feat(diagnostic-agent): add photo-diagnosis skill"
 ### Task 8.2: Create Audio Diagnosis Skill
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/.skills/audio-diagnosis/skill.md`
 
 **Step 1: Create skill file (use content from design document)**
 
-See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full content.
+See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full
+content.
 
 **Step 2: Commit**
 
@@ -1705,11 +1817,13 @@ git commit -m "feat(diagnostic-agent): add audio-diagnosis skill"
 ### Task 8.3: Create Video Diagnosis Skill
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/.skills/video-diagnosis/skill.md`
 
 **Step 1: Create skill file (use content from design document)**
 
-See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full content.
+See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full
+content.
 
 **Step 2: Commit**
 
@@ -1723,11 +1837,13 @@ git commit -m "feat(diagnostic-agent): add video-diagnosis skill"
 ### Task 8.4: Create OBD Diagnosis Skill
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/.skills/obd-diagnosis/skill.md`
 
 **Step 1: Create skill file (use content from design document)**
 
-See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full content.
+See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full
+content.
 
 **Step 2: Commit**
 
@@ -1741,11 +1857,13 @@ git commit -m "feat(diagnostic-agent): add obd-diagnosis skill"
 ### Task 8.5: Create Comprehensive Diagnosis Skill
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/.skills/comprehensive-diagnosis/skill.md`
 
 **Step 1: Create skill file (use content from design document)**
 
-See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full content.
+See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full
+content.
 
 **Step 2: Commit**
 
@@ -1761,6 +1879,7 @@ git commit -m "feat(diagnostic-agent): add comprehensive-diagnosis skill"
 ### Task 9.1: Create Dockerfile
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/Dockerfile`
 
 **Step 1: Create Dockerfile**
@@ -1800,6 +1919,7 @@ git commit -m "feat(diagnostic-agent): add Dockerfile for Railway deployment"
 ### Task 9.2: Create Railway Configuration
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/railway.toml`
 
 **Step 1: Create railway.toml**
@@ -1828,12 +1948,14 @@ git commit -m "feat(diagnostic-agent): add Railway deployment configuration"
 ### Task 9.3: Add to Turbo Config
 
 **Files:**
+
 - Modify: `turbo.json` (if needed)
 - Modify: `package.json` (add dev script)
 
 **Step 1: Add dev:diagnostic script to root package.json**
 
 Add to scripts:
+
 ```json
 "dev:diagnostic": "cd apps/diagnostic-agent && deno task dev"
 ```
@@ -1852,6 +1974,7 @@ git commit -m "chore: add diagnostic-agent dev script to root package.json"
 ### Task 10.1: Create Integration Test
 
 **Files:**
+
 - Create: `apps/diagnostic-agent/src/test/integration.test.ts`
 
 **Step 1: Create basic integration test**
@@ -1874,6 +1997,7 @@ Deno.test("unauthenticated request returns 401", async () => {
 **Step 2: Add test task to deno.json**
 
 Add to tasks:
+
 ```json
 "test": "deno test --allow-all src/test/"
 ```

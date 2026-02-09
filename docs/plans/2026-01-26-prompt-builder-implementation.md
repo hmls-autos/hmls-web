@@ -1,10 +1,13 @@
 # Prompt Builder Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
+> implement this plan task-by-task.
 
-**Goal:** Create a modular, type-safe system prompt builder for HMLS agents that supports both Mobile Mechanic Agent and future AI Diagnostic Agent.
+**Goal:** Create a modular, type-safe system prompt builder for HMLS agents that
+supports both Mobile Mechanic Agent and future AI Diagnostic Agent.
 
-**Architecture:** Section-based prompt builder where each section is a function that returns string[]. Sections can be shared or customized per agent type.
+**Architecture:** Section-based prompt builder where each section is a function
+that returns string[]. Sections can be shared or customized per agent type.
 
 **Tech Stack:** TypeScript, Deno
 
@@ -13,9 +16,11 @@
 ## Task 1: Create types.ts
 
 **Files:**
+
 - Create: `apps/api/src/prompts/types.ts`
 
 **Content:**
+
 ```typescript
 // apps/api/src/prompts/types.ts
 
@@ -50,9 +55,11 @@ export type PromptSection = (config: PromptConfig) => string[];
 ## Task 2: Create identity section
 
 **Files:**
+
 - Create: `apps/api/src/prompts/sections/identity.ts`
 
 **Content:**
+
 ```typescript
 // apps/api/src/prompts/sections/identity.ts
 
@@ -73,9 +80,11 @@ export function buildIdentitySection(_config: PromptConfig): string[] {
 ## Task 3: Create business section
 
 **Files:**
+
 - Create: `apps/api/src/prompts/sections/business.ts`
 
 **Content:**
+
 ```typescript
 // apps/api/src/prompts/sections/business.ts
 
@@ -102,9 +111,11 @@ export function buildBusinessSection(_config: PromptConfig): string[] {
 ## Task 4: Create role section
 
 **Files:**
+
 - Create: `apps/api/src/prompts/sections/role.ts`
 
 **Content:**
+
 ```typescript
 // apps/api/src/prompts/sections/role.ts
 
@@ -143,9 +154,11 @@ export function buildRoleSection(config: PromptConfig): string[] {
 ## Task 5: Create user context section
 
 **Files:**
+
 - Create: `apps/api/src/prompts/sections/user-context.ts`
 
 **Content:**
+
 ```typescript
 // apps/api/src/prompts/sections/user-context.ts
 
@@ -183,9 +196,11 @@ export function buildUserContextSection(config: PromptConfig): string[] {
 ## Task 6: Create workflow section
 
 **Files:**
+
 - Create: `apps/api/src/prompts/sections/workflow.ts`
 
 **Content:**
+
 ```typescript
 // apps/api/src/prompts/sections/workflow.ts
 
@@ -237,9 +252,11 @@ export function buildWorkflowSection(config: PromptConfig): string[] {
 ## Task 7: Create guidelines section
 
 **Files:**
+
 - Create: `apps/api/src/prompts/sections/guidelines.ts`
 
 **Content:**
+
 ```typescript
 // apps/api/src/prompts/sections/guidelines.ts
 
@@ -278,9 +295,11 @@ export function buildGuidelinesSection(config: PromptConfig): string[] {
 ## Task 8: Create pricing section
 
 **Files:**
+
 - Create: `apps/api/src/prompts/sections/pricing.ts`
 
 **Content:**
+
 ```typescript
 // apps/api/src/prompts/sections/pricing.ts
 
@@ -307,9 +326,11 @@ export function buildPricingSection(_config: PromptConfig): string[] {
 ## Task 9: Create builder.ts
 
 **Files:**
+
 - Create: `apps/api/src/prompts/builder.ts`
 
 **Content:**
+
 ```typescript
 // apps/api/src/prompts/builder.ts
 
@@ -353,26 +374,39 @@ export function buildSystemPrompt(
 ## Task 10: Create index.ts and update agent.ts
 
 **Files:**
+
 - Create: `apps/api/src/prompts/index.ts`
 - Modify: `apps/api/src/agent.ts`
 
 **prompts/index.ts:**
+
 ```typescript
 // apps/api/src/prompts/index.ts
 
 export { buildSystemPrompt } from "./builder.ts";
-export type { PromptConfig, UserContext, AgentType, ToolInfo, PromptSection } from "./types.ts";
+export type {
+  AgentType,
+  PromptConfig,
+  PromptSection,
+  ToolInfo,
+  UserContext,
+} from "./types.ts";
 ```
 
 **agent.ts changes:**
+
 - Import `buildSystemPrompt` and `PromptConfig` from `./prompts/index.ts`
 - Remove import of `SYSTEM_PROMPT` from `./system-prompt.ts`
 - Update `createHmlsAgent` to use `buildSystemPrompt`
 
 ```typescript
-import { createZypherAgent, anthropic } from "@corespeed/zypher";
+import { anthropic, createZypherAgent } from "@corespeed/zypher";
 import { env } from "./env.ts";
-import { buildSystemPrompt, type PromptConfig, type UserContext } from "./prompts/index.ts";
+import {
+  buildSystemPrompt,
+  type PromptConfig,
+  type UserContext,
+} from "./prompts/index.ts";
 import { calcomTools } from "./tools/calcom.ts";
 import { serviceTools } from "./tools/customer.ts";
 import { stripeTools } from "./tools/stripe.ts";
@@ -405,7 +439,7 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
 
   await agent.skills.discover();
   const skillNames = Array.from(agent.skills.skills.values()).map(
-    (s) => s.metadata.name
+    (s) => s.metadata.name,
   );
   if (skillNames.length > 0) {
     console.log(`[agent] Skills loaded: ${skillNames.join(", ")}`);
@@ -422,6 +456,7 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
 ## Task 11: Remove old system-prompt.ts and cleanup
 
 **Files:**
+
 - Delete: `apps/api/src/system-prompt.ts`
 - Delete: `apps/api/src/types/user-context.ts` (moved to prompts/types.ts)
 
@@ -432,6 +467,7 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
 ## Task 12: Test and verify
 
 **Steps:**
+
 1. Run typecheck: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api`
 2. Start dev server: `deno task dev`
 3. Test health endpoint: `curl http://localhost:8080/health`
@@ -443,7 +479,9 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
 ## Summary
 
 After completing all tasks:
+
 - Modular prompt builder in `apps/api/src/prompts/`
-- 7 reusable sections (identity, business, role, user-context, workflow, pricing, guidelines)
+- 7 reusable sections (identity, business, role, user-context, workflow,
+  pricing, guidelines)
 - Type-safe configuration via `PromptConfig`
 - Ready for AI Diagnostic Agent (just change `agentType: "diagnostic"`)

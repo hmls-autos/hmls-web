@@ -1,2 +1,2 @@
-export * from "./websocket";
-export * from "./entities";
+export * from "./websocket.ts";
+export * from "./entities.ts";

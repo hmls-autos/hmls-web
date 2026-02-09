@@ -2,16 +2,18 @@
 
 ## Background
 
-The current agent design has audience confusion - it mixes customer-facing and mechanic-facing functionality. This redesign clarifies the agent's role as a customer-facing receptionist for the mobile mechanic business.
+The current agent design has audience confusion - it mixes customer-facing and
+mechanic-facing functionality. This redesign clarifies the agent's role as a
+customer-facing receptionist for the mobile mechanic business.
 
 ## Two Separate Products
 
 HMLS has two distinct agent products:
 
-| Product | Purpose | Status |
-|---------|---------|--------|
+| Product                   | Purpose                                       | Status      |
+| ------------------------- | --------------------------------------------- | ----------- |
 | **Mobile Mechanic Agent** | Receptionist for the mobile mechanic business | This design |
-| **AI Diagnostic Agent** | Standalone AI car diagnosis product | Future |
+| **AI Diagnostic Agent**   | Standalone AI car diagnosis product           | Future      |
 
 This document focuses on the Mobile Mechanic Agent.
 
@@ -20,6 +22,7 @@ This document focuses on the Mobile Mechanic Agent.
 ### Role
 
 A website chat receptionist that helps customers:
+
 1. Understand available services
 2. Get price estimates
 3. Receive formal quotes
@@ -43,38 +46,41 @@ User logs in → Enters chat → Agent knows user info (name, phone, email)
 ### User Context
 
 **From session (automatic):**
+
 - Name
 - Email
 - Phone
 - Customer ID
 
 **Collected per conversation (agent asks):**
+
 - Vehicle make
 - Vehicle model
 - Vehicle year
 
-This design supports customers with multiple vehicles - each conversation can be about a different car.
+This design supports customers with multiple vehicles - each conversation can be
+about a different car.
 
 ### Tools
 
 **Keep:**
 
-| Tool | Purpose |
-|------|---------|
-| `get_services` | Query available services with pricing and duration |
-| `create_estimate` | Generate estimate PDF |
-| `create_quote` | Send formal Stripe quote |
-| `get_quote_status` | Check quote status |
-| `get_availability` | Query available time slots (Cal.com) |
-| `create_booking` | Create appointment (Cal.com) |
+| Tool               | Purpose                                            |
+| ------------------ | -------------------------------------------------- |
+| `get_services`     | Query available services with pricing and duration |
+| `create_estimate`  | Generate estimate PDF                              |
+| `create_quote`     | Send formal Stripe quote                           |
+| `get_quote_status` | Check quote status                                 |
+| `get_availability` | Query available time slots (Cal.com)               |
+| `create_booking`   | Create appointment (Cal.com)                       |
 
 **Remove:**
 
-| Tool | Reason |
-|------|--------|
+| Tool              | Reason                                      |
+| ----------------- | ------------------------------------------- |
 | `create_customer` | User registers through auth flow, not agent |
-| `get_customer` | User info injected from session |
-| `create_invoice` | Owner handles this in backend after service |
+| `get_customer`    | User info injected from session             |
+| `create_invoice`  | Owner handles this in backend after service |
 
 ### Architecture
 
@@ -90,16 +96,19 @@ src/system-prompt.ts     # Simple identity + role + context
 ### Pricing Guidelines
 
 **Internal adjustments** (not shared with customers):
+
 - Vehicle type (luxury/European may cost more)
 - Vehicle age
 - Issue complexity
 
-**Important:** Agent should NOT explain pricing adjustments to customers. Just provide the final price range in a friendly way.
+**Important:** Agent should NOT explain pricing adjustments to customers. Just
+provide the final price range in a friendly way.
 
 ### Implementation Changes
 
 1. **Modify:**
-   - `src/tools/customer.ts` - Keep only `get_services`, rename export to `serviceTools`
+   - `src/tools/customer.ts` - Keep only `get_services`, rename export to
+     `serviceTools`
    - `src/tools/stripe.ts` - Remove `create_invoice` tool
    - `src/agent.ts` - Update tool imports
    - `src/system-prompt.ts` - Simplified receptionist prompt
@@ -116,6 +125,7 @@ src/system-prompt.ts     # Simple identity + role + context
 ## Future: AI Diagnostic Agent
 
 A separate product for intelligent car diagnosis:
+
 - Standalone AI product (potentially mobile app)
 - Multi-turn diagnostic conversations
 - Multimedia input (photos, audio of car sounds)

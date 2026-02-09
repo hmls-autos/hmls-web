@@ -37,7 +37,7 @@ export function isValidClientMessage(data: unknown): data is ClientMessage {
  */
 export function createServerMessage<T extends ServerMessage["type"]>(
   type: T,
-  data: Omit<Extract<ServerMessage, { type: T }>, "type">
+  data: Omit<Extract<ServerMessage, { type: T }>, "type">,
 ): ServerMessage {
   return { type, ...data } as ServerMessage;
 }

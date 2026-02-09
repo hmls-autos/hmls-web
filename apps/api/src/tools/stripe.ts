@@ -28,7 +28,9 @@ async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
   }
 
   if (customer.email) {
-    console.log(`[stripe] Searching for customer with email: ${customer.email}`);
+    console.log(
+      `[stripe] Searching for customer with email: ${customer.email}`,
+    );
     const existing = await stripe.customers.list({
       email: customer.email,
       limit: 1,
@@ -47,7 +49,9 @@ async function getOrCreateStripeCustomer(customerId: number): Promise<string> {
     }
   }
 
-  console.log(`[stripe] Creating new customer for: ${customer.name || customer.email}`);
+  console.log(
+    `[stripe] Creating new customer for: ${customer.name || customer.email}`,
+  );
   const stripeCustomer = await stripe.customers.create({
     email: customer.email ?? undefined,
     name: customer.name ?? undefined,
@@ -85,7 +89,7 @@ export const createQuoteTool = {
           service: z.string().describe("Service name"),
           description: z.string().describe("Description of the work"),
           amount: z.number().describe("Price in dollars"),
-        })
+        }),
       )
       .describe("List of services and their prices"),
     expiresInDays: z.number().default(7).describe("Days until quote expires"),
@@ -113,8 +117,7 @@ export const createQuoteTool = {
     const quote = await stripe.quotes.create({
       customer: stripeCustomerId,
       line_items: lineItems,
-      expires_at:
-        Math.floor(Date.now() / 1000) +
+      expires_at: Math.floor(Date.now() / 1000) +
         (params.expiresInDays || 7) * 24 * 60 * 60,
     });
 
@@ -122,10 +125,14 @@ export const createQuoteTool = {
 
     const totalAmount = params.items.reduce(
       (sum, item) => sum + dollarsToCents(item.amount),
-      0
+      0,
     );
 
-    console.log(`[stripe] Quote created: ${finalizedQuote.id} for $${centsToDollars(totalAmount)}`);
+    console.log(
+      `[stripe] Quote created: ${finalizedQuote.id} for $${
+        centsToDollars(totalAmount)
+      }`,
+    );
 
     const [dbQuote] = await db
       .insert(schema.quotes)
@@ -136,7 +143,7 @@ export const createQuoteTool = {
         totalAmount,
         status: "sent",
         expiresAt: new Date(
-          Date.now() + (params.expiresInDays || 7) * 24 * 60 * 60 * 1000
+          Date.now() + (params.expiresInDays || 7) * 24 * 60 * 60 * 1000,
         ),
       })
       .returning();
@@ -149,15 +156,16 @@ export const createQuoteTool = {
       // @ts-ignore - Stripe API types have changed
       hostedUrl: finalizedQuote.hosted_quote_url,
       // @ts-ignore - Stripe API types have changed
-      message: `Quote created for $${centsToDollars(totalAmount).toFixed(2)}. Customer can view and accept at: ${finalizedQuote.hosted_quote_url}`,
+      message: `Quote created for $${
+        centsToDollars(totalAmount).toFixed(2)
+      }. Customer can view and accept at: ${finalizedQuote.hosted_quote_url}`,
     });
   },
 };
 
 export const getQuoteStatusTool = {
   name: "get_quote_status",
-  description:
-    "Check the status of a quote (draft, sent, accepted, declined).",
+  description: "Check the status of a quote (draft, sent, accepted, declined).",
   schema: z.object({
     quoteId: z.number().describe("The quote ID from the database"),
   }),

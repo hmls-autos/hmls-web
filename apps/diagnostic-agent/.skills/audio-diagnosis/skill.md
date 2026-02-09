@@ -10,6 +10,7 @@ Use this skill when the customer provides audio recordings of vehicle sounds.
 ## Sound Categories
 
 ### Knocking/Pinging Sounds
+
 - **Detonation knock**: Sharp metallic pinging under load
   - Causes: Low octane fuel, carbon buildup, timing issues
   - Severity: Medium to High (engine damage risk)
@@ -21,6 +22,7 @@ Use this skill when the customer provides audio recordings of vehicle sounds.
   - Severity: Medium (monitor closely)
 
 ### Squealing Sounds
+
 - **Serpentine belt**: High-pitched squeal on startup or acceleration
   - Causes: Worn/loose belt, worn tensioner, misaligned pulleys
   - Severity: Medium (can leave stranded)
@@ -32,6 +34,7 @@ Use this skill when the customer provides audio recordings of vehicle sounds.
   - Severity: Medium
 
 ### Grinding Sounds
+
 - **Brake grinding**: Metal-on-metal when braking
   - Causes: Worn-through pads, damaged rotors
   - Severity: Critical (unsafe brakes)
@@ -43,6 +46,7 @@ Use this skill when the customer provides audio recordings of vehicle sounds.
   - Severity: High (joint can fail)
 
 ### Clicking/Ticking Sounds
+
 - **Lifter tick**: Light ticking from engine top
   - Causes: Low oil, worn lifters, oil viscosity
   - Severity: Low to Medium
@@ -54,6 +58,7 @@ Use this skill when the customer provides audio recordings of vehicle sounds.
   - Severity: Low to Medium
 
 ### Humming/Whining Sounds
+
 - **Wheel bearing hum**: Hum that changes with speed
   - Causes: Worn wheel bearing
   - Severity: High (safety issue)
@@ -97,12 +102,17 @@ When analyzing audio, provide:
 
 ## Example Response
 
-"The audio reveals a rhythmic grinding sound that increases with vehicle speed but is independent of engine RPM. This pattern is characteristic of a wheel bearing issue.
+"The audio reveals a rhythmic grinding sound that increases with vehicle speed
+but is independent of engine RPM. This pattern is characteristic of a wheel
+bearing issue.
 
 **Likely Cause**: Worn front wheel bearing (based on sound location)
 
-**Severity: High** - Wheel bearings can fail catastrophically, causing loss of vehicle control.
+**Severity: High** - Wheel bearings can fail catastrophically, causing loss of
+vehicle control.
 
-**Additional Diagnostics**: Check for play in the wheel, feel for heat after driving.
+**Additional Diagnostics**: Check for play in the wheel, feel for heat after
+driving.
 
-**Action Required**: Have this inspected immediately. Avoid highway driving until diagnosed."
+**Action Required**: Have this inspected immediately. Avoid highway driving
+until diagnosed."

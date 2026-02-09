@@ -1,6 +1,7 @@
 # Contributing to HMLS
 
-Thank you for your interest in contributing to HMLS! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to HMLS! This document provides
+guidelines and information for contributors.
 
 ## Branch Strategy (GitHub Flow)
 

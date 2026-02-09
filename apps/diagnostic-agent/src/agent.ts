@@ -1,10 +1,10 @@
-import { createZypherAgent, anthropic } from "@corespeed/zypher";
+import { anthropic, createZypherAgent } from "@corespeed/zypher";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { analyzeImageTool } from "./tools/analyzeImage.ts";
 import { transcribeAudioTool } from "./tools/transcribeAudio.ts";
 import { extractVideoFramesTool } from "./tools/extractVideoFrames.ts";
 import { lookupObdCodeTool } from "./tools/lookupObdCode.ts";
-import { saveMediaTool, getMediaTool } from "./tools/storage.ts";
+import { getMediaTool, saveMediaTool } from "./tools/storage.ts";
 
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
@@ -34,14 +34,14 @@ export async function createDiagnosticAgent() {
     // Use /tmp for Deno Deploy (source dir is read-only)
     context: isDenoDeploy ? { zypherDir: "/tmp/.zypher" } : undefined,
     overrides: {
-      systemPromptLoader: async () => SYSTEM_PROMPT,
+      systemPromptLoader: () => SYSTEM_PROMPT,
     },
   });
 
   // Discover and log skills
   await agent.skills.discover();
   const skillNames = Array.from(agent.skills.skills.values()).map(
-    (s) => s.metadata.name
+    (s) => s.metadata.name,
   );
   if (skillNames.length > 0) {
     console.log(`[diagnostic-agent] Skills loaded: ${skillNames.join(", ")}`);

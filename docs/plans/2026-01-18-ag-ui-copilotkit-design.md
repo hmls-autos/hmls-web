@@ -2,7 +2,8 @@
 
 ## Overview
 
-Integrate CopilotKit in headless mode to gain full AG-UI protocol compliance while preserving the existing custom chat UI design.
+Integrate CopilotKit in headless mode to gain full AG-UI protocol compliance
+while preserving the existing custom chat UI design.
 
 ## Goals
 
@@ -137,7 +138,7 @@ const {
 } = useCopilotChat();
 
 // Adapt message format
-const messages = visibleMessages.map(msg => ({
+const messages = visibleMessages.map((msg) => ({
   id: msg.id,
   role: msg.role,
   content: msg.content,
@@ -171,14 +172,14 @@ AGENT_URL=http://localhost:50051
 
 ## Hook API Mapping
 
-| Old (useChat) | New (useCopilotChat) |
-|---------------|---------------------|
-| `messages` | `visibleMessages` |
-| `isLoading` | `isLoading` |
+| Old (useChat)       | New (useCopilotChat)                             |
+| ------------------- | ------------------------------------------------ |
+| `messages`          | `visibleMessages`                                |
+| `isLoading`         | `isLoading`                                      |
 | `sendMessage(text)` | `appendMessage({ role: "user", content: text })` |
-| `clearMessages()` | `setMessages([])` |
-| `isConnected` | Always connected (runtime handles) |
-| `currentTool` | Access via message metadata or `inProgressTool` |
+| `clearMessages()`   | `setMessages([])`                                |
+| `isConnected`       | Always connected (runtime handles)               |
+| `currentTool`       | Access via message metadata or `inProgressTool`  |
 
 ## Tool Visualization
 
@@ -193,7 +194,9 @@ const currentTool = inProgressTool?.name;
 
 ## Shared Conversation State
 
-Both ChatWidget (popup) and chat/page.tsx share the same conversation because they're under the same `<CopilotKit>` provider. User can start in popup, navigate to /chat, and continue seamlessly.
+Both ChatWidget (popup) and chat/page.tsx share the same conversation because
+they're under the same `<CopilotKit>` provider. User can start in popup,
+navigate to /chat, and continue seamlessly.
 
 ## What This Enables
 

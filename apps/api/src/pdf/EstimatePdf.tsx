@@ -1,13 +1,7 @@
 // apps/agent/src/pdf/EstimatePdf.tsx
 
-import React from "react";
-import {
-  Document,
-  Page,
-  View,
-  Text,
-  StyleSheet,
-} from "@react-pdf/renderer";
+import type React from "react";
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
   page: {
@@ -210,7 +204,7 @@ function formatDate(date: Date): string {
 function formatVehicle(vehicleInfo: Customer["vehicleInfo"]): string {
   if (!vehicleInfo) return "Not specified";
   const parts = [vehicleInfo.year, vehicleInfo.make, vehicleInfo.model].filter(
-    Boolean
+    Boolean,
   );
   return parts.join(" ") || "Not specified";
 }
@@ -240,7 +234,9 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Prepared For</Text>
           <View style={styles.customerInfo}>
-            <Text style={styles.customerName}>{customer.name || "Customer"}</Text>
+            <Text style={styles.customerName}>
+              {customer.name || "Customer"}
+            </Text>
             {customer.phone && (
               <Text style={styles.customerDetail}>{customer.phone}</Text>
             )}
@@ -305,9 +301,10 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.disclaimer}>
-            This estimate is valid until {formatDate(estimate.expiresAt)}. Final
-            price may vary based on actual conditions found during service.
-            Payment is due upon completion of service.
+            This estimate is valid until{" "}
+            {formatDate(estimate.expiresAt)}. Final price may vary based on
+            actual conditions found during service. Payment is due upon
+            completion of service.
           </Text>
           <Text style={styles.cta}>
             Ready to proceed? Reply in chat or call us to schedule your service.

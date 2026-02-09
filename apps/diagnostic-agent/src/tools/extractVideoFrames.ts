@@ -49,14 +49,16 @@ export const extractVideoFramesTool = {
       // Upload extracted frames to R2
       const frameKeys: string[] = [];
       for (let i = 1; i <= frameCount; i++) {
-        const framePath = `${tempOutput}/frame_${String(i).padStart(3, "0")}.jpg`;
+        const framePath = `${tempOutput}/frame_${
+          String(i).padStart(3, "0")
+        }.jpg`;
         try {
           const frameData = await Deno.readFile(framePath);
           const result = await uploadMedia(
             frameData,
             `frame_${i}.jpg`,
             "image/jpeg",
-            sessionId
+            sessionId,
           );
           frameKeys.push(result.key);
         } catch {

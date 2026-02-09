@@ -1,16 +1,19 @@
 # Landing Page Redesign
 
-A complete redesign of the HMLS landing page with a premium, neutral luxury aesthetic and SSR-first architecture.
+A complete redesign of the HMLS landing page with a premium, neutral luxury
+aesthetic and SSR-first architecture.
 
 ## Design Direction
 
 **Style:** Premium & Clean, Neutral Luxury
+
 - Soft beige/tan tones, dark text, minimal color
 - Photography-focused, warm natural lighting
 - Editorial typography with serif headlines
 - Generous whitespace, refined details
 
 **Primary Focus:**
+
 1. Convenience - "We come to you" as the hero message
 2. Services - Clear offerings with transparent pricing
 
@@ -18,25 +21,25 @@ A complete redesign of the HMLS landing page with a premium, neutral luxury aest
 
 ### Color Palette
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--bg-primary` | `#FAF9F7` | Page background |
-| `--bg-surface` | `#F5F4F2` | Cards, sections |
-| `--text-primary` | `#1A1A1A` | Headlines, body |
+| Token              | Value     | Usage              |
+| ------------------ | --------- | ------------------ |
+| `--bg-primary`     | `#FAF9F7` | Page background    |
+| `--bg-surface`     | `#F5F4F2` | Cards, sections    |
+| `--text-primary`   | `#1A1A1A` | Headlines, body    |
 | `--text-secondary` | `#6B6560` | Descriptions, meta |
-| `--border` | `#E8E6E3` | Subtle borders |
-| `--accent` | `#2C2C2C` | Buttons, links |
+| `--border`         | `#E8E6E3` | Subtle borders     |
+| `--accent`         | `#2C2C2C` | Buttons, links     |
 
 ### Typography
 
-| Element | Font | Size | Weight |
-|---------|------|------|--------|
-| Display | Serif (Playfair Display / Fraunces) | 72px+ | 400 |
-| Headline | Serif | 48px | 400 |
-| Subhead | Sans-serif (Inter / system) | 24px | 500 |
-| Body | Sans-serif | 16-18px | 400 |
-| Small | Sans-serif | 14px | 400 |
-| Eyebrow | Sans-serif | 14px uppercase | 500 |
+| Element  | Font                                | Size           | Weight |
+| -------- | ----------------------------------- | -------------- | ------ |
+| Display  | Serif (Playfair Display / Fraunces) | 72px+          | 400    |
+| Headline | Serif                               | 48px           | 400    |
+| Subhead  | Sans-serif (Inter / system)         | 24px           | 500    |
+| Body     | Sans-serif                          | 16-18px        | 400    |
+| Small    | Sans-serif                          | 14px           | 400    |
+| Eyebrow  | Sans-serif                          | 14px uppercase | 500    |
 
 ### Photography
 
@@ -70,14 +73,14 @@ Single `useEffect` with IntersectionObserver for scroll reveals.
 
 Following Vercel React Best Practices:
 
-| Principle | Implementation |
-|-----------|----------------|
-| Server Components default | All sections are RSC, no `"use client"` |
-| Minimal client JS | Only mobile nav toggle, map component |
-| CSS animations | No Framer Motion, use CSS transitions |
-| Dynamic imports | Lazy load map with `next/dynamic` |
-| Parallel fetching | Fetch stats, services, testimonials in parallel |
-| Suspense boundaries | Wrap dynamic sections for streaming |
+| Principle                 | Implementation                                  |
+| ------------------------- | ----------------------------------------------- |
+| Server Components default | All sections are RSC, no `"use client"`         |
+| Minimal client JS         | Only mobile nav toggle, map component           |
+| CSS animations            | No Framer Motion, use CSS transitions           |
+| Dynamic imports           | Lazy load map with `next/dynamic`               |
+| Parallel fetching         | Fetch stats, services, testimonials in parallel |
+| Suspense boundaries       | Wrap dynamic sections for streaming             |
 
 ### Key Rules Applied
 
@@ -151,6 +154,7 @@ app/
 ```
 
 **CTAs:**
+
 - **Get a Free Quote** → `/chat` (primary, dark filled) - Opens AI agent
 - **Book a Service** → `/contact` (secondary, outlined) - Scheduling
 
@@ -218,6 +222,7 @@ app/
 ```
 
 **Card design:**
+
 - Beige background (`#F5F4F2`)
 - Subtle border (`#E8E6E3`)
 - 32px padding
@@ -225,6 +230,7 @@ app/
 - No icons, text-only
 
 **Pricing:**
+
 - "From $XX" format
 - Fetched from database (SSR)
 
@@ -322,22 +328,23 @@ app/
 
 ## Responsive Breakpoints
 
-| Breakpoint | Layout Changes |
-|------------|----------------|
-| Mobile (<640px) | Single column, stacked CTAs, hamburger nav |
-| Tablet (640-1024px) | 2-column services, side-by-side about |
-| Desktop (>1024px) | Full layout as designed |
+| Breakpoint          | Layout Changes                             |
+| ------------------- | ------------------------------------------ |
+| Mobile (<640px)     | Single column, stacked CTAs, hamburger nav |
+| Tablet (640-1024px) | 2-column services, side-by-side about      |
+| Desktop (>1024px)   | Full layout as designed                    |
 
 ## Performance Targets
 
-| Metric | Target |
-|--------|--------|
-| LCP | < 2.5s |
-| FID | < 100ms |
-| CLS | < 0.1 |
-| TTI | < 3.5s |
+| Metric | Target  |
+| ------ | ------- |
+| LCP    | < 2.5s  |
+| FID    | < 100ms |
+| CLS    | < 0.1   |
+| TTI    | < 3.5s  |
 
 Achieved through:
+
 - SSR-first architecture
 - Minimal client JavaScript
 - Optimized images with `next/image`

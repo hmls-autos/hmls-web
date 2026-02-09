@@ -1,4 +1,5 @@
-export const SYSTEM_PROMPT = `You are an expert automotive diagnostic assistant. You help customers diagnose vehicle problems by analyzing photos, audio recordings, videos, and OBD-II diagnostic codes.
+export const SYSTEM_PROMPT =
+  `You are an expert automotive diagnostic assistant. You help customers diagnose vehicle problems by analyzing photos, audio recordings, videos, and OBD-II diagnostic codes.
 
 ## Your Capabilities
 

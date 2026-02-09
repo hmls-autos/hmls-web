@@ -1,6 +1,6 @@
 "use client";
 
-import { type Message as AgentMessage, HttpAgent } from "@ag-ui/client";
+import { HttpAgent, type Message as AgentMessage } from "@ag-ui/client";
 import { type RefObject, useCallback, useRef, useState } from "react";
 
 const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
@@ -71,8 +71,8 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           buffer += event.delta;
           setMessages((m) =>
             m.map((msg) =>
-              msg.id === assistantId ? { ...msg, content: buffer } : msg,
-            ),
+              msg.id === assistantId ? { ...msg, content: buffer } : msg
+            )
           );
           setTimeout(scrollToBottom, 0);
         },

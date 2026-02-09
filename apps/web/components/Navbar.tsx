@@ -25,43 +25,51 @@ export default function Navbar() {
         <div className="hidden md:flex gap-8 text-sm font-light text-gray-300 absolute left-1/2 -translate-x-1/2">
           <Link
             href="/"
-            className={`hover:text-emerald-400 transition-colors ${isActive("/") ? "text-emerald-400" : ""}`}
+            className={`hover:text-emerald-400 transition-colors ${
+              isActive("/") ? "text-emerald-400" : ""
+            }`}
           >
             Home
           </Link>
           <Link
             href="/contact"
-            className={`hover:text-emerald-400 transition-colors ${isActive("/contact") ? "text-emerald-400" : ""}`}
+            className={`hover:text-emerald-400 transition-colors ${
+              isActive("/contact") ? "text-emerald-400" : ""
+            }`}
           >
             Contact
           </Link>
           <Link
             href="/chat"
-            className={`hover:text-emerald-400 transition-colors ${isActive("/chat") ? "text-emerald-400" : ""}`}
+            className={`hover:text-emerald-400 transition-colors ${
+              isActive("/chat") ? "text-emerald-400" : ""
+            }`}
           >
             Chat
           </Link>
         </div>
 
         <div className="flex items-center gap-4">
-          {isUserLoggedIn ? (
-            <button
-              type="button"
-              onClick={() => supabase.auth.signOut()}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-zinc-400 hover:text-white transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
-          ) : (
-            <Link
-              href="/login"
-              className="glass-button flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium text-emerald-400 hover:text-emerald-300"
-            >
-              <LogIn className="w-4 h-4" />
-              Sign In
-            </Link>
-          )}
+          {isUserLoggedIn
+            ? (
+              <button
+                type="button"
+                onClick={() => supabase.auth.signOut()}
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            )
+            : (
+              <Link
+                href="/login"
+                className="glass-button flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium text-emerald-400 hover:text-emerald-300"
+              >
+                <LogIn className="w-4 h-4" />
+                Sign In
+              </Link>
+            )}
           {isUserLoggedIn && (
             <Link
               href="/contact"

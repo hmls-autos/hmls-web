@@ -1,10 +1,13 @@
 # Diagnostic Agent Design
 
-A standalone multimodal diagnostic agent for vehicle troubleshooting, deployed separately from the existing HMLS agent.
+A standalone multimodal diagnostic agent for vehicle troubleshooting, deployed
+separately from the existing HMLS agent.
 
 ## Overview
 
-The diagnostic agent analyzes photos, audio, video, and OBD-II codes to help customers diagnose vehicle issues. It operates on a credit-based subscription model and is designed for future mobile app integration.
+The diagnostic agent analyzes photos, audio, video, and OBD-II codes to help
+customers diagnose vehicle issues. It operates on a credit-based subscription
+model and is designed for future mobile app integration.
 
 ## Architecture
 
@@ -31,37 +34,37 @@ The diagnostic agent analyzes photos, audio, video, and OBD-II codes to help cus
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Runtime | Deno + Zypher framework |
-| AI (reasoning/vision) | Claude Sonnet 4 |
-| AI (audio) | OpenAI Whisper |
-| Video processing | ffmpeg (frame extraction) |
-| Auth | Supabase Auth (Google, Apple OAuth + JWT) |
-| Media storage | Cloudflare R2 |
-| Database | PostgreSQL (shared with HMLS) |
-| Billing/Credits | Stripe |
-| Deployment | Railway |
-| Protocol | AG-UI (conversational streaming) |
+| Component             | Technology                                |
+| --------------------- | ----------------------------------------- |
+| Runtime               | Deno + Zypher framework                   |
+| AI (reasoning/vision) | Claude Sonnet 4                           |
+| AI (audio)            | OpenAI Whisper                            |
+| Video processing      | ffmpeg (frame extraction)                 |
+| Auth                  | Supabase Auth (Google, Apple OAuth + JWT) |
+| Media storage         | Cloudflare R2                             |
+| Database              | PostgreSQL (shared with HMLS)             |
+| Billing/Credits       | Stripe                                    |
+| Deployment            | Railway                                   |
+| Protocol              | AG-UI (conversational streaming)          |
 
 ## Subscription & Credits
 
 ### Tiers
 
-| Tier | Monthly Credits | Price |
-|------|-----------------|-------|
-| Free | 10 | $0 |
-| Pro | 100 | TBD |
-| Premium | 200 | TBD |
+| Tier    | Monthly Credits | Price |
+| ------- | --------------- | ----- |
+| Free    | 10              | $0    |
+| Pro     | 100             | TBD   |
+| Premium | 200             | TBD   |
 
 ### Credit Costs
 
-| Input Type | Credits |
-|------------|---------|
-| Text + OBD codes | 1 |
-| Photo (each) | 2 |
-| Audio (per 30s) | 5 |
-| Video (per 30s) | 10 |
+| Input Type       | Credits |
+| ---------------- | ------- |
+| Text + OBD codes | 1       |
+| Photo (each)     | 2       |
+| Audio (per 30s)  | 5       |
+| Video (per 30s)  | 10      |
 
 ### Rules
 
@@ -74,11 +77,13 @@ The diagnostic agent analyzes photos, audio, video, and OBD-II codes to help cus
 ## Input Methods
 
 ### OBD-II Codes
+
 - Manual text entry (e.g., "P0301")
 - Photo of code reader screen (OCR extraction)
 - Bluetooth OBD-II adapter (future mobile app)
 
 ### Media
+
 - Photos: Engine bay, tires, brakes, damage, dashboard
 - Audio: Engine sounds, brake noises, clicking, grinding
 - Video: Issues in motion, exhaust smoke, vibrations
@@ -89,17 +94,18 @@ Stripe handles subscriptions and credits. Database stores diagnostic data only.
 
 ### diagnosticSessions
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| customerId | uuid | FK to customers |
-| status | enum | pending, processing, complete, failed |
-| creditsCharged | int | Total credits used |
-| createdAt | timestamp | Session start |
-| completedAt | timestamp | Session end |
-| result | jsonb | AI-generated diagnosis |
+| Column         | Type      | Description                           |
+| -------------- | --------- | ------------------------------------- |
+| id             | uuid      | Primary key                           |
+| customerId     | uuid      | FK to customers                       |
+| status         | enum      | pending, processing, complete, failed |
+| creditsCharged | int       | Total credits used                    |
+| createdAt      | timestamp | Session start                         |
+| completedAt    | timestamp | Session end                           |
+| result         | jsonb     | AI-generated diagnosis                |
 
 **Result JSON structure:**
+
 ```json
 {
   "diagnosis": "Primary issue identified",
@@ -125,27 +131,27 @@ Stripe handles subscriptions and credits. Database stores diagnostic data only.
 
 ### diagnosticMedia
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| sessionId | uuid | FK to diagnosticSessions |
-| type | enum | photo, audio, video, obd_photo |
-| r2Key | string | Cloudflare R2 object key |
-| creditCost | int | Credits charged for this media |
-| metadata | jsonb | Duration, dimensions, etc. |
-| processingStatus | enum | pending, processing, complete, failed |
-| transcription | text | Whisper output (for audio) |
-| createdAt | timestamp | Upload time |
+| Column           | Type      | Description                           |
+| ---------------- | --------- | ------------------------------------- |
+| id               | uuid      | Primary key                           |
+| sessionId        | uuid      | FK to diagnosticSessions              |
+| type             | enum      | photo, audio, video, obd_photo        |
+| r2Key            | string    | Cloudflare R2 object key              |
+| creditCost       | int       | Credits charged for this media        |
+| metadata         | jsonb     | Duration, dimensions, etc.            |
+| processingStatus | enum      | pending, processing, complete, failed |
+| transcription    | text      | Whisper output (for audio)            |
+| createdAt        | timestamp | Upload time                           |
 
 ### obdCodes
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| sessionId | uuid | FK to diagnosticSessions |
-| code | string | e.g., "P0301" |
-| source | enum | manual, bluetooth, ocr |
-| createdAt | timestamp | Input time |
+| Column    | Type      | Description              |
+| --------- | --------- | ------------------------ |
+| id        | uuid      | Primary key              |
+| sessionId | uuid      | FK to diagnosticSessions |
+| code      | string    | e.g., "P0301"            |
+| source    | enum      | manual, bluetooth, ocr   |
+| createdAt | timestamp | Input time               |
 
 ## API Endpoints
 
@@ -244,7 +250,9 @@ apps/diagnostic-agent/
 ## Agent Skills
 
 ### photo-diagnosis
+
 Analyzes vehicle photos for:
+
 - Tire wear patterns (cupping, feathering, edge wear)
 - Brake pad thickness and rotor condition
 - Engine bay leaks, corrosion, worn belts/hoses
@@ -252,7 +260,9 @@ Analyzes vehicle photos for:
 - Body damage assessment
 
 ### audio-diagnosis
+
 Interprets vehicle sounds:
+
 - Knocking/pinging (detonation, rod knock, piston slap)
 - Squealing (belt, brakes, power steering)
 - Grinding (brakes, transmission, CV joint)
@@ -260,7 +270,9 @@ Interprets vehicle sounds:
 - Humming/whining (wheel bearing, transmission)
 
 ### video-diagnosis
+
 Processes video for:
+
 - Frame extraction for visual analysis
 - Audio track transcription
 - Motion-based issues (vibration, steering pull)
@@ -268,14 +280,18 @@ Processes video for:
 - Dashboard warning light behavior
 
 ### obd-diagnosis
+
 Interprets OBD-II codes:
+
 - Code structure parsing (P/B/C/U, generic vs manufacturer)
 - Common code quick reference
 - Severity classification
 - Root cause vs symptom identification
 
 ### comprehensive-diagnosis
+
 Synthesizes all inputs:
+
 - Correlates evidence across input types
 - Identifies root cause vs symptoms
 - Prioritizes by severity (critical/high/medium/low)
@@ -284,16 +300,17 @@ Synthesizes all inputs:
 
 ## Error Handling
 
-| Scenario | Handling |
-|----------|----------|
-| Insufficient credits | 402 response with balance + required cost |
-| Invalid/corrupt media | Error response, no credit deduction |
-| Whisper fails | Agent asks for clearer audio recording |
-| Video too long | Reject with max duration limit |
-| Stripe unavailable | Queue credit ops, allow with grace period |
+| Scenario              | Handling                                    |
+| --------------------- | ------------------------------------------- |
+| Insufficient credits  | 402 response with balance + required cost   |
+| Invalid/corrupt media | Error response, no credit deduction         |
+| Whisper fails         | Agent asks for clearer audio recording      |
+| Video too long        | Reject with max duration limit              |
+| Stripe unavailable    | Queue credit ops, allow with grace period   |
 | Unrecognized OBD code | Agent attempts diagnosis, flags uncertainty |
 
 ### Refund Policy
+
 - Processing failure (our fault): Auto-refund credits
 - Bad quality input: No refund (customer can retry)
 

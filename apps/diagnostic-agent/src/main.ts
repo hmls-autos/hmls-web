@@ -4,15 +4,11 @@ import { streamSSE } from "hono/streaming";
 import { eachValueFrom } from "rxjs-for-await";
 
 import { createDiagnosticAgent } from "./agent.ts";
-import { authenticateRequest, type AuthContext } from "./middleware/auth.ts";
+import { type AuthContext, authenticateRequest } from "./middleware/auth.ts";
 import { processCredits } from "./middleware/credits.ts";
 import { db } from "./db/client.ts";
-import {
-  diagnosticSessions,
-  diagnosticMedia,
-  obdCodes,
-} from "./db/schema.ts";
-import { eq, desc } from "drizzle-orm";
+import { diagnosticMedia, diagnosticSessions, obdCodes } from "./db/schema.ts";
+import { desc, eq } from "drizzle-orm";
 import { uploadMedia } from "./lib/r2.ts";
 import type { InputType } from "./lib/stripe.ts";
 import { createAguiEventStream, parseRunAgentInput } from "@zypher/agui";
@@ -156,7 +152,7 @@ app.post("/diagnostics/:id/input", async (c) => {
     auth.stripeCustomerId,
     type as InputType,
     sessionId,
-    durationSeconds
+    durationSeconds,
   );
   if (creditResult instanceof Response) {
     return creditResult;
@@ -189,7 +185,7 @@ app.post("/diagnostics/:id/input", async (c) => {
       binaryData,
       filename,
       contentType,
-      String(sessionId)
+      String(sessionId),
     );
 
     await db.insert(diagnosticMedia).values({
@@ -200,7 +196,8 @@ app.post("/diagnostics/:id/input", async (c) => {
       metadata: { filename, contentType, durationSeconds },
     });
 
-    agentInput = `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
+    agentInput =
+      `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
   } else {
     agentInput = content;
   }
@@ -240,14 +237,24 @@ app.post("/task", async (c) => {
   try {
     input = parseRunAgentInput(body);
   } catch (parseError) {
-    return c.json({ error: "Invalid AG-UI input", details: String(parseError) }, 400);
+    return c.json(
+      { error: "Invalid AG-UI input", details: String(parseError) },
+      400,
+    );
   }
 
   const { threadId, runId, messages } = input;
-  console.log(`[diagnostic-agent] threadId=${threadId}, messages=${messages.length}`);
+  console.log(
+    `[diagnostic-agent] threadId=${threadId}, messages=${messages.length}`,
+  );
 
   const agentInstance = await getAgent();
-  const aguiStream = createAguiEventStream({ agent: agentInstance, messages, threadId, runId });
+  const aguiStream = createAguiEventStream({
+    agent: agentInstance,
+    messages,
+    threadId,
+    runId,
+  });
 
   return streamSSE(c, async (stream) => {
     try {
@@ -275,6 +282,8 @@ if (isDenoDeploy) {
   Deno.serve({ port: PORT }, app.fetch);
   console.log(`[diagnostic-agent] Running on http://localhost:${PORT}`);
   if (DEV_MODE) {
-    console.log(`[diagnostic-agent] DEV_MODE enabled - /task endpoint auth bypassed`);
+    console.log(
+      `[diagnostic-agent] DEV_MODE enabled - /task endpoint auth bypassed`,
+    );
   }
 }

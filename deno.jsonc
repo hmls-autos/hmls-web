@@ -1,9 +1,35 @@
 {
   "workspace": ["./apps/web", "./apps/api", "./apps/diagnostic-agent"],
+  "nodeModulesDir": "auto",
+  "unstable": [
+    "bare-node-builtins",
+    "detect-cjs",
+    "node-globals",
+    "unsafe-proto",
+    "sloppy-imports"
+  ],
+  "lint": {
+    "exclude": ["apps/web"]
+  },
+  "fmt": {
+    "exclude": ["apps/web"]
+  },
   "tasks": {
+    // Dev servers
+    "dev:web": "cd apps/web && bun run dev",
     "dev:api": "deno task --cwd apps/api dev",
     "dev:diagnostic": "deno task --cwd apps/diagnostic-agent dev",
+
+    // Build & quality (web)
+    "build:web": "cd apps/web && bun run build",
+    "lint:web": "cd apps/web && bun run lint",
+    "typecheck:web": "cd apps/web && bun run typecheck",
+
+    // Deno checks
     "check:api": "deno check apps/api/src/index.ts",
-    "check:diagnostic": "deno check apps/diagnostic-agent/src/main.ts"
+    "check:diagnostic": "deno check apps/diagnostic-agent/src/main.ts",
+
+    // Database
+    "db:up": "docker compose up -d postgres"
   }
 }

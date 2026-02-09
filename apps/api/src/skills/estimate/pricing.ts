@@ -1,8 +1,8 @@
 // apps/agent/src/skills/estimate/pricing.ts
 
 import { db, schema } from "../../db/client.ts";
-import { eq, and, isNull } from "drizzle-orm";
-import type { PricingConfig, ServiceInput, LineItem } from "./types.ts";
+import { and, eq, isNull } from "drizzle-orm";
+import type { LineItem, PricingConfig, ServiceInput } from "./types.ts";
 
 interface ServiceCatalogEntry {
   id: number;
@@ -12,7 +12,7 @@ interface ServiceCatalogEntry {
 }
 
 export async function getServiceById(
-  serviceId: number
+  serviceId: number,
 ): Promise<ServiceCatalogEntry | null> {
   const [service] = await db
     .select()
@@ -59,7 +59,7 @@ export function clearConfigCache(): void {
 
 export async function getVehicleMultiplier(
   make: string,
-  model?: string | null
+  model?: string | null,
 ): Promise<number> {
   // Try exact make + model match first
   if (model) {
@@ -69,8 +69,8 @@ export async function getVehicleMultiplier(
       .where(
         and(
           eq(schema.vehiclePricing.make, make),
-          eq(schema.vehiclePricing.model, model)
-        )
+          eq(schema.vehiclePricing.model, model),
+        ),
       )
       .limit(1);
 
@@ -86,8 +86,8 @@ export async function getVehicleMultiplier(
     .where(
       and(
         eq(schema.vehiclePricing.make, make),
-        isNull(schema.vehiclePricing.model)
-      )
+        isNull(schema.vehiclePricing.model),
+      ),
     )
     .limit(1);
 
@@ -101,7 +101,7 @@ export async function getVehicleMultiplier(
 
 export async function calculatePrice(
   service: ServiceInput,
-  vehicleMultiplier: number
+  vehicleMultiplier: number,
 ): Promise<LineItem> {
   const config = await getPricingConfig();
 
@@ -121,7 +121,7 @@ export async function calculatePrice(
 
   if (laborHours) {
     laborCost = Math.round(
-      config.hourlyRate * laborHours * vehicleMultiplier
+      config.hourlyRate * laborHours * vehicleMultiplier,
     );
   }
 

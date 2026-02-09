@@ -21,7 +21,8 @@ export const analyzeImageTool = {
       throw new Error("ANTHROPIC_API_KEY is required");
     }
 
-    const prompt = `You are an expert automotive technician. Analyze this vehicle image and identify:
+    const prompt =
+      `You are an expert automotive technician. Analyze this vehicle image and identify:
 - Any visible damage or wear
 - Fluid leaks or stains
 - Component condition (tires, brakes, belts, hoses, etc.)

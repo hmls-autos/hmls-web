@@ -1,10 +1,14 @@
 // apps/agent/src/skills/estimate/tools.ts
 
 import { z } from "zod";
-import { nanoid } from "npm:nanoid";
+import { nanoid } from "nanoid";
 import { db, schema } from "../../db/client.ts";
 import { eq, ilike, or } from "drizzle-orm";
-import { calculatePrice, getVehicleMultiplier, getPricingConfig } from "./pricing.ts";
+import {
+  calculatePrice,
+  getPricingConfig,
+  getVehicleMultiplier,
+} from "./pricing.ts";
 import { toolResult } from "../../lib/tool-result.ts";
 
 export const listServicesTool = {
@@ -19,9 +23,14 @@ export const listServicesTool = {
     category: z
       .string()
       .optional()
-      .describe("Filter by category (e.g., 'maintenance', 'repair', 'diagnostic')"),
+      .describe(
+        "Filter by category (e.g., 'maintenance', 'repair', 'diagnostic')",
+      ),
   }),
-  execute: async (params: { search?: string; category?: string }, _ctx: unknown) => {
+  execute: async (
+    params: { search?: string; category?: string },
+    _ctx: unknown,
+  ) => {
     let query = db
       .select({
         id: schema.services.id,
@@ -42,8 +51,8 @@ export const listServicesTool = {
       query = query.where(
         or(
           ilike(schema.services.name, `%${params.search}%`),
-          ilike(schema.services.description, `%${params.search}%`)
-        )
+          ilike(schema.services.description, `%${params.search}%`),
+        ),
       );
     }
 
@@ -58,7 +67,8 @@ export const listServicesTool = {
         category: s.category,
       })),
       count: services.length,
-      note: "Use serviceId when creating estimates for consistent pricing based on labor hours",
+      note:
+        "Use serviceId when creating estimates for consistent pricing based on labor hours",
     });
   },
 };
@@ -83,7 +93,7 @@ export const createEstimateTool = {
             .number()
             .optional()
             .describe("Estimated parts cost in dollars"),
-        })
+        }),
       )
       .describe("List of services to include in estimate"),
     notes: z.string().optional().describe("Additional notes for the estimate"),
@@ -135,12 +145,12 @@ export const createEstimateTool = {
     // 2. Get vehicle multiplier
     const multiplier = await getVehicleMultiplier(
       vehicleInfo.make,
-      vehicleInfo.model
+      vehicleInfo.model,
     );
 
     // 3. Calculate pricing for each service
     const items = await Promise.all(
-      params.services.map((s) => calculatePrice(s, multiplier))
+      params.services.map((s) => calculatePrice(s, multiplier)),
     );
 
     // 4. Add fees
@@ -174,7 +184,7 @@ export const createEstimateTool = {
     const shareToken = nanoid(32);
     const validDays = params.validDays ?? 14;
     const expiresAt = new Date(
-      Date.now() + validDays * 24 * 60 * 60 * 1000
+      Date.now() + validDays * 24 * 60 * 60 * 1000,
     );
 
     // 7. Create estimate record
@@ -202,7 +212,9 @@ export const createEstimateTool = {
       downloadUrl: `${baseUrl}/${estimate.id}/pdf`,
       shareUrl: `${baseUrl}/${estimate.id}/pdf?token=${shareToken}`,
       subtotal: subtotal / 100,
-      priceRange: `$${(rangeLow / 100).toFixed(2)} - $${(rangeHigh / 100).toFixed(2)}`,
+      priceRange: `$${(rangeLow / 100).toFixed(2)} - $${
+        (rangeHigh / 100).toFixed(2)
+      }`,
       expiresAt,
     });
   },
@@ -233,16 +245,23 @@ export const getEstimateTool = {
         id: estimate.id,
         items: estimate.items,
         subtotal: estimate.subtotal / 100,
-        priceRange: `$${(estimate.priceRangeLow / 100).toFixed(2)} - $${(estimate.priceRangeHigh / 100).toFixed(2)}`,
+        priceRange: `$${(estimate.priceRangeLow / 100).toFixed(2)} - $${
+          (estimate.priceRangeHigh / 100).toFixed(2)
+        }`,
         notes: estimate.notes,
         expiresAt: estimate.expiresAt,
         isExpired,
         convertedToQuote: estimate.convertedToQuoteId !== null,
         downloadUrl: `/api/estimates/${estimate.id}/pdf`,
-        shareUrl: `/api/estimates/${estimate.id}/pdf?token=${estimate.shareToken}`,
+        shareUrl:
+          `/api/estimates/${estimate.id}/pdf?token=${estimate.shareToken}`,
       },
     });
   },
 };
 
-export const estimateTools = [listServicesTool, createEstimateTool, getEstimateTool];
+export const estimateTools = [
+  listServicesTool,
+  createEstimateTool,
+  getEstimateTool,
+];

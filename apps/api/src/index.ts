@@ -9,14 +9,17 @@ import { env } from "./env.ts";
 import { createHmlsAgent } from "./agent.ts";
 import { db } from "./db/client.ts";
 import * as schema from "./db/schema.ts";
-import { eq, and } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { EstimatePdf } from "./pdf/EstimatePdf.tsx";
 import { AppError, Errors } from "./lib/errors.ts";
 import { createAguiEventStream, parseRunAgentInput } from "@zypher/agui";
-import { type UserContext } from "./types/user-context.ts";
+import type { UserContext } from "./types/user-context.ts";
 
 // Agent cache by user ID (or singleton for anonymous)
-const agentCache = new Map<string, Awaited<ReturnType<typeof createHmlsAgent>>>();
+const agentCache = new Map<
+  string,
+  Awaited<ReturnType<typeof createHmlsAgent>>
+>();
 
 async function getAgent(userContext?: UserContext) {
   const cacheKey = userContext ? `user:${userContext.id}` : "anonymous";
@@ -40,15 +43,23 @@ app.use("*", logger());
 app.onError((err, c) => {
   if (err instanceof AppError) {
     console.error(`[error] ${err.code}: ${err.message}`);
-    return c.json(err.toJSON(), err.status as 400 | 401 | 403 | 404 | 422 | 500 | 502);
+    return c.json(
+      err.toJSON(),
+      err.status as 400 | 401 | 403 | 404 | 422 | 500 | 502,
+    );
   }
   console.error(`[error] Unhandled:`, err);
-  return c.json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } }, 500);
+  return c.json({
+    error: { code: "INTERNAL_ERROR", message: "Internal server error" },
+  }, 500);
 });
 
 // 404 handler
 app.notFound((c) => {
-  return c.json({ error: { code: "NOT_FOUND", message: "Route not found" } }, 404);
+  return c.json(
+    { error: { code: "NOT_FOUND", message: "Route not found" } },
+    404,
+  );
 });
 
 // Health check
@@ -92,8 +103,11 @@ app.get("/api/estimates/:id/pdf", async (c) => {
     .from(schema.estimates)
     .where(
       token
-        ? and(eq(schema.estimates.id, id), eq(schema.estimates.shareToken, token))
-        : eq(schema.estimates.id, id)
+        ? and(
+          eq(schema.estimates.id, id),
+          eq(schema.estimates.shareToken, token),
+        )
+        : eq(schema.estimates.id, id),
     )
     .limit(1);
 
@@ -111,16 +125,24 @@ app.get("/api/estimates/:id/pdf", async (c) => {
     EstimatePdf({
       estimate: {
         ...estimate,
-        items: estimate.items as { name: string; description: string; price: number }[],
+        items: estimate.items as {
+          name: string;
+          description: string;
+          price: number;
+        }[],
       },
       customer: {
         name: customer.name,
         phone: customer.phone,
         email: customer.email,
         address: customer.address,
-        vehicleInfo: customer.vehicleInfo as { make?: string; model?: string; year?: string } | null,
+        vehicleInfo: customer.vehicleInfo as {
+          make?: string;
+          model?: string;
+          year?: string;
+        } | null,
       },
-    })
+    }),
   );
 
   return new Response(pdfStream as unknown as ReadableStream, {
@@ -154,10 +176,19 @@ app.post("/task", async (c) => {
   }
 
   const { threadId, runId, messages } = input;
-  console.log(`[agent] threadId=${threadId}, messages=${messages.length}, user=${userContext?.id ?? "anonymous"}`);
+  console.log(
+    `[agent] threadId=${threadId}, messages=${messages.length}, user=${
+      userContext?.id ?? "anonymous"
+    }`,
+  );
 
   const agent = await getAgent(userContext);
-  const aguiStream = createAguiEventStream({ agent, messages, threadId, runId });
+  const aguiStream = createAguiEventStream({
+    agent,
+    messages,
+    threadId,
+    runId,
+  });
 
   return streamSSE(c, async (stream) => {
     try {
@@ -184,5 +215,7 @@ if (isDenoDeploy) {
   console.log(`[server] HMLS Agent running on Deno Deploy`);
 } else {
   Deno.serve({ port: env.HTTP_PORT }, app.fetch);
-  console.log(`[server] HMLS Agent running on http://localhost:${env.HTTP_PORT}`);
+  console.log(
+    `[server] HMLS Agent running on http://localhost:${env.HTTP_PORT}`,
+  );
 }

@@ -36,6 +36,7 @@ Manage customer appointments for HMLS Mobile Mechanic.
 ## Service Durations
 
 Estimate duration based on service type:
+
 - Oil change: 30-45 minutes
 - Brake service: 1-2 hours
 - Diagnostic: 30-60 minutes
@@ -49,4 +50,5 @@ Monday - Saturday: 8:00 AM - 12:00 AM (midnight)
 
 ## Service Area
 
-Orange County only: Irvine, Newport Beach, Anaheim, Santa Ana, Costa Mesa, Fullerton, Huntington Beach, Lake Forest, Mission Viejo
+Orange County only: Irvine, Newport Beach, Anaheim, Santa Ana, Costa Mesa,
+Fullerton, Huntington Beach, Lake Forest, Mission Viejo

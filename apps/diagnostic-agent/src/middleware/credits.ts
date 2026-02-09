@@ -1,9 +1,9 @@
 import {
-  getCustomerCredits,
-  deductCredits,
-  CREDIT_COSTS,
   calculateAudioCredits,
   calculateVideoCredits,
+  CREDIT_COSTS,
+  deductCredits,
+  getCustomerCredits,
   type InputType,
 } from "../lib/stripe.ts";
 
@@ -16,7 +16,7 @@ export interface CreditCheck {
 export async function checkCredits(
   stripeCustomerId: string,
   inputType: InputType,
-  durationSeconds?: number
+  durationSeconds?: number,
 ): Promise<CreditCheck> {
   const balance = await getCustomerCredits(stripeCustomerId);
 
@@ -43,9 +43,13 @@ export async function processCredits(
   stripeCustomerId: string,
   inputType: InputType,
   sessionId: number,
-  durationSeconds?: number
+  durationSeconds?: number,
 ): Promise<{ charged: number } | Response> {
-  const check = await checkCredits(stripeCustomerId, inputType, durationSeconds);
+  const check = await checkCredits(
+    stripeCustomerId,
+    inputType,
+    durationSeconds,
+  );
 
   if (!check.hasEnough) {
     return new Response(
@@ -58,14 +62,14 @@ export async function processCredits(
       {
         status: 402,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 
   await deductCredits(
     stripeCustomerId,
     check.required,
-    `Diagnostic session ${sessionId}: ${inputType} analysis`
+    `Diagnostic session ${sessionId}: ${inputType} analysis`,
   );
 
   return { charged: check.required };

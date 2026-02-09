@@ -1,11 +1,16 @@
-import { createZypherAgent, ZypherAgent, anthropic, type ZypherContext } from "@corespeed/zypher";
+import {
+  anthropic,
+  createZypherAgent,
+  ZypherAgent,
+  type ZypherContext,
+} from "@corespeed/zypher";
 import { env } from "./env.ts";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { calcomTools } from "./tools/calcom.ts";
 import { serviceTools } from "./tools/customer.ts";
 import { stripeTools } from "./tools/stripe.ts";
 import { estimateTools } from "./skills/estimate/tools.ts";
-import { type UserContext, formatUserContext } from "./types/user-context.ts";
+import { formatUserContext, type UserContext } from "./types/user-context.ts";
 
 // Default model, can be overridden via env
 const DEFAULT_MODEL = "claude-sonnet-4-20250514";
@@ -25,7 +30,12 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
     ? `${SYSTEM_PROMPT}\n\n${formatUserContext(options.userContext)}`
     : SYSTEM_PROMPT;
 
-  const allTools = [...serviceTools, ...estimateTools, ...stripeTools, ...calcomTools];
+  const allTools = [
+    ...serviceTools,
+    ...estimateTools,
+    ...stripeTools,
+    ...calcomTools,
+  ];
 
   if (isDenoDeploy) {
     // Deno Deploy has no writable filesystem - instantiate ZypherAgent directly
@@ -44,9 +54,9 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
       {
         tools: allTools,
         overrides: {
-          systemPromptLoader: async () => systemPrompt,
+          systemPromptLoader: () => systemPrompt,
         },
-      }
+      },
     );
 
     console.log(`[agent] Running on Deno Deploy (no filesystem)`);
@@ -58,14 +68,14 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
     model: anthropic(modelId, { apiKey: env.ANTHROPIC_API_KEY }),
     tools: allTools,
     overrides: {
-      systemPromptLoader: async () => systemPrompt,
+      systemPromptLoader: () => systemPrompt,
     },
   });
 
   // Discover and log skills (only works with filesystem)
   await agent.skills.discover();
   const skillNames = Array.from(agent.skills.skills.values()).map(
-    (s) => s.metadata.name
+    (s) => s.metadata.name,
   );
   if (skillNames.length > 0) {
     console.log(`[agent] Skills loaded: ${skillNames.join(", ")}`);

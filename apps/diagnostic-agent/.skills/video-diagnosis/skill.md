@@ -10,17 +10,21 @@ Use this skill when the customer provides video recordings of their vehicle.
 ## Video Analysis Approach
 
 ### 1. Extract and Analyze Frames
+
 Use the `extractVideoFrames` tool to capture key frames for visual analysis.
 
 ### 2. Transcribe Audio Track
+
 If the video has audio, use the `transcribeAudio` tool to analyze sounds.
 
 ### 3. Motion Analysis
+
 Look for issues that require motion to observe.
 
 ## What to Analyze
 
 ### Vibration Issues
+
 - **Steering wheel shake**:
   - At highway speed → unbalanced wheels, warped rotors
   - Under braking → warped rotors
@@ -32,6 +36,7 @@ Look for issues that require motion to observe.
   - Rear-end issues, exhaust hangers
 
 ### Steering Behavior
+
 - **Pull to one side**:
   - Constant → alignment, tire pressure
   - Under braking → caliper issue, uneven wear
@@ -42,6 +47,7 @@ Look for issues that require motion to observe.
   - Worn steering gear, linkage
 
 ### Exhaust Smoke Patterns
+
 - **Startup smoke**:
   - Blue on cold start → valve seals
   - White puff that clears → normal condensation
@@ -53,17 +59,20 @@ Look for issues that require motion to observe.
   - Indicates when issue occurs
 
 ### Dashboard Warning Lights
+
 - Capture and identify warning indicators
 - Note when lights illuminate/extinguish
 - Check for intermittent patterns
 
 ### Suspension Behavior
+
 - **Body roll**: Excessive lean in corners
 - **Nose dive**: Excessive dip when braking
 - **Bounce test**: Multiple oscillations after bump
 - **Uneven ride height**: One corner sagging
 
 ### Drivetrain Issues
+
 - **Clunks on acceleration/deceleration**: U-joints, CV joints
 - **Shudder under load**: Torque converter, clutch
 - **Hesitation**: Transmission slipping
@@ -71,12 +80,14 @@ Look for issues that require motion to observe.
 ## Frame Extraction Strategy
 
 Request frames at key moments:
+
 1. Beginning of symptom
 2. Peak of symptom
 3. End of symptom
 4. Multiple angles if panning
 
 For timing:
+
 - Short videos (< 30s): 5 frames evenly distributed
 - Longer videos: Focus on symptomatic moments
 
@@ -95,18 +106,25 @@ When analyzing video, provide:
 
 "I've analyzed your video of the steering wheel shake:
 
-**Visual Findings**: The steering wheel oscillates approximately 1-2 inches side to side at highway speed.
+**Visual Findings**: The steering wheel oscillates approximately 1-2 inches side
+to side at highway speed.
 
-**Motion Analysis**: The vibration appears speed-dependent (worse at 60+ mph) and is not affected by braking in this clip.
+**Motion Analysis**: The vibration appears speed-dependent (worse at 60+ mph)
+and is not affected by braking in this clip.
 
-**Combined Assessment**: This pattern is consistent with wheel balance issues or tire irregularities. The frequency of oscillation suggests front wheel imbalance.
+**Combined Assessment**: This pattern is consistent with wheel balance issues or
+tire irregularities. The frequency of oscillation suggests front wheel
+imbalance.
 
-**Severity: Medium** - Safe to drive but should be addressed for comfort and tire longevity.
+**Severity: Medium** - Safe to drive but should be addressed for comfort and
+tire longevity.
 
 **Recommended Action**:
+
 1. Check tire pressures
 2. Inspect tires for flat spots or bulges
 3. Have wheels balanced
 4. If persists, have tires and wheels inspected for runout
 
-Can you send a video showing the shake while braking? This will help rule out warped rotors."
+Can you send a video showing the shake while braking? This will help rule out
+warped rotors."
