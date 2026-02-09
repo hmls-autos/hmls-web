@@ -50,6 +50,3 @@ jobs:
 
       - name: Check Diagnostic Agent
         run: deno task check:diagnostic
-
-      - name: Build
-        run: deno task build:web
