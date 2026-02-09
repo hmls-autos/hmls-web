@@ -30,7 +30,7 @@ export async function createDiagnosticAgent() {
 
   const agent = await createZypherAgent({
     model: anthropic(modelId, { apiKey }),
-    tools: allTools as never[],
+    tools: allTools,
     // Use /tmp for Deno Deploy (source dir is read-only)
     context: isDenoDeploy ? { zypherDir: "/tmp/.zypher" } : undefined,
     overrides: {

@@ -114,7 +114,7 @@ export const lookupObdCodeTool = {
   name: "lookupObdCode",
   description: "Look up OBD-II diagnostic trouble code description and system",
   schema: lookupObdCodeSchema,
-  execute: (params: z.infer<typeof lookupObdCodeSchema>) => {
+  execute: async (params: z.infer<typeof lookupObdCodeSchema>) => {
     const { code } = params;
     const upperCode = code.toUpperCase().trim();
 
