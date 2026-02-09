@@ -19,30 +19,37 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      # Cache bun dependencies
-      - name: Cache dependencies
+      # Cache bun dependencies for web app
+      - name: Cache bun dependencies
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('apps/web/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Check version sync
-        run: bun run version:check
+      - name: Install web dependencies
+        run: cd apps/web && bun install --frozen-lockfile
 
       - name: Lint
-        run: bun run lint
+        run: deno task lint:web
 
       - name: Type Check
-        run: bun run typecheck
+        run: deno task typecheck:web
+
+      - name: Check API
+        run: deno task check:api
+
+      - name: Check Diagnostic Agent
+        run: deno task check:diagnostic
 
       - name: Build
-        run: bun run build
+        run: deno task build:web
