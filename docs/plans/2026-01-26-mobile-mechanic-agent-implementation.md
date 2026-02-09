@@ -444,7 +444,7 @@ Expected: Server starts without errors
 
 **Step 2: Test health endpoint**
 
-Run: `curl http://localhost:8000/health`
+Run: `curl http://localhost:8080/health`
 Expected: `{"status":"ok","timestamp":"..."}`
 
 **Step 3: Commit all changes**

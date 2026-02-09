@@ -226,10 +226,10 @@ Required environment variables:
 
 ```bash
 # Health check
-curl http://localhost:8000/health
+curl http://localhost:8080/health
 
 # Test chat (requires AG-UI format)
-curl -X POST http://localhost:8000/task \
+curl -X POST http://localhost:8080/task \
   -H "Content-Type: application/json" \
   -H "X-User-Context: {\"id\":1,\"name\":\"Test\",\"email\":\"test@example.com\",\"phone\":\"555-1234\"}" \
   -d '{

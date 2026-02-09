@@ -434,7 +434,7 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
 **Steps:**
 1. Run typecheck: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api`
 2. Start dev server: `deno task dev`
-3. Test health endpoint: `curl http://localhost:8000/health`
+3. Test health endpoint: `curl http://localhost:8080/health`
 
 **Commit:** Final verification, no commit needed
 

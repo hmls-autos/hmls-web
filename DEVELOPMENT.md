@@ -114,7 +114,7 @@ hmls/
 | Service | Port |
 |---------|------|
 | Web App | 3000 |
-| API | 8000 |
+| API | 8080 |
 | Agent | 8001 |
 | PostgreSQL | 5432 |
 

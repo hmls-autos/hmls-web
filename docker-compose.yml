@@ -14,23 +14,5 @@ services:
       timeout: 5s
       retries: 5
 
-  api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    container_name: hmls-api
-    ports:
-      - "8000:8000"
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      CALCOM_API_KEY: ${CALCOM_API_KEY}
-      CALCOM_EVENT_TYPE_ID: ${CALCOM_EVENT_TYPE_ID}
-      HTTP_PORT: "8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
 volumes:
   postgres_data:

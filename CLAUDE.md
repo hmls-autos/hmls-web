@@ -5,28 +5,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Development Commands
 
 ```bash
-# All services
-turbo dev                        # Start web (Next.js on port 3000)
-bun run dev:agent                # Start agent (Deno on port 8000)
+# Web (Next.js on port 3000)
+turbo dev                        # Start all turbo tasks
+bun run dev:web                  # Start web only
 
+# Deno services
+bun run dev:api                  # Start API agent (Deno on port 8080)
+bun run dev:diagnostic           # Start diagnostic agent
+
+# Build & quality
 turbo build              # Build all packages
 turbo lint               # Lint with Biome
 turbo typecheck          # TypeScript type checking
 
-# Docker
+# Database
 docker compose up -d postgres   # Start PostgreSQL
-bun run docker:build            # Build images
-bun run docker:push             # Push to GHCR
 ```
 
 ## Architecture
 
-Bun + Turbo monorepo for a mobile mechanic business with an AI-powered chat agent.
+Bun + Turbo monorepo for a mobile mechanic business with an AI-powered chat agent. All apps deploy to **Deno Deploy** via GitHub integration. Deno workspace is managed via `deno.jsonc`.
 
 ```
 apps/
-├── web/     # Next.js 16 frontend (React 19, Tailwind CSS 4)
-└── agent/   # Deno AI agent (Zypher framework, Claude Sonnet 4, AG-UI protocol)
+├── web/                # Next.js 16 frontend (React 19, Tailwind CSS 4) → Deno Deploy
+├── api/                # Deno AI agent (Zypher framework, Claude Sonnet 4, AG-UI protocol) → Deno Deploy
+└── diagnostic-agent/   # Deno diagnostic agent → Deno Deploy
 
 packages/
 ├── shared/  # Shared types and utilities
@@ -35,7 +39,7 @@ packages/
 
 ### Service Communication
 
-- **Web → Agent**: Direct AG-UI protocol connection via `@ag-ui/client` (port 8000)
+- **Web → Agent**: Direct AG-UI protocol connection via `@ag-ui/client` (port 8080)
 - **Agent → DB**: Direct PostgreSQL connection for tools
 
 ### Key Patterns
@@ -74,5 +78,5 @@ CALCOM_EVENT_TYPE_ID=123456
 
 Optional in web (`.env.local`):
 ```
-NEXT_PUBLIC_AGENT_URL=http://localhost:8000  # defaults to localhost:8000
+NEXT_PUBLIC_AGENT_URL=http://localhost:8080  # defaults to localhost:8080
 ```
