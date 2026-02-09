@@ -26,7 +26,7 @@ deno task db:up                  # Start PostgreSQL
 
 Deno workspace monorepo for a mobile mechanic business with an AI-powered chat
 agent. All apps deploy to **Deno Deploy** via GitHub integration. Root config is
-`deno.jsonc`; web app uses Bun/Next.js internally.
+`deno.json`; web app uses Bun/Next.js internally.
 
 ```
 apps/
