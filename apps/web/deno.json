@@ -1,5 +1,11 @@
 {
   "name": "@hmls/web",
   "version": "0.3.0",
-  "exports": "./app/layout.tsx"
+  "exports": "./app/layout.tsx",
+  "deploy": {
+    "framework": "nextjs"
+  },
+  "tasks": {
+    "build": "npx next build"
+  }
 }
