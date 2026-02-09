@@ -1,3 +1,5 @@
 {
-  "name": "@hmls/web"
+  "name": "@hmls/web",
+  "version": "0.3.0",
+  "exports": "./app/layout.tsx"
 }
