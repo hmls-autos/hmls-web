@@ -2,6 +2,11 @@
   "name": "@hmls/diagnostic-agent",
   "version": "0.1.0",
   "exports": "./src/main.ts",
+  "deploy": {
+    "runtime": {
+      "entrypoint": "./src/main.ts"
+    }
+  },
   "tasks": {
     "dev": "deno run --env=../../.env --allow-all --watch src/main.ts",
     "start": "deno run --env=../../.env --allow-all src/main.ts",

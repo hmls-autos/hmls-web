@@ -18,6 +18,11 @@
     "react": "npm:react@^19.2.3",
     "nanoid": "npm:nanoid@^5.1.5"
   },
+  "deploy": {
+    "runtime": {
+      "entrypoint": "./src/index.ts"
+    }
+  },
   "tasks": {
     "dev": "deno run --env=../../.env --allow-net --allow-env --allow-read --allow-write --allow-run --allow-sys --watch src/index.ts",
     "start": "deno run --env=../../.env --allow-net --allow-env --allow-read --allow-write --allow-run --allow-sys src/index.ts",
