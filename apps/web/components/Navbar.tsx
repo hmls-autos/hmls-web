@@ -19,7 +19,7 @@ export default function Navbar() {
   const isUserLoggedIn = !!user;
 
   return (
-    <header className="fixed top-0 left-0 z-50 w-screen bg-surface/80 backdrop-blur-md border-b border-border">
+    <header className="relative shrink-0 z-50 bg-surface/80 backdrop-blur-md border-b border-border">
       <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link
           href="/"

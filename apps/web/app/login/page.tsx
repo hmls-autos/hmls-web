@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { Loader2, Lock, LogIn, Mail, Phone, User } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -69,18 +68,8 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col bg-background text-text">
-      {/* Header */}
-      <nav className="fixed top-0 w-full max-w-7xl px-6 h-16 flex justify-between items-center z-50 bg-surface/80 backdrop-blur-md border-b border-border left-1/2 -translate-x-1/2">
-        <Link
-          href="/"
-          className="text-xl font-display font-bold tracking-tight text-text"
-        >
-          HMLS<span className="text-red-primary">.</span>
-        </Link>
-      </nav>
-
-      <div className="flex-1 flex flex-col items-center justify-center px-4 pt-24">
+    <main className="flex min-h-full flex-col bg-background text-text">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 pt-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

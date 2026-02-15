@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, LogIn, Send, Wrench } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import Navbar from "@/components/Navbar";
 import { Markdown } from "@/components/ui/Markdown";
 import { useAgentChat } from "@/hooks/useAgentChat";
 import { toolDisplayNames } from "@/lib/agent-tools";
@@ -43,8 +42,7 @@ export default function ChatPage() {
   // Show loading state
   if (authLoading) {
     return (
-      <main className="flex min-h-screen flex-col bg-background text-text">
-        <Navbar />
+      <main className="flex min-h-full flex-col bg-background text-text">
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <div className="text-red-primary animate-pulse">Loading...</div>
         </div>
@@ -55,8 +53,7 @@ export default function ChatPage() {
   // Show login prompt if not authenticated
   if (!user) {
     return (
-      <main className="flex min-h-screen flex-col bg-background text-text">
-        <Navbar />
+      <main className="flex min-h-full flex-col bg-background text-text">
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -94,10 +91,8 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-background text-text">
-      <Navbar />
-
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full pt-24 pb-4 px-4">
+    <main className="flex min-h-full flex-col bg-background text-text">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full pt-8 pb-4 px-4">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

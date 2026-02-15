@@ -1,13 +1,10 @@
 import FooterNew from "@/components/FooterNew";
-import Navbar from "@/components/Navbar";
 import { FadeIn } from "@/components/ui/Animations";
 
 export default function Terms() {
   return (
-    <main className="flex min-h-screen flex-col items-center bg-background text-text overflow-x-hidden">
-      <Navbar />
-
-      <section className="w-full max-w-4xl px-6 pt-32 pb-20">
+    <main className="flex min-h-full flex-col items-center bg-background text-text overflow-x-hidden">
+      <section className="w-full max-w-4xl px-6 pt-16 pb-20">
         <FadeIn className="mb-12">
           <div className="inline-block mb-4 px-4 py-1.5 rounded-full border border-red-primary/30 bg-red-light text-red-primary text-xs tracking-widest uppercase font-display font-semibold">
             Legal

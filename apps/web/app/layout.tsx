@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ChatWidget } from "@/components/ChatWidget";
+import Navbar from "@/components/Navbar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -31,12 +32,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${barlow.variable} font-sans antialiased bg-background text-text`}
+        className={`${inter.variable} ${barlow.variable} font-sans antialiased bg-background text-text h-screen overflow-hidden flex flex-col`}
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
-            {children}
-            <ChatWidget />
+            <Navbar />
+            <div className="flex-1 overflow-y-auto">
+              {children}
+              <ChatWidget />
+            </div>
           </AuthProvider>
         </ThemeProvider>
       </body>
