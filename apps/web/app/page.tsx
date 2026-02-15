@@ -10,7 +10,7 @@ import TrustBar from "@/components/sections/TrustBar";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-cream-50 text-charcoal">
+    <main className="min-h-screen bg-background text-text">
       <NavbarNew />
       <HeroNew />
       <TrustBar />

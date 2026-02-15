@@ -20,9 +20,9 @@ export default function HowItWorks() {
   ];
 
   return (
-    <section className="w-full py-24 bg-cream-50">
+    <section className="w-full py-24 bg-background">
       <div className="max-w-7xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-serif text-charcoal text-center mb-16">
+        <h2 className="text-3xl md:text-4xl font-display font-bold text-text text-center mb-16">
           How it works
         </h2>
 
@@ -30,13 +30,13 @@ export default function HowItWorks() {
           {steps.map((step, index) => (
             <RevealOnScroll key={step.number} delay={index + 1}>
               <div className="text-center">
-                <div className="text-5xl font-serif text-cream-200 mb-4">
+                <div className="text-5xl font-display font-extrabold text-red-primary/20 mb-4">
                   {step.number}
                 </div>
-                <h3 className="text-xl font-medium text-charcoal mb-2">
+                <h3 className="text-xl font-display font-semibold text-text mb-2">
                   {step.title}
                 </h3>
-                <p className="text-charcoal-light">{step.description}</p>
+                <p className="text-text-secondary">{step.description}</p>
               </div>
             </RevealOnScroll>
           ))}

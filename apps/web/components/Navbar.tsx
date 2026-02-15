@@ -14,35 +14,35 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center backdrop-blur-md border-b border-white/5 rounded-b-2xl relative">
+      <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center bg-white/80 backdrop-blur-md border-b border-border">
         <Link
           href="/"
-          className="text-2xl font-light tracking-tighter text-white"
+          className="text-xl font-display font-bold tracking-tight text-text"
         >
-          hmls<span className="text-emerald-500">.</span>
+          HMLS<span className="text-red-primary">.</span>
         </Link>
 
-        <div className="hidden md:flex gap-8 text-sm font-light text-gray-300 absolute left-1/2 -translate-x-1/2">
+        <div className="hidden md:flex gap-8 text-sm text-text-secondary absolute left-1/2 -translate-x-1/2">
           <Link
             href="/"
-            className={`hover:text-emerald-400 transition-colors ${
-              isActive("/") ? "text-emerald-400" : ""
+            className={`hover:text-red-primary transition-colors ${
+              isActive("/") ? "text-red-primary" : ""
             }`}
           >
             Home
           </Link>
           <Link
             href="/contact"
-            className={`hover:text-emerald-400 transition-colors ${
-              isActive("/contact") ? "text-emerald-400" : ""
+            className={`hover:text-red-primary transition-colors ${
+              isActive("/contact") ? "text-red-primary" : ""
             }`}
           >
             Contact
           </Link>
           <Link
             href="/chat"
-            className={`hover:text-emerald-400 transition-colors ${
-              isActive("/chat") ? "text-emerald-400" : ""
+            className={`hover:text-red-primary transition-colors ${
+              isActive("/chat") ? "text-red-primary" : ""
             }`}
           >
             Chat
@@ -54,7 +54,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => supabase.auth.signOut()}
-              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-text transition-colors"
             >
               <LogOut className="w-4 h-4" />
               Sign Out
@@ -62,7 +62,7 @@ export default function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="glass-button flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium text-emerald-400 hover:text-emerald-300"
+              className="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium border border-border text-text hover:border-red-primary hover:text-red-primary transition-colors"
             >
               <LogIn className="w-4 h-4" />
               Sign In
@@ -71,7 +71,7 @@ export default function Navbar() {
           {isUserLoggedIn && (
             <Link
               href="/contact"
-              className="glass-button px-6 py-2 rounded-full text-sm font-medium text-emerald-400 hover:text-emerald-300"
+              className="px-5 py-2 rounded-lg text-sm font-medium bg-red-primary text-white hover:bg-red-dark transition-colors"
             >
               Book Now
             </Link>

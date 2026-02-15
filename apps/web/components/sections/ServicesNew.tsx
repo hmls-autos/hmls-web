@@ -37,13 +37,13 @@ const services = [
 
 export default function ServicesNew() {
   return (
-    <section id="services" className="w-full py-24 bg-cream-50">
+    <section id="services" className="w-full py-24 bg-background">
       <div className="max-w-7xl mx-auto px-6">
         <RevealOnScroll>
-          <h2 className="text-3xl md:text-4xl font-serif text-charcoal text-center mb-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-text text-center mb-4">
             What we can help with
           </h2>
-          <p className="text-charcoal-light text-center max-w-xl mx-auto mb-16">
+          <p className="text-text-secondary text-center max-w-xl mx-auto mb-16">
             From routine maintenance to complex repairs, we handle it all at
             your location.
           </p>
@@ -51,7 +51,11 @@ export default function ServicesNew() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {services.map((service, index) => (
-            <RevealOnScroll key={service.title} delay={(index % 3) + 1}>
+            <RevealOnScroll
+              key={service.title}
+              delay={(index % 3) + 1}
+              className="h-full"
+            >
               <ServiceCard {...service} />
             </RevealOnScroll>
           ))}
@@ -60,7 +64,7 @@ export default function ServicesNew() {
         <div className="text-center mt-12">
           <Link
             href="/chat"
-            className="inline-block px-6 py-3 border border-charcoal-dark text-charcoal-dark rounded-lg hover:bg-charcoal-dark hover:text-cream-50 transition-colors"
+            className="inline-block px-6 py-3 border border-text text-text rounded-lg hover:bg-text hover:text-white transition-colors font-medium"
           >
             View all services
           </Link>

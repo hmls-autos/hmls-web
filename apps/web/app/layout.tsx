@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Barlow, Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ChatWidget } from "@/components/ChatWidget";
@@ -9,9 +9,10 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const playfair = Playfair_Display({
+const barlow = Barlow({
   subsets: ["latin"],
-  variable: "--font-serif",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-barlow",
   display: "swap",
 });
 
@@ -29,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${playfair.variable} font-sans antialiased bg-cream-50 text-charcoal`}
+        className={`${inter.variable} ${barlow.variable} font-sans antialiased bg-background text-text`}
       >
         <AuthProvider>
           {children}

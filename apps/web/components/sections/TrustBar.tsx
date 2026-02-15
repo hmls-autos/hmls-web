@@ -6,15 +6,15 @@ export default function TrustBar() {
   ];
 
   return (
-    <section className="w-full py-8 border-y border-cream-200 bg-cream-100">
+    <section className="w-full py-8 border-y border-border bg-red-light">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-wrap justify-center gap-8 md:gap-16">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center">
-              <div className="text-2xl md:text-3xl font-serif text-charcoal">
+              <div className="text-2xl md:text-3xl font-display font-bold text-red-primary">
                 {stat.value}
               </div>
-              <div className="text-sm text-charcoal-light uppercase tracking-wide">
+              <div className="text-sm text-text-secondary uppercase tracking-wide">
                 {stat.label}
               </div>
             </div>

@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import Background from "@/components/Background";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -70,16 +69,14 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col bg-black text-white">
-      <Background />
-
+    <main className="flex min-h-screen flex-col bg-background text-text">
       {/* Header */}
-      <nav className="fixed top-0 w-full max-w-7xl px-6 py-6 flex justify-between items-center z-50 backdrop-blur-md border-b border-white/5 left-1/2 -translate-x-1/2 rounded-b-2xl">
+      <nav className="fixed top-0 w-full max-w-7xl px-6 h-16 flex justify-between items-center z-50 bg-white/80 backdrop-blur-md border-b border-border left-1/2 -translate-x-1/2">
         <Link
           href="/"
-          className="text-2xl font-light tracking-tighter text-white"
+          className="text-xl font-display font-bold tracking-tight text-text"
         >
-          hmls<span className="text-emerald-500">.</span>
+          HMLS<span className="text-red-primary">.</span>
         </Link>
       </nav>
 
@@ -94,14 +91,14 @@ export default function LoginPage() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4"
+              className="w-16 h-16 rounded-full bg-red-light flex items-center justify-center mx-auto mb-4"
             >
-              <LogIn className="w-8 h-8 text-emerald-400" />
+              <LogIn className="w-8 h-8 text-red-primary" />
             </motion.div>
-            <h1 className="text-2xl font-semibold mb-2">
+            <h1 className="text-2xl font-display font-bold mb-2">
               {mode === "login" ? "Welcome back" : "Create an account"}
             </h1>
-            <p className="text-zinc-400">
+            <p className="text-text-secondary">
               {mode === "login"
                 ? "Sign in to access your account"
                 : "Sign up to get started"}
@@ -120,12 +117,12 @@ export default function LoginPage() {
                 <div>
                   <label
                     htmlFor="name"
-                    className="block text-sm font-medium text-zinc-400 mb-2"
+                    className="block text-sm font-medium text-text-secondary mb-2"
                   >
                     Full Name
                   </label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
                     <input
                       id="name"
                       type="text"
@@ -133,7 +130,7 @@ export default function LoginPage() {
                       onChange={(e) => setName(e.target.value)}
                       placeholder="John Doe"
                       required
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full bg-surface border border-border rounded-xl pl-12 pr-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary transition-colors"
                     />
                   </div>
                 </div>
@@ -141,12 +138,12 @@ export default function LoginPage() {
                 <div>
                   <label
                     htmlFor="phone"
-                    className="block text-sm font-medium text-zinc-400 mb-2"
+                    className="block text-sm font-medium text-text-secondary mb-2"
                   >
                     Phone Number
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
                     <input
                       id="phone"
                       type="tel"
@@ -154,7 +151,7 @@ export default function LoginPage() {
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="(555) 123-4567"
                       required
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                      className="w-full bg-surface border border-border rounded-xl pl-12 pr-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary transition-colors"
                     />
                   </div>
                 </div>
@@ -164,12 +161,12 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-zinc-400 mb-2"
+                className="block text-sm font-medium text-text-secondary mb-2"
               >
                 Email
               </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
                 <input
                   id="email"
                   type="email"
@@ -177,7 +174,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-surface border border-border rounded-xl pl-12 pr-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary transition-colors"
                 />
               </div>
             </div>
@@ -185,12 +182,12 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-zinc-400 mb-2"
+                className="block text-sm font-medium text-text-secondary mb-2"
               >
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
                 <input
                   id="password"
                   type="password"
@@ -199,31 +196,31 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   required
                   minLength={6}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-surface border border-border rounded-xl pl-12 pr-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary transition-colors"
                 />
               </div>
               {mode === "signup" && (
-                <ul className="text-xs text-zinc-500 mt-2 space-y-1">
+                <ul className="text-xs text-text-secondary mt-2 space-y-1">
                   <li
-                    className={password.length >= 8 ? "text-emerald-400" : ""}
+                    className={password.length >= 8 ? "text-red-primary" : ""}
                   >
                     {password.length >= 8 ? "\u2713" : "\u2022"} At least 8
                     characters
                   </li>
                   <li
-                    className={/[A-Z]/.test(password) ? "text-emerald-400" : ""}
+                    className={/[A-Z]/.test(password) ? "text-red-primary" : ""}
                   >
                     {/[A-Z]/.test(password) ? "\u2713" : "\u2022"} One uppercase
                     letter
                   </li>
                   <li
-                    className={/[a-z]/.test(password) ? "text-emerald-400" : ""}
+                    className={/[a-z]/.test(password) ? "text-red-primary" : ""}
                   >
                     {/[a-z]/.test(password) ? "\u2713" : "\u2022"} One lowercase
                     letter
                   </li>
                   <li
-                    className={/[0-9]/.test(password) ? "text-emerald-400" : ""}
+                    className={/[0-9]/.test(password) ? "text-red-primary" : ""}
                   >
                     {/[0-9]/.test(password) ? "\u2713" : "\u2022"} One number
                   </li>
@@ -235,12 +232,12 @@ export default function LoginPage() {
               <div>
                 <label
                   htmlFor="confirmPassword"
-                  className="block text-sm font-medium text-zinc-400 mb-2"
+                  className="block text-sm font-medium text-text-secondary mb-2"
                 >
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
                   <input
                     id="confirmPassword"
                     type="password"
@@ -249,7 +246,7 @@ export default function LoginPage() {
                     placeholder="Confirm your password"
                     required
                     minLength={6}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full bg-surface border border-border rounded-xl pl-12 pr-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary transition-colors"
                   />
                 </div>
               </div>
@@ -261,8 +258,8 @@ export default function LoginPage() {
                 animate={{ opacity: 1 }}
                 className={`text-sm ${
                   error.includes("Check your email")
-                    ? "text-emerald-400"
-                    : "text-red-400"
+                    ? "text-green-600"
+                    : "text-red-primary"
                 }`}
               >
                 {error}
@@ -274,7 +271,7 @@ export default function LoginPage() {
               disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full bg-emerald-500 text-white font-medium py-3 rounded-xl hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-red-primary text-white font-medium py-3 rounded-xl hover:bg-red-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -287,14 +284,14 @@ export default function LoginPage() {
             </motion.button>
           </motion.form>
 
-          <p className="text-center text-zinc-400 text-sm mt-6">
+          <p className="text-center text-text-secondary text-sm mt-6">
             {mode === "login" ? (
               <>
                 Don&apos;t have an account?{" "}
                 <button
                   type="button"
                   onClick={() => setMode("signup")}
-                  className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                  className="text-red-primary hover:text-red-dark transition-colors font-medium"
                 >
                   Sign up
                 </button>
@@ -305,7 +302,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setMode("login")}
-                  className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                  className="text-red-primary hover:text-red-dark transition-colors font-medium"
                 >
                   Sign in
                 </button>

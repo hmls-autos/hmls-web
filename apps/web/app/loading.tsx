@@ -2,15 +2,10 @@
 
 import { motion } from "framer-motion";
 import { Wrench } from "lucide-react";
-import Background from "@/components/Background";
-import Navbar from "@/components/Navbar";
 
 export default function Loading() {
   return (
-    <main className="flex min-h-screen flex-col bg-black text-white">
-      <Navbar />
-      <Background />
-
+    <main className="flex min-h-screen flex-col bg-background text-text">
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0 }}
@@ -27,9 +22,9 @@ export default function Loading() {
               repeat: Number.POSITIVE_INFINITY,
               ease: "easeInOut",
             }}
-            className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-6"
+            className="w-20 h-20 rounded-full bg-red-light flex items-center justify-center mx-auto mb-6"
           >
-            <Wrench className="w-10 h-10 text-emerald-400" />
+            <Wrench className="w-10 h-10 text-red-primary" />
           </motion.div>
 
           <motion.div className="flex gap-1 justify-center mb-4">
@@ -45,7 +40,7 @@ export default function Loading() {
                   repeat: Number.POSITIVE_INFINITY,
                   delay: i * 0.2,
                 }}
-                className="w-3 h-3 bg-emerald-500 rounded-full"
+                className="w-3 h-3 bg-red-primary rounded-full"
               />
             ))}
           </motion.div>
@@ -54,7 +49,7 @@ export default function Loading() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-zinc-400"
+            className="text-text-secondary"
           >
             Loading...
           </motion.p>

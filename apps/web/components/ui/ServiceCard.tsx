@@ -16,11 +16,15 @@ export default function ServiceCard({
   return (
     <Link
       href={href}
-      className="block p-8 bg-cream-100 border border-cream-200 rounded-xl card-hover hover:border-charcoal-light"
+      className="flex flex-col h-full p-8 bg-surface border border-border rounded-xl card-hover hover:border-red-primary"
     >
-      <h3 className="text-lg font-medium text-charcoal mb-2">{title}</h3>
-      <p className="text-sm text-charcoal-light mb-4">{description}</p>
-      <p className="text-sm font-medium text-charcoal">From {price}</p>
+      <h3 className="text-lg font-display font-semibold text-text mb-2">
+        {title}
+      </h3>
+      <p className="text-sm text-text-secondary mb-4 flex-1">
+        {description}
+      </p>
+      <p className="text-sm font-bold text-red-primary">From {price}</p>
     </Link>
   );
 }

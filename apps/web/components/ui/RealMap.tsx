@@ -58,18 +58,18 @@ export default function RealMap({ className = "" }: MapProps) {
   if (!isMounted || !Leaflet) {
     return (
       <div
-        className={`w-full h-full bg-black/40 flex items-center justify-center ${className}`}
+        className={`w-full h-full bg-surface-alt flex items-center justify-center ${className}`}
       >
-        <div className="text-emerald-500 animate-pulse">Loading Map...</div>
+        <div className="text-red-primary animate-pulse">Loading Map...</div>
       </div>
     );
   }
 
-  // Use a DivIcon for a custom CSS-based marker to match the theme
+  // Red dot marker to match the theme
   const createCustomIcon = () => {
     return Leaflet.divIcon({
       className: "custom-map-marker",
-      html: `<div class="w-3 h-3 bg-emerald-400 rounded-full shadow-[0_0_15px_rgba(52,211,153,0.6)] animate-pulse"></div>`,
+      html: `<div style="width:12px;height:12px;background:#dc2626;border-radius:50%;box-shadow:0 0 12px rgba(220,38,38,0.5);border:2px solid white;"></div>`,
       iconSize: [12, 12],
       iconAnchor: [6, 6],
     });
@@ -88,11 +88,10 @@ export default function RealMap({ className = "" }: MapProps) {
         zoomControl={false}
         attributionControl={false}
       >
-        {/* Dark Matter Tile Layer for that futuristic look */}
+        {/* Light Positron Tile Layer */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          opacity={0.8}
         />
 
         {/* Markers for key cities across LA and OC */}
@@ -124,17 +123,12 @@ export default function RealMap({ className = "" }: MapProps) {
         ))}
       </MapContainer>
 
-      {/* UI Overlays to match the requested design */}
+      {/* Border Overlay */}
+      <div className="absolute inset-0 pointer-events-none border border-border rounded-2xl z-[400]" />
 
-      {/* 1. Grid Overlay */}
-      <div className="absolute inset-0 pointer-events-none z-[400] opacity-20 bg-[linear-gradient(rgba(16,185,129,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(16,185,129,0.1)_1px,transparent_1px)] bg-[size:40px_40px]" />
-
-      {/* 2. Border Overlay */}
-      <div className="absolute inset-0 pointer-events-none border border-emerald-500/20 rounded-2xl z-[400]" />
-
-      {/* 3. Live Coverage Label */}
-      <div className="absolute bottom-4 right-4 px-3 py-1 bg-black/80 border border-white/10 rounded text-[10px] text-emerald-500/80 font-mono uppercase tracking-widest backdrop-blur-sm z-[400]">
-        Live Coverage Map
+      {/* Coverage Label */}
+      <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-white/90 border border-border rounded-lg text-[10px] text-red-600 font-semibold uppercase tracking-widest backdrop-blur-sm z-[400]">
+        Service Coverage
       </div>
     </div>
   );

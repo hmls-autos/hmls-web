@@ -2,25 +2,30 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #faf9f7;
-  --foreground: #1a1a1a;
-  --primary: #1a1a1a;
+  --background: #fafafa;
+  --foreground: #171717;
+  --primary: #dc2626;
 }
 
 @theme inline {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-serif), Georgia, serif;
+  --font-display: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
 
-  /* Neutral luxury palette */
-  --color-cream-50: #faf9f7;
-  --color-cream-100: #f5f4f2;
-  --color-cream-200: #e8e6e3;
-  --color-charcoal: #1a1a1a;
-  --color-charcoal-light: #6b6560;
-  --color-charcoal-dark: #2c2c2c;
+  /* Red mechanic palette */
+  --color-surface: #ffffff;
+  --color-surface-alt: #f5f5f5;
+  --color-surface-hover: #fef2f2;
+  --color-border: #e5e5e5;
+  --color-border-hover: #dc2626;
+  --color-text: #171717;
+  --color-text-secondary: #737373;
+  --color-red-primary: #dc2626;
+  --color-red-dark: #991b1b;
+  --color-red-light: #fef2f2;
+  --color-red-glow: #dc262640;
 }
 
 body {
@@ -29,24 +34,32 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Custom Glassmorphism Utilities */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+/* Custom scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 transparent;
 }
 
-.glass-button {
-  background: rgba(16, 185, 129, 0.2);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  transition: all 0.3s ease;
+*:hover {
+  scrollbar-color: #dc2626 transparent;
 }
 
-.glass-button:hover {
-  background: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #dc2626;
 }
 
 /* Scroll reveal animations */
@@ -84,5 +97,28 @@ body {
 
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.08);
+}
+
+/* Diagonal hazard stripe for CTA */
+.hazard-stripe {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 10px,
+    rgba(0, 0, 0, 0.03) 10px,
+    rgba(0, 0, 0, 0.03) 20px
+  );
+}
+
+/* Subtle tire tread border */
+.tread-border {
+  border-image: repeating-linear-gradient(
+      90deg,
+      #dc2626 0px,
+      #dc2626 8px,
+      transparent 8px,
+      transparent 16px
+    )
+    4;
 }

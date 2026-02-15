@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, LogIn, Send, Wrench } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import Background from "@/components/Background";
 import Navbar from "@/components/Navbar";
 import { Markdown } from "@/components/ui/Markdown";
 import { useAgentChat } from "@/hooks/useAgentChat";
@@ -44,11 +43,10 @@ export default function ChatPage() {
   // Show loading state
   if (authLoading) {
     return (
-      <main className="flex min-h-screen flex-col bg-black text-white">
+      <main className="flex min-h-screen flex-col bg-background text-text">
         <Navbar />
-        <Background />
         <div className="flex-1 flex flex-col items-center justify-center px-4">
-          <div className="text-emerald-500 animate-pulse">Loading...</div>
+          <div className="text-red-primary animate-pulse">Loading...</div>
         </div>
       </main>
     );
@@ -57,9 +55,8 @@ export default function ChatPage() {
   // Show login prompt if not authenticated
   if (!user) {
     return (
-      <main className="flex min-h-screen flex-col bg-black text-white">
+      <main className="flex min-h-screen flex-col bg-background text-text">
         <Navbar />
-        <Background />
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -70,12 +67,14 @@ export default function ChatPage() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6"
+              className="w-20 h-20 rounded-full bg-red-light flex items-center justify-center mx-auto mb-6"
             >
-              <Wrench className="w-10 h-10 text-emerald-400" />
+              <Wrench className="w-10 h-10 text-red-primary" />
             </motion.div>
-            <h1 className="text-2xl font-semibold mb-3">Sign in to Chat</h1>
-            <p className="text-zinc-400 mb-8">
+            <h1 className="text-2xl font-display font-bold mb-3">
+              Sign in to Chat
+            </h1>
+            <p className="text-text-secondary mb-8">
               Log in to access our AI assistant for scheduling, quotes, and
               service questions.
             </p>
@@ -83,7 +82,7 @@ export default function ChatPage() {
               href="/login"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-colors"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-red-primary text-white font-medium hover:bg-red-dark transition-colors"
             >
               <LogIn className="w-5 h-5" />
               Sign In
@@ -95,9 +94,8 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-black text-white">
+    <main className="flex min-h-screen flex-col bg-background text-text">
       <Navbar />
-      <Background />
 
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full pt-24 pb-4 px-4">
         {/* Header */}
@@ -112,15 +110,15 @@ export default function ChatPage() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center"
+              className="w-12 h-12 rounded-full bg-red-light flex items-center justify-center"
             >
-              <Wrench className="w-6 h-6 text-emerald-400" />
+              <Wrench className="w-6 h-6 text-red-primary" />
             </motion.div>
             <div>
-              <h1 className="text-xl font-semibold text-white">
+              <h1 className="text-xl font-display font-bold text-text">
                 HMLS Assistant
               </h1>
-              <p className="text-sm text-zinc-400">
+              <p className="text-sm text-text-secondary">
                 {isConnected ? "Online - Ready to help" : "Connecting..."}
               </p>
             </div>
@@ -130,7 +128,7 @@ export default function ChatPage() {
             onClick={clearMessages}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors px-4 py-2 rounded-lg hover:bg-zinc-800"
+            className="text-sm text-text-secondary hover:text-text transition-colors px-4 py-2 rounded-lg hover:bg-surface-alt"
           >
             Clear chat
           </motion.button>
@@ -141,7 +139,7 @@ export default function ChatPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
-          className="flex-1 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-900/50 backdrop-blur-sm p-6 space-y-4"
+          className="flex-1 overflow-y-auto rounded-2xl border border-border bg-surface p-6 space-y-4"
         >
           <AnimatePresence mode="wait">
             {messages.length === 0 && (
@@ -157,15 +155,15 @@ export default function ChatPage() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4"
+                  className="w-16 h-16 rounded-full bg-red-light flex items-center justify-center mb-4"
                 >
-                  <Wrench className="w-8 h-8 text-emerald-400" />
+                  <Wrench className="w-8 h-8 text-red-primary" />
                 </motion.div>
                 <motion.h2
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="text-xl font-medium text-white mb-2"
+                  className="text-xl font-display font-bold text-text mb-2"
                 >
                   Welcome to HMLS Assistant
                 </motion.h2>
@@ -173,7 +171,7 @@ export default function ChatPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="text-zinc-400 max-w-md"
+                  className="text-text-secondary max-w-md"
                 >
                   I can help you with scheduling appointments, getting quotes,
                   checking service availability, and answering questions about
@@ -199,11 +197,11 @@ export default function ChatPage() {
                       transition={{ delay: 0.6 + index * 0.1 }}
                       whileHover={{
                         scale: 1.05,
-                        borderColor: "rgb(16 185 129 / 0.5)",
+                        borderColor: "rgb(220 38 38 / 0.5)",
                       }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => sendMessage(suggestion)}
-                      className="px-4 py-2 rounded-full bg-zinc-800 border border-zinc-700 text-sm text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-400 transition-colors"
+                      className="px-4 py-2 rounded-full bg-surface-alt border border-border text-sm text-text-secondary hover:border-red-primary/50 hover:text-red-primary transition-colors"
                     >
                       {suggestion}
                     </motion.button>
@@ -229,8 +227,8 @@ export default function ChatPage() {
                 transition={{ duration: 0.2, delay: 0.05 }}
                 className={`max-w-[80%] px-5 py-3 rounded-2xl ${
                   msg.role === "user"
-                    ? "bg-emerald-500 text-white rounded-br-md"
-                    : "bg-zinc-800 text-zinc-100 rounded-bl-md"
+                    ? "bg-red-primary text-white rounded-br-md"
+                    : "bg-surface-alt border border-border text-text rounded-bl-md"
                 }`}
               >
                 {msg.role === "user" ? (
@@ -256,9 +254,9 @@ export default function ChatPage() {
                 exit={{ opacity: 0, y: -10 }}
                 className="flex justify-start"
               >
-                <div className="bg-zinc-800/50 border border-zinc-700 px-4 py-2 rounded-xl flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
-                  <span className="text-sm text-zinc-400">
+                <div className="bg-surface-alt border border-border px-4 py-2 rounded-xl flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 text-red-primary animate-spin" />
+                  <span className="text-sm text-text-secondary">
                     {toolDisplayNames[currentTool] || currentTool}...
                   </span>
                 </div>
@@ -277,11 +275,11 @@ export default function ChatPage() {
                   exit={{ opacity: 0 }}
                   className="flex justify-start"
                 >
-                  <div className="bg-zinc-800 px-5 py-3 rounded-2xl rounded-bl-md">
+                  <div className="bg-surface-alt border border-border px-5 py-3 rounded-2xl rounded-bl-md">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce" />
-                      <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0.1s]" />
-                      <span className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <span className="w-2 h-2 bg-text-secondary/50 rounded-full animate-bounce" />
+                      <span className="w-2 h-2 bg-text-secondary/50 rounded-full animate-bounce [animation-delay:0.1s]" />
+                      <span className="w-2 h-2 bg-text-secondary/50 rounded-full animate-bounce [animation-delay:0.2s]" />
                     </div>
                   </div>
                 </motion.div>
@@ -307,14 +305,14 @@ export default function ChatPage() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
               disabled={!isConnected || isLoading}
-              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 disabled:opacity-50 transition-colors"
+              className="flex-1 bg-surface border border-border rounded-xl px-5 py-4 text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary disabled:opacity-50 transition-colors"
             />
             <motion.button
               type="submit"
               disabled={!isConnected || isLoading || !input.trim()}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="w-14 h-14 rounded-xl bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-14 h-14 rounded-xl bg-red-primary text-white flex items-center justify-center hover:bg-red-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />
             </motion.button>
