@@ -8,6 +8,7 @@ import { type FormEvent, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { Markdown } from "@/components/ui/Markdown";
 import { useAgentChat } from "@/hooks/useAgentChat";
+import { toolDisplayNames } from "@/lib/agent-tools";
 
 export function ChatWidget() {
   const pathname = usePathname();
@@ -36,19 +37,6 @@ export function ChatWidget() {
     if (!input.trim() || isLoading) return;
     sendMessage(input.trim());
     setInput("");
-  };
-
-  const toolDisplayNames: Record<string, string> = {
-    get_availability: "Checking availability",
-    create_booking: "Creating booking",
-    get_customer: "Looking up customer",
-    create_customer: "Saving customer info",
-    get_services: "Getting services",
-    create_estimate: "Preparing estimate",
-    get_estimate: "Loading estimate",
-    create_quote: "Creating quote",
-    create_invoice: "Creating invoice",
-    get_quote_status: "Checking quote status",
   };
 
   return (
