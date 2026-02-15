@@ -1,13 +1,13 @@
 "use client";
 
-import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthContextType = {
   user: User | null;
   session: Session | null;
-  supabase: SupabaseClient;
+  supabase: ReturnType<typeof createClient>;
   isLoading: boolean;
 };
 
