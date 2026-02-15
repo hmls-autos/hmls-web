@@ -33,10 +33,6 @@ apps/
 ├── web/                # Next.js 16 frontend (React 19, Tailwind CSS 4) → Deno Deploy
 ├── api/                # Deno AI agent (Zypher framework, Claude Sonnet 4, AG-UI protocol) → Deno Deploy
 └── diagnostic-agent/   # Deno diagnostic agent → Deno Deploy
-
-packages/
-├── shared/  # Shared types and utilities
-└── proto/   # Protocol definitions
 ```
 
 ### Service Communication
