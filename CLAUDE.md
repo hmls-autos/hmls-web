@@ -6,27 +6,40 @@ code in this repository.
 ## Build & Development Commands
 
 ```bash
-# Dev servers (all via deno task)
-deno task dev:web                # Next.js on port 3000
+# Dev servers
+cd apps/web && bun run dev       # Next.js on port 3000
 deno task dev:api                # API agent on port 8080
 deno task dev:diagnostic         # Diagnostic agent
 
 # Build & quality
-deno task build:web              # Build Next.js
-deno task lint:web               # Lint with Biome
-deno task typecheck:web          # TypeScript type checking
+cd apps/web && bun run build     # Build Next.js
+cd apps/web && bun run lint      # Lint with Biome
+cd apps/web && bun run typecheck # TypeScript type checking
 deno task check:api              # Deno check API
 deno task check:diagnostic       # Deno check diagnostic agent
 
 # Database
+deno task db:up                       # Start PostgreSQL
+deno task --cwd apps/api db:migrate   # Run migrations
+deno task --cwd apps/api db:seed      # Seed data
+deno task --cwd apps/api db:reset     # Migrate + seed
+```
+
+## Setup
+
+```bash
+cd apps/web && bun install       # Install web dependencies
 deno task db:up                  # Start PostgreSQL
+deno task --cwd apps/api db:reset  # Migrate + seed database
 ```
 
 ## Architecture
 
 Deno workspace monorepo for a mobile mechanic business with an AI-powered chat
-agent. All apps deploy to **Deno Deploy** via GitHub integration. Root config is
-`deno.json`; web app uses Bun/Next.js internally.
+agent. All apps deploy to **Deno Deploy** (console.deno.com) via GitHub integration. Root config is
+`deno.json`; web app uses Bun/Next.js internally. Root `deno.json` `imports`
+are inherited by all workspace members — shared deps go there, app-specific
+deps in each app's `deno.json`.
 
 ```
 apps/
@@ -43,15 +56,14 @@ apps/
 
 ### Key Patterns
 
-**Agent Tools** (`apps/agent/src/tools/`): Zod-validated functions the AI can
+**Agent Tools** (`apps/api/src/tools/`): Zod-validated functions the AI can
 call
 
-- `customerTools` - Customer CRUD
-- `stripeTools` - Payments/invoices
-- `calcomTools` - Scheduling
-- `estimateTools` - Estimate generation
+- `customer.ts` - Customer CRUD
+- `stripe.ts` - Payments/invoices
+- `calcom.ts` - Scheduling
 
-**Agent Skills** (`apps/agent/src/skills/`): Multi-tool workflows
+**Agent Skills** (`apps/api/src/skills/`): Multi-tool workflows
 
 - `estimate` - Calculate prices, generate PDFs
 
@@ -59,6 +71,10 @@ call
 
 - customers, conversations, messages, bookings, services, quotes, estimates
 - `pricingConfig` / `vehiclePricing` tables for dynamic pricing
+
+**Seed Data** (`apps/api/src/db/seed-data/`): JSON files imported by `seed.ts`
+
+- `services.json`, `pricing-config.json`, `vehicle-pricing.json`
 
 **PDF Generation** (`apps/api/src/pdf/`): React-PDF templates served by API
 routes
