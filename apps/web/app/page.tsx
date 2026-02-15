@@ -1,5 +1,5 @@
 import FooterNew from "@/components/FooterNew";
-import NavbarNew from "@/components/NavbarNew";
+import Navbar from "@/components/Navbar";
 import AboutNew from "@/components/sections/AboutNew";
 import CTANew from "@/components/sections/CTANew";
 import HeroNew from "@/components/sections/HeroNew";
@@ -11,7 +11,7 @@ import TrustBar from "@/components/sections/TrustBar";
 export default function Home() {
   return (
     <main className="min-h-screen bg-background text-text">
-      <NavbarNew />
+      <Navbar />
       <HeroNew />
       <TrustBar />
       <HowItWorks />
