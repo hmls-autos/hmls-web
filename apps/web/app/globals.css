@@ -180,6 +180,27 @@ body {
     4;
 }
 
+/* Theme transition (View Transitions API) */
+::view-transition-group(root) {
+  animation-duration: 0.5s;
+  animation-timing-function: ease;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+  animation: none;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+  animation: none;
+}
+
 /* Leaflet dark mode */
 .dark .leaflet-container {
   filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
