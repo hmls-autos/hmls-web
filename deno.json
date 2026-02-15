@@ -1,5 +1,5 @@
 {
-  "workspace": ["./apps/web", "./apps/api", "./apps/diagnostic-agent"],
+  "workspace": ["./apps/api", "./apps/diagnostic-agent"],
   "nodeModulesDir": "auto",
   "unstable": [
     "bare-node-builtins",
