@@ -35,8 +35,8 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
   const allTools = [
     ...serviceTools,
     ...estimateTools,
-    ...createStripeTools(config.stripeSecretKey),
-    ...createCalcomTools(config.calcomApiKey, config.calcomEventTypeId),
+    ...(config.stripeSecretKey ? createStripeTools(config.stripeSecretKey) : []),
+    ...(config.calcomApiKey ? createCalcomTools(config.calcomApiKey, config.calcomEventTypeId) : []),
   ];
 
   if (isDenoDeploy) {
