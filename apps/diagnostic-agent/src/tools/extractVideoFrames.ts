@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getMedia, uploadMedia } from "../lib/r2.ts";
-import { toolResult } from "../lib/tool-result.ts";
+import { toolResult } from "@hmls/shared/tool-result";
 
 const extractVideoFramesSchema = z.object({
   r2Key: z.string().describe("R2 storage key for the video file"),

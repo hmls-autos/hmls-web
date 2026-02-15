@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { db, schema } from "../db/client.ts";
 import { eq } from "drizzle-orm";
-import { toolResult } from "../lib/tool-result.ts";
+import { toolResult } from "@hmls/shared/tool-result";
 
 export const getServicesTool = {
   name: "get_services",

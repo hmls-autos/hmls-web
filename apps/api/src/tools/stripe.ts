@@ -3,8 +3,8 @@ import Stripe from "stripe";
 import { db, schema } from "../db/client.ts";
 import { eq } from "drizzle-orm";
 import { env } from "../env.ts";
-import { Errors } from "../lib/errors.ts";
-import { toolResult } from "../lib/tool-result.ts";
+import { Errors } from "@hmls/shared/errors";
+import { toolResult } from "@hmls/shared/tool-result";
 
 // Initialize Stripe SDK with validated API key
 const stripe = new Stripe(env.STRIPE_SECRET_KEY, {

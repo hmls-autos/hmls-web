@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getMedia, uploadMedia } from "../lib/r2.ts";
-import { toolResult } from "../lib/tool-result.ts";
+import { toolResult } from "@hmls/shared/tool-result";
 
 const saveMediaSchema = z.object({
   data: z.string().describe("Base64-encoded media data"),

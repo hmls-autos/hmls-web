@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { transcribeAudio as whisperTranscribe } from "../lib/whisper.ts";
 import { getMedia } from "../lib/r2.ts";
-import { toolResult } from "../lib/tool-result.ts";
+import { toolResult } from "@hmls/shared/tool-result";
 
 const transcribeAudioSchema = z.object({
   r2Key: z.string().describe("R2 storage key for the audio file"),

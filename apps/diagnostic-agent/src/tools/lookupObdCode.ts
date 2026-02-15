@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { toolResult } from "../lib/tool-result.ts";
+import { toolResult } from "@hmls/shared/tool-result";
 
 const lookupObdCodeSchema = z.object({
   code: z.string().describe("OBD-II code to look up (e.g., P0301)"),

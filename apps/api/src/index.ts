@@ -11,7 +11,7 @@ import { db } from "./db/client.ts";
 import * as schema from "./db/schema.ts";
 import { and, eq } from "drizzle-orm";
 import { EstimatePdf } from "./pdf/EstimatePdf.tsx";
-import { AppError, Errors } from "./lib/errors.ts";
+import { AppError, Errors } from "@hmls/shared/errors";
 import { createAguiEventStream, parseRunAgentInput } from "@zypher/agui";
 import type { UserContext } from "./types/user-context.ts";
 

@@ -9,7 +9,7 @@ import {
   getPricingConfig,
   getVehicleMultiplier,
 } from "./pricing.ts";
-import { toolResult } from "../../lib/tool-result.ts";
+import { toolResult } from "@hmls/shared/tool-result";
 
 export const listServicesTool = {
   name: "list_services",

@@ -1,5 +1,5 @@
 {
-  "workspace": ["./apps/api", "./apps/diagnostic-agent"],
+  "workspace": ["./apps/api", "./apps/diagnostic-agent", "./packages/shared"],
   "imports": {
     "@corespeed/zypher": "jsr:@zypher/agent@0.9.1",
     "@zypher/agui": "jsr:@zypher/agui@0.3.0",

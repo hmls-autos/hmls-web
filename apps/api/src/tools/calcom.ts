@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { env } from "../env.ts";
-import { Errors } from "../lib/errors.ts";
-import { toolResult } from "../lib/tool-result.ts";
+import { Errors } from "@hmls/shared/errors";
+import { toolResult } from "@hmls/shared/tool-result";
 
 const CALCOM_API_BASE = "https://api.cal.com/v1";
 

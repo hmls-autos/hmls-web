@@ -1,0 +1,10 @@
+{
+  "name": "@hmls/shared",
+  "version": "0.1.0",
+  "exports": {
+    ".": "./src/mod.ts",
+    "./tool-result": "./src/lib/tool-result.ts",
+    "./errors": "./src/lib/errors.ts",
+    "./db": "./src/db/client.ts"
+  }
+}
