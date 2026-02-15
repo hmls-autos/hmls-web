@@ -19,7 +19,18 @@ initChat({
 const app = new Hono();
 
 // Middleware
-app.use("*", cors());
+app.use(
+  "*",
+  cors({
+    origin: [
+      "https://hmls.autos",
+      "https://www.hmls.autos",
+      "http://localhost:3000",
+    ],
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use("*", logger());
 
 // Global error handler
