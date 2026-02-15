@@ -1,9 +1,10 @@
 import Link from "next/link";
 import MobileNav from "./MobileNav";
+import ThemeToggle from "./ThemeToggle";
 
 export default function NavbarNew() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md border-b border-border">
       <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link
           href="/"
@@ -32,6 +33,7 @@ export default function NavbarNew() {
           >
             Contact
           </Link>
+          <ThemeToggle />
           <Link
             href="/chat"
             className="px-5 py-2 bg-red-primary text-white text-sm font-medium rounded-lg hover:bg-red-dark transition-colors"

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Barlow, Inter } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ChatWidget } from "@/components/ChatWidget";
@@ -28,14 +29,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${barlow.variable} font-sans antialiased bg-background text-text`}
       >
-        <AuthProvider>
-          {children}
-          <ChatWidget />
-        </AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider>
+            {children}
+            <ChatWidget />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

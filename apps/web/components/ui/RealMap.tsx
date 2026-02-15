@@ -114,8 +114,8 @@ export default function RealMap({ className = "" }: MapProps) {
             icon={createCustomIcon()}
           >
             <Popup className="custom-popup">
-              <div className="text-black font-medium text-sm">{city.name}</div>
-              <div className="text-xs text-gray-600">
+              <div className="text-text font-medium text-sm">{city.name}</div>
+              <div className="text-xs text-text-secondary">
                 Mobile Service Available
               </div>
             </Popup>
@@ -127,7 +127,7 @@ export default function RealMap({ className = "" }: MapProps) {
       <div className="absolute inset-0 pointer-events-none border border-border rounded-2xl z-[400]" />
 
       {/* Coverage Label */}
-      <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-white/90 border border-border rounded-lg text-[10px] text-red-600 font-semibold uppercase tracking-widest backdrop-blur-sm z-[400]">
+      <div className="absolute bottom-4 right-4 px-3 py-1.5 bg-surface/90 border border-border rounded-lg text-[10px] text-red-primary font-semibold uppercase tracking-widest backdrop-blur-sm z-[400]">
         Service Coverage
       </div>
     </div>

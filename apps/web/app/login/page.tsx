@@ -71,7 +71,7 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen flex-col bg-background text-text">
       {/* Header */}
-      <nav className="fixed top-0 w-full max-w-7xl px-6 h-16 flex justify-between items-center z-50 bg-white/80 backdrop-blur-md border-b border-border left-1/2 -translate-x-1/2">
+      <nav className="fixed top-0 w-full max-w-7xl px-6 h-16 flex justify-between items-center z-50 bg-surface/80 backdrop-blur-md border-b border-border left-1/2 -translate-x-1/2">
         <Link
           href="/"
           className="text-xl font-display font-bold tracking-tight text-text"

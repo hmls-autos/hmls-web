@@ -9,7 +9,7 @@ interface MarkdownProps {
 
 export function Markdown({ content, className = "" }: MarkdownProps) {
   return (
-    <div className={`prose prose-invert prose-sm max-w-none ${className}`}>
+    <div className={`prose dark:prose-invert prose-sm max-w-none ${className}`}>
       <ReactMarkdown
         components={{
           // Style overrides for chat context
@@ -22,18 +22,18 @@ export function Markdown({ content, className = "" }: MarkdownProps) {
           ),
           li: ({ children }) => <li className="mb-1">{children}</li>,
           strong: ({ children }) => (
-            <strong className="font-semibold text-emerald-400">
+            <strong className="font-semibold text-red-primary">
               {children}
             </strong>
           ),
           em: ({ children }) => <em className="italic">{children}</em>,
           code: ({ children }) => (
-            <code className="bg-zinc-700/50 px-1.5 py-0.5 rounded text-xs font-mono">
+            <code className="bg-surface-alt px-1.5 py-0.5 rounded text-xs font-mono">
               {children}
             </code>
           ),
           pre: ({ children }) => (
-            <pre className="bg-zinc-800 p-3 rounded-lg overflow-x-auto my-2">
+            <pre className="bg-surface-alt p-3 rounded-lg overflow-x-auto my-2">
               {children}
             </pre>
           ),
@@ -42,7 +42,7 @@ export function Markdown({ content, className = "" }: MarkdownProps) {
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-emerald-400 hover:underline"
+              className="text-red-primary hover:underline"
             >
               {children}
             </a>

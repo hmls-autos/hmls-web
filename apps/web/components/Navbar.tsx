@@ -4,6 +4,7 @@ import { LogIn, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -14,7 +15,7 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center bg-white/80 backdrop-blur-md border-b border-border">
+      <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center bg-surface/80 backdrop-blur-md border-b border-border">
         <Link
           href="/"
           className="text-xl font-display font-bold tracking-tight text-text"
@@ -50,6 +51,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           {isUserLoggedIn ? (
             <button
               type="button"

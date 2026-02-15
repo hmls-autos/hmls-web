@@ -1,10 +1,64 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+@custom-variant dark (&:where(.dark, .dark *));
 
+/* ── Light palette (default) ── */
 :root {
   --background: #fafafa;
   --foreground: #171717;
   --primary: #dc2626;
+  --surface: #ffffff;
+  --surface-alt: #f5f5f5;
+  --surface-hover: #fef2f2;
+  --border: #e5e5e5;
+  --border-hover: #dc2626;
+  --text: #171717;
+  --text-secondary: #737373;
+  --red-primary: #dc2626;
+  --red-dark: #991b1b;
+  --red-light: #fef2f2;
+  --red-glow: #dc262640;
+  --scrollbar-thumb: #d4d4d4;
+  --scrollbar-hover: #dc2626;
+  --tread-color: #dc2626;
+}
+
+/* ── Dark palette ── */
+.dark {
+  --background: #1c1917;
+  --foreground: #fafaf9;
+  --primary: #ef4444;
+  --surface: #292524;
+  --surface-alt: #1c1917;
+  --surface-hover: #44403c;
+  --border: #44403c;
+  --border-hover: #ef4444;
+  --text: #fafaf9;
+  --text-secondary: #a8a29e;
+  --red-primary: #ef4444;
+  --red-dark: #dc2626;
+  --red-light: #451a1a;
+  --red-glow: #ef444440;
+  --scrollbar-thumb: #57534e;
+  --scrollbar-hover: #ef4444;
+  --tread-color: #ef4444;
+}
+
+/* ── Footer stays dark in both modes ── */
+:root {
+  --footer-bg: #171717;
+  --footer-text: #ffffff;
+  --footer-muted: #a3a3a3;
+  --footer-border: #262626;
+  --footer-dim: #737373;
+}
+
+.dark {
+  --footer-bg: #0c0a09;
+  --footer-text: #fafaf9;
+  --footer-muted: #a8a29e;
+  --footer-border: #292524;
+  --footer-dim: #78716c;
 }
 
 @theme inline {
@@ -13,19 +67,22 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
-
-  /* Red mechanic palette */
-  --color-surface: #ffffff;
-  --color-surface-alt: #f5f5f5;
-  --color-surface-hover: #fef2f2;
-  --color-border: #e5e5e5;
-  --color-border-hover: #dc2626;
-  --color-text: #171717;
-  --color-text-secondary: #737373;
-  --color-red-primary: #dc2626;
-  --color-red-dark: #991b1b;
-  --color-red-light: #fef2f2;
-  --color-red-glow: #dc262640;
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-red-primary: var(--red-primary);
+  --color-red-dark: var(--red-dark);
+  --color-red-light: var(--red-light);
+  --color-red-glow: var(--red-glow);
+  --color-footer-bg: var(--footer-bg);
+  --color-footer-text: var(--footer-text);
+  --color-footer-muted: var(--footer-muted);
+  --color-footer-border: var(--footer-border);
+  --color-footer-dim: var(--footer-dim);
 }
 
 body {
@@ -37,11 +94,11 @@ body {
 /* Custom scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #d4d4d4 transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 *:hover {
-  scrollbar-color: #dc2626 transparent;
+  scrollbar-color: var(--scrollbar-hover) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -54,12 +111,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d4d4d4;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #dc2626;
+  background: var(--scrollbar-hover);
 }
 
 /* Scroll reveal animations */
@@ -115,10 +172,20 @@ body {
 .tread-border {
   border-image: repeating-linear-gradient(
       90deg,
-      #dc2626 0px,
-      #dc2626 8px,
+      var(--tread-color) 0px,
+      var(--tread-color) 8px,
       transparent 8px,
       transparent 16px
     )
     4;
+}
+
+/* Leaflet dark mode */
+.dark .leaflet-container {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}
+
+.dark .leaflet-container .leaflet-popup-content-wrapper,
+.dark .leaflet-container .leaflet-popup-tip {
+  filter: invert(1) hue-rotate(180deg);
 }

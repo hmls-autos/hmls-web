@@ -64,7 +64,7 @@ export default function ServicesNew() {
         <div className="text-center mt-12">
           <Link
             href="/chat"
-            className="inline-block px-6 py-3 border border-text text-text rounded-lg hover:bg-text hover:text-white transition-colors font-medium"
+            className="inline-block px-6 py-3 border border-text text-text rounded-lg hover:bg-text hover:text-background transition-colors font-medium"
           >
             View all services
           </Link>

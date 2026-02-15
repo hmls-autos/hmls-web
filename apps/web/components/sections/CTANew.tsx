@@ -14,7 +14,7 @@ export default function CTANew() {
           </p>
           <Link
             href="/chat"
-            className="inline-block px-10 py-4 bg-white text-red-primary rounded-lg text-base font-bold hover:bg-red-light transition-colors"
+            className="inline-block px-10 py-4 bg-surface text-red-primary rounded-lg text-base font-bold hover:bg-red-light transition-colors"
           >
             Get a Free Quote
           </Link>

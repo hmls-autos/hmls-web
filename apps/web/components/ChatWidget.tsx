@@ -79,7 +79,7 @@ export function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 z-50 w-[380px] h-[500px] bg-white border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-6 z-50 w-[380px] h-[500px] bg-surface border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-surface">
@@ -142,7 +142,7 @@ export function ChatWidget() {
                       className={`max-w-[80%] px-4 py-2 rounded-2xl ${
                         msg.role === "user"
                           ? "bg-red-primary text-white rounded-br-md"
-                          : "bg-white border border-border text-text rounded-bl-md"
+                          : "bg-surface border border-border text-text rounded-bl-md"
                       }`}
                     >
                       {msg.role === "user" ? (
@@ -159,7 +159,7 @@ export function ChatWidget() {
               {/* Tool indicator */}
               {isAuthenticated && currentTool && (
                 <div className="flex justify-start">
-                  <div className="bg-white border border-border px-3 py-2 rounded-xl flex items-center gap-2">
+                  <div className="bg-surface border border-border px-3 py-2 rounded-xl flex items-center gap-2">
                     <Loader2 className="w-4 h-4 text-red-primary animate-spin" />
                     <span className="text-xs text-text-secondary">
                       {toolDisplayNames[currentTool] || currentTool}...
@@ -174,7 +174,7 @@ export function ChatWidget() {
                 !currentTool &&
                 messages[messages.length - 1]?.role === "user" && (
                   <div className="flex justify-start">
-                    <div className="bg-white border border-border px-4 py-2 rounded-2xl rounded-bl-md">
+                    <div className="bg-surface border border-border px-4 py-2 rounded-2xl rounded-bl-md">
                       <div className="flex gap-1">
                         <span className="w-2 h-2 bg-text-secondary/50 rounded-full animate-bounce" />
                         <span className="w-2 h-2 bg-text-secondary/50 rounded-full animate-bounce [animation-delay:0.1s]" />

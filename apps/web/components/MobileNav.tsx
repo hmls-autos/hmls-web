@@ -3,6 +3,7 @@
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import ThemeToggle from "./ThemeToggle";
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,7 +20,7 @@ export default function MobileNav() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-16 left-0 right-0 bg-white border-b border-border p-6 shadow-lg">
+        <div className="absolute top-16 left-0 right-0 bg-surface border-b border-border p-6 shadow-lg">
           <div className="flex flex-col gap-4">
             <Link
               href="#services"
@@ -42,6 +43,10 @@ export default function MobileNav() {
             >
               Contact
             </Link>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <span className="text-sm text-text-secondary">Theme</span>
+            </div>
             <Link
               href="/chat"
               onClick={() => setIsOpen(false)}

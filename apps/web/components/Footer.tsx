@@ -2,10 +2,10 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="w-full border-t-4 tread-border bg-text py-12 z-10 relative">
-      <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6 text-neutral-400 text-sm">
+    <footer className="w-full border-t-4 tread-border bg-footer-bg py-12 z-10 relative">
+      <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6 text-footer-muted text-sm">
         <div>
-          <span className="text-white text-lg font-display font-bold mr-2">
+          <span className="text-footer-text text-lg font-display font-bold mr-2">
             HMLS.
           </span>
           &copy; {new Date().getFullYear()} Mobile Mechanic

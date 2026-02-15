@@ -29,7 +29,7 @@ export default function HeroNew() {
             </Link>
             <Link
               href="/contact"
-              className="px-8 py-4 border border-text text-text rounded-lg text-base font-medium hover:bg-text hover:text-white transition-colors"
+              className="px-8 py-4 border border-text text-text rounded-lg text-base font-medium hover:bg-text hover:text-background transition-colors"
             >
               Book a Service
             </Link>
