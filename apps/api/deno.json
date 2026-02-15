@@ -9,9 +9,8 @@
     "nanoid": "npm:nanoid@^5.1.5"
   },
   "deploy": {
-    "runtime": {
-      "entrypoint": "./src/index.ts"
-    }
+    "org": "spinsirr",
+    "app": "hmls-api"
   },
   "tasks": {
     "dev": "deno run --env=../../.env --allow-net --allow-env --allow-read --allow-write --allow-run --allow-sys --watch src/index.ts",

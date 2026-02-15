@@ -22,3 +22,5 @@ build
 
 # temp
 .pr-body.tmp
+.vercel
+.env*.local

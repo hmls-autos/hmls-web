@@ -32,5 +32,9 @@
     "fmt:check": "deno fmt --check",
     "lint": "deno lint",
     "db:up": "docker compose up -d postgres"
+  },
+  "deploy": {
+    "org": "spinsirr",
+    "app": "hmls-api"
   }
 }
