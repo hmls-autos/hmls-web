@@ -96,6 +96,20 @@ packages/
 
 **PDF Generation** (`apps/api/src/pdf/`): React-PDF templates served by API routes
 
+## Pre-Push CI
+
+**Always run the full CI suite locally before pushing:**
+
+```bash
+cd apps/web && bun run lint        # Biome lint
+cd apps/web && bun run typecheck   # TypeScript check
+cd apps/web && bun run build       # Next.js build
+deno task check:api                # Deno check API
+deno task check:diagnostic         # Deno check diagnostic agent
+```
+
+Do not push if any of these fail.
+
 ## Code Style
 
 - **Web**: Biome (double quotes, 2-space indent)
