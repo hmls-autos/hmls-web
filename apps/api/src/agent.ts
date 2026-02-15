@@ -1,9 +1,4 @@
-import {
-  anthropic,
-  createZypherAgent,
-  ZypherAgent,
-  type ZypherContext,
-} from "@corespeed/zypher";
+import { anthropic, createZypherAgent, ZypherAgent, type ZypherContext } from "@corespeed/zypher";
 import { env } from "./env.ts";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { calcomTools } from "./tools/calcom.ts";
@@ -54,6 +49,7 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
       {
         tools: allTools,
         overrides: {
+          // deno-lint-ignore require-await
           systemPromptLoader: async () => systemPrompt,
         },
       },
@@ -68,6 +64,7 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
     model: anthropic(modelId, { apiKey: env.ANTHROPIC_API_KEY }),
     tools: allTools,
     overrides: {
+      // deno-lint-ignore require-await
       systemPromptLoader: async () => systemPrompt,
     },
   });

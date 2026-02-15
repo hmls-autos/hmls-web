@@ -129,9 +129,7 @@ export const createQuoteTool = {
     );
 
     console.log(
-      `[stripe] Quote created: ${finalizedQuote.id} for $${
-        centsToDollars(totalAmount)
-      }`,
+      `[stripe] Quote created: ${finalizedQuote.id} for $${centsToDollars(totalAmount)}`,
     );
 
     const [dbQuote] = await db
@@ -156,7 +154,9 @@ export const createQuoteTool = {
       hostedUrl: (finalizedQuote as unknown as Record<string, unknown>).hosted_quote_url as string,
       message: `Quote created for $${
         centsToDollars(totalAmount).toFixed(2)
-      }. Customer can view and accept at: ${(finalizedQuote as unknown as Record<string, unknown>).hosted_quote_url}`,
+      }. Customer can view and accept at: ${
+        (finalizedQuote as unknown as Record<string, unknown>).hosted_quote_url
+      }`,
     });
   },
 };

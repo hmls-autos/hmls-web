@@ -2,9 +2,9 @@
 
 ## Overview
 
-A comprehensive estimate skill for the HMLS agent that generates downloadable
-PDF estimates for customers. The skill includes a pricing engine with
-vehicle-based multipliers, tiered parts markup, and dynamic fees.
+A comprehensive estimate skill for the HMLS agent that generates downloadable PDF estimates for
+customers. The skill includes a pricing engine with vehicle-based multipliers, tiered parts markup,
+and dynamic fees.
 
 ## Architecture
 
@@ -55,8 +55,7 @@ const agent = await createZypherAgent({
 ### Base Rates
 
 - **Labor rate:** $140/hr (for hourly services)
-- **Diagnostic fee:** $95 (complex electrical/computer only, waived if repair
-  proceeds)
+- **Diagnostic fee:** $95 (complex electrical/computer only, waived if repair proceeds)
 
 ### Vehicle Multipliers
 
@@ -202,13 +201,13 @@ INSERT INTO pricing_config (key, value, description) VALUES
 |                       | **Subtotal**               | $475.00     |
 |                       | **Estimated Range**        | $427 - $523 |
 
-_Note: Prices shown are final. Vehicle adjustments and fees are applied
-internally but not displayed._
+_Note: Prices shown are final. Vehicle adjustments and fees are applied internally but not
+displayed._
 
 **Footer Section:**
 
-- Disclaimer: "This estimate is valid for 14 days. Final price may vary based on
-  conditions found during service."
+- Disclaimer: "This estimate is valid for 14 days. Final price may vary based on conditions found
+  during service."
 - Terms: Payment due upon completion, accepted methods
 - CTA: "Ready to proceed? Reply in chat or call (XXX) XXX-XXXX"
 - HMLS contact info and service area

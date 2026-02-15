@@ -10,8 +10,7 @@ const transcribeAudioSchema = z.object({
 
 export const transcribeAudioTool = {
   name: "transcribeAudio",
-  description:
-    "Transcribe vehicle audio (engine sounds, brake noises, etc.) using Whisper",
+  description: "Transcribe vehicle audio (engine sounds, brake noises, etc.) using Whisper",
   schema: transcribeAudioSchema,
   execute: async (params: z.infer<typeof transcribeAudioSchema>) => {
     const { r2Key, filename } = params;
@@ -25,8 +24,7 @@ export const transcribeAudioTool = {
     return toolResult({
       transcription: result.text,
       durationSeconds: result.duration,
-      analysis:
-        `Audio transcription: "${result.text}". Duration: ${result.duration} seconds.`,
+      analysis: `Audio transcription: "${result.text}". Duration: ${result.duration} seconds.`,
     });
   },
 };

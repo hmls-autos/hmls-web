@@ -106,18 +106,16 @@ When analyzing video, provide:
 
 "I've analyzed your video of the steering wheel shake:
 
-**Visual Findings**: The steering wheel oscillates approximately 1-2 inches side
-to side at highway speed.
+**Visual Findings**: The steering wheel oscillates approximately 1-2 inches side to side at highway
+speed.
 
-**Motion Analysis**: The vibration appears speed-dependent (worse at 60+ mph)
-and is not affected by braking in this clip.
+**Motion Analysis**: The vibration appears speed-dependent (worse at 60+ mph) and is not affected by
+braking in this clip.
 
-**Combined Assessment**: This pattern is consistent with wheel balance issues or
-tire irregularities. The frequency of oscillation suggests front wheel
-imbalance.
+**Combined Assessment**: This pattern is consistent with wheel balance issues or tire
+irregularities. The frequency of oscillation suggests front wheel imbalance.
 
-**Severity: Medium** - Safe to drive but should be addressed for comfort and
-tire longevity.
+**Severity: Medium** - Safe to drive but should be addressed for comfort and tire longevity.
 
 **Recommended Action**:
 
@@ -126,5 +124,4 @@ tire longevity.
 3. Have wheels balanced
 4. If persists, have tires and wheels inspected for runout
 
-Can you send a video showing the shake while braking? This will help rule out
-warped rotors."
+Can you send a video showing the shake while braking? This will help rule out warped rotors."

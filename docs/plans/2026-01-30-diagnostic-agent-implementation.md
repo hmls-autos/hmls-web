@@ -1,17 +1,17 @@
 # Diagnostic Agent Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
-> implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan
+> task-by-task.
 
-**Goal:** Build a standalone multimodal diagnostic agent that analyzes photos,
-audio, video, and OBD-II codes to diagnose vehicle issues.
+**Goal:** Build a standalone multimodal diagnostic agent that analyzes photos, audio, video, and
+OBD-II codes to diagnose vehicle issues.
 
-**Architecture:** Deno + Zypher agent deployed on Railway, with Supabase Auth,
-Stripe credits, Cloudflare R2 media storage, and shared PostgreSQL database.
-AG-UI protocol for conversational streaming.
+**Architecture:** Deno + Zypher agent deployed on Railway, with Supabase Auth, Stripe credits,
+Cloudflare R2 media storage, and shared PostgreSQL database. AG-UI protocol for conversational
+streaming.
 
-**Tech Stack:** Deno, Zypher framework, Claude Sonnet 4, OpenAI Whisper,
-Supabase Auth, Stripe, Cloudflare R2, Drizzle ORM, PostgreSQL
+**Tech Stack:** Deno, Zypher framework, Claude Sonnet 4, OpenAI Whisper, Supabase Auth, Stripe,
+Cloudflare R2, Drizzle ORM, PostgreSQL
 
 ---
 
@@ -173,15 +173,7 @@ git commit -m "feat(diagnostic-agent): add environment configuration with Zod va
 **Step 1: Create schema.ts**
 
 ```typescript
-import {
-  integer,
-  jsonb,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 // Reference existing customers table
 export const customers = pgTable("customers", {
@@ -284,8 +276,7 @@ export const db = drizzle(client, { schema });
 
 **Step 3: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/db/schema.ts src/db/client.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/db/schema.ts src/db/client.ts` Expected: No errors
 
 **Step 4: Commit**
 
@@ -420,8 +411,7 @@ export async function verifyToken(token: string): Promise<AuthUser | null> {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/lib/supabase.ts` Expected: No
-errors
+Run: `cd apps/diagnostic-agent && deno check src/lib/supabase.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -503,8 +493,7 @@ export function calculateVideoCredits(durationSeconds: number): number {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/lib/stripe.ts` Expected: No
-errors
+Run: `cd apps/diagnostic-agent && deno check src/lib/stripe.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -565,8 +554,7 @@ export async function uploadMedia(
 
   return {
     key,
-    url:
-      `https://${env.R2_BUCKET_NAME}.${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`,
+    url: `https://${env.R2_BUCKET_NAME}.${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`,
   };
 }
 
@@ -647,8 +635,7 @@ export async function transcribeAudio(
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/lib/whisper.ts` Expected: No
-errors
+Run: `cd apps/diagnostic-agent && deno check src/lib/whisper.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -683,8 +670,7 @@ const analyzeImageSchema = z.object({
 
 export const analyzeImageTool = {
   name: "analyzeImage",
-  description:
-    "Analyze a vehicle photo for damage, wear, fluid leaks, and mechanical issues",
+  description: "Analyze a vehicle photo for damage, wear, fluid leaks, and mechanical issues",
   parameters: analyzeImageSchema,
   execute: async (params: z.infer<typeof analyzeImageSchema>) => {
     const { imageUrl, context } = params;
@@ -740,8 +726,7 @@ Provide a detailed analysis with severity ratings (low/medium/high) for any issu
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/tools/analyzeImage.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/tools/analyzeImage.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -772,8 +757,7 @@ const transcribeAudioSchema = z.object({
 
 export const transcribeAudioTool = {
   name: "transcribeAudio",
-  description:
-    "Transcribe vehicle audio (engine sounds, brake noises, etc.) using Whisper",
+  description: "Transcribe vehicle audio (engine sounds, brake noises, etc.) using Whisper",
   parameters: transcribeAudioSchema,
   execute: async (params: z.infer<typeof transcribeAudioSchema>) => {
     const { r2Key, filename } = params;
@@ -787,8 +771,7 @@ export const transcribeAudioTool = {
     return {
       transcription: result.text,
       durationSeconds: result.duration,
-      analysis:
-        `Audio transcription: "${result.text}". Duration: ${result.duration} seconds.`,
+      analysis: `Audio transcription: "${result.text}". Duration: ${result.duration} seconds.`,
     };
   },
 };
@@ -796,8 +779,7 @@ export const transcribeAudioTool = {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/tools/transcribeAudio.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/tools/transcribeAudio.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -867,9 +849,7 @@ export const extractVideoFramesTool = {
       // Upload extracted frames to R2
       const frameKeys: string[] = [];
       for (let i = 1; i <= frameCount; i++) {
-        const framePath = `${tempOutput}/frame_${
-          String(i).padStart(3, "0")
-        }.jpg`;
+        const framePath = `${tempOutput}/frame_${String(i).padStart(3, "0")}.jpg`;
         try {
           const frameData = await Deno.readFile(framePath);
           const result = await uploadMedia(
@@ -901,8 +881,7 @@ export const extractVideoFramesTool = {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/tools/extractVideoFrames.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/tools/extractVideoFrames.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -964,18 +943,15 @@ const OBD_CODES: Record<string, { description: string; system: string }> = {
     system: "EVAP",
   },
   P0442: {
-    description:
-      "Evaporative Emission Control System Leak Detected (small leak)",
+    description: "Evaporative Emission Control System Leak Detected (small leak)",
     system: "EVAP",
   },
   P0455: {
-    description:
-      "Evaporative Emission Control System Leak Detected (gross leak)",
+    description: "Evaporative Emission Control System Leak Detected (gross leak)",
     system: "EVAP",
   },
   P0456: {
-    description:
-      "Evaporative Emission Control System Leak Detected (very small leak)",
+    description: "Evaporative Emission Control System Leak Detected (very small leak)",
     system: "EVAP",
   },
 
@@ -1075,8 +1051,7 @@ export const lookupObdCodeTool = {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/tools/lookupObdCode.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/tools/lookupObdCode.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -1155,8 +1130,7 @@ export const getMediaTool = {
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/tools/storage.ts` Expected: No
-errors
+Run: `cd apps/diagnostic-agent && deno check src/tools/storage.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -1248,8 +1222,7 @@ export async function authenticateRequest(
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/middleware/auth.ts` Expected:
-No errors
+Run: `cd apps/diagnostic-agent && deno check src/middleware/auth.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -1349,8 +1322,7 @@ export async function processCredits(
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/middleware/credits.ts`
-Expected: No errors
+Run: `cd apps/diagnostic-agent && deno check src/middleware/credits.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -1415,8 +1387,7 @@ export const SYSTEM_PROMPT =
 
 **Step 2: Verify types**
 
-Run: `cd apps/diagnostic-agent && deno check src/system-prompt.ts` Expected: No
-errors
+Run: `cd apps/diagnostic-agent && deno check src/system-prompt.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -1436,12 +1407,7 @@ git commit -m "feat(diagnostic-agent): add diagnostic agent system prompt"
 **Step 1: Create agent.ts**
 
 ```typescript
-import {
-  anthropic,
-  createZypherAgent,
-  ZypherAgent,
-  type ZypherContext,
-} from "@corespeed/zypher";
+import { anthropic, createZypherAgent, ZypherAgent, type ZypherContext } from "@corespeed/zypher";
 import { env } from "./env.ts";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { analyzeImageTool } from "./tools/analyzeImage.ts";
@@ -1710,18 +1676,13 @@ Deno.serve({ port: parseInt(env.PORT) }, async (request) => {
           // Store media record
           await db.insert(diagnosticMedia).values({
             sessionId,
-            type: type === "photo"
-              ? "photo"
-              : type === "audio"
-              ? "audio"
-              : "video",
+            type: type === "photo" ? "photo" : type === "audio" ? "audio" : "video",
             r2Key: uploadResult.key,
             creditCost: creditResult.charged,
             metadata: { filename, contentType, durationSeconds },
           });
 
-          agentInput =
-            `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
+          agentInput = `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
         } else {
           agentInput = content;
         }
@@ -1782,8 +1743,7 @@ git commit -m "feat(diagnostic-agent): add API server with session and input end
 
 **Step 1: Create skill file (use content from design document)**
 
-See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full
-content.
+See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full content.
 
 **Step 2: Commit**
 
@@ -1802,8 +1762,7 @@ git commit -m "feat(diagnostic-agent): add photo-diagnosis skill"
 
 **Step 1: Create skill file (use content from design document)**
 
-See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full
-content.
+See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full content.
 
 **Step 2: Commit**
 
@@ -1822,8 +1781,7 @@ git commit -m "feat(diagnostic-agent): add audio-diagnosis skill"
 
 **Step 1: Create skill file (use content from design document)**
 
-See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full
-content.
+See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full content.
 
 **Step 2: Commit**
 
@@ -1842,8 +1800,7 @@ git commit -m "feat(diagnostic-agent): add video-diagnosis skill"
 
 **Step 1: Create skill file (use content from design document)**
 
-See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full
-content.
+See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full content.
 
 **Step 2: Commit**
 
@@ -1862,8 +1819,7 @@ git commit -m "feat(diagnostic-agent): add obd-diagnosis skill"
 
 **Step 1: Create skill file (use content from design document)**
 
-See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full
-content.
+See `docs/plans/2026-01-30-diagnostic-agent-design.md` Section 8 for full content.
 
 **Step 2: Commit**
 

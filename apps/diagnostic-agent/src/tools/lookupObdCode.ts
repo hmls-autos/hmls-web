@@ -41,18 +41,15 @@ const OBD_CODES: Record<string, { description: string; system: string }> = {
     system: "EVAP",
   },
   P0442: {
-    description:
-      "Evaporative Emission Control System Leak Detected (small leak)",
+    description: "Evaporative Emission Control System Leak Detected (small leak)",
     system: "EVAP",
   },
   P0455: {
-    description:
-      "Evaporative Emission Control System Leak Detected (gross leak)",
+    description: "Evaporative Emission Control System Leak Detected (gross leak)",
     system: "EVAP",
   },
   P0456: {
-    description:
-      "Evaporative Emission Control System Leak Detected (very small leak)",
+    description: "Evaporative Emission Control System Leak Detected (very small leak)",
     system: "EVAP",
   },
 
@@ -114,6 +111,7 @@ export const lookupObdCodeTool = {
   name: "lookupObdCode",
   description: "Look up OBD-II diagnostic trouble code description and system",
   schema: lookupObdCodeSchema,
+  // deno-lint-ignore require-await
   execute: async (params: z.infer<typeof lookupObdCodeSchema>) => {
     const { code } = params;
     const upperCode = code.toUpperCase().trim();

@@ -2,14 +2,13 @@
 
 ## Overview
 
-The Mobile Mechanic Agent is a customer-facing AI receptionist for HMLS Mobile
-Mechanic. It helps customers understand services, get price estimates, receive
-formal quotes, and book appointments.
+The Mobile Mechanic Agent is a customer-facing AI receptionist for HMLS Mobile Mechanic. It helps
+customers understand services, get price estimates, receive formal quotes, and book appointments.
 
 ## Access Requirements
 
-**Login Required** - Customers must be authenticated to use the chat service.
-User information is automatically injected from the session.
+**Login Required** - Customers must be authenticated to use the chat service. User information is
+automatically injected from the session.
 
 ## User Flow
 
@@ -100,8 +99,7 @@ Login → Chat → [Service Inquiry / Estimate / Quote / Booking]
 | Vehicle Model | Before estimate/booking |
 | Vehicle Year  | Before estimate/booking |
 
-**Note:** Vehicle info is NOT stored in profile to support customers with
-multiple vehicles.
+**Note:** Vehicle info is NOT stored in profile to support customers with multiple vehicles.
 
 ## Technical Integration
 
@@ -161,8 +159,8 @@ The agent appends this to the system prompt as:
 - **Rush service**: Same-day service adds fee
 - **After-hours**: Evening appointments add fee
 
-**Important:** Agent does NOT explain pricing adjustments to customers. Just
-provides the final price range.
+**Important:** Agent does NOT explain pricing adjustments to customers. Just provides the final
+price range.
 
 ## Business Information
 
@@ -174,8 +172,8 @@ provides the final price range.
 
 ### Cities Served
 
-Irvine, Newport Beach, Anaheim, Santa Ana, Costa Mesa, Fullerton, Huntington
-Beach, Lake Forest, Mission Viejo
+Irvine, Newport Beach, Anaheim, Santa Ana, Costa Mesa, Fullerton, Huntington Beach, Lake Forest,
+Mission Viejo
 
 ## Skills Reference
 
@@ -217,8 +215,7 @@ If the agent reports database errors when calling tools:
 
 **Tool Definition Format**
 
-All tools must use consistent format with `schema` (not `parameters`) for Zod
-validation:
+All tools must use consistent format with `schema` (not `parameters`) for Zod validation:
 
 ```typescript
 export const myTool = {

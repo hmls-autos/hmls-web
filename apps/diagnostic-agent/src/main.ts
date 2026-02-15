@@ -196,8 +196,7 @@ app.post("/diagnostics/:id/input", async (c) => {
       metadata: { filename, contentType, durationSeconds },
     });
 
-    agentInput =
-      `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
+    agentInput = `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
   } else {
     agentInput = content;
   }

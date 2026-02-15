@@ -132,9 +132,8 @@ When interpreting codes, provide:
 
 "You've provided code **P0171** - System Too Lean (Bank 1).
 
-**What This Means**: The engine is receiving more air than fuel on one side of
-the engine. The computer is trying to compensate by adding fuel but has reached
-its limit.
+**What This Means**: The engine is receiving more air than fuel on one side of the engine. The
+computer is trying to compensate by adding fuel but has reached its limit.
 
 **Likely Causes** (most to least common):
 
@@ -143,8 +142,8 @@ its limit.
 3. Fuel delivery issue (weak pump, clogged filter, failing injector)
 4. Exhaust leak before O2 sensor
 
-**Severity: Medium** - Safe to drive short-term but fuel economy and performance
-suffer. Can cause catalyst damage if ignored.
+**Severity: Medium** - Safe to drive short-term but fuel economy and performance suffer. Can cause
+catalyst damage if ignored.
 
 **DIY Checks**:
 
@@ -152,8 +151,7 @@ suffer. Can cause catalyst damage if ignored.
 - Check for cracked or disconnected vacuum hoses
 - Clean the MAF sensor with MAF-specific cleaner
 
-**Professional Diagnosis**: Smoke test for vacuum leaks, fuel pressure test,
-live data review.
+**Professional Diagnosis**: Smoke test for vacuum leaks, fuel pressure test, live data review.
 
-Do you have any other codes? And have you noticed any performance issues like
-rough idle or hesitation?"
+Do you have any other codes? And have you noticed any performance issues like rough idle or
+hesitation?"

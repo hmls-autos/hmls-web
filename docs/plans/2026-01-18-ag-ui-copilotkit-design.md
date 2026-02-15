@@ -2,8 +2,8 @@
 
 ## Overview
 
-Integrate CopilotKit in headless mode to gain full AG-UI protocol compliance
-while preserving the existing custom chat UI design.
+Integrate CopilotKit in headless mode to gain full AG-UI protocol compliance while preserving the
+existing custom chat UI design.
 
 ## Goals
 
@@ -56,10 +56,7 @@ Note: `@copilotkit/react-ui` is NOT needed (headless mode).
 CopilotKit runtime endpoint that bridges to the Deno agent:
 
 ```typescript
-import {
-  CopilotRuntime,
-  copilotRuntimeNextJSAppRouterEndpoint,
-} from "@copilotkit/runtime";
+import { CopilotRuntime, copilotRuntimeNextJSAppRouterEndpoint } from "@copilotkit/runtime";
 import { HttpAgent } from "@ag-ui/client";
 
 const runtime = new CopilotRuntime({
@@ -194,9 +191,8 @@ const currentTool = inProgressTool?.name;
 
 ## Shared Conversation State
 
-Both ChatWidget (popup) and chat/page.tsx share the same conversation because
-they're under the same `<CopilotKit>` provider. User can start in popup,
-navigate to /chat, and continue seamlessly.
+Both ChatWidget (popup) and chat/page.tsx share the same conversation because they're under the same
+`<CopilotKit>` provider. User can start in popup, navigate to /chat, and continue seamlessly.
 
 ## What This Enables
 

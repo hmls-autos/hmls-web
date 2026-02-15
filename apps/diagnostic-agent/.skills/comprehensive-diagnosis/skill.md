@@ -5,8 +5,8 @@ description: Synthesize all diagnostic inputs to provide complete vehicle assess
 
 # Comprehensive Diagnosis Skill
 
-Use this skill when you have multiple types of input (photos, audio, video, OBD
-codes) and need to synthesize a complete diagnosis.
+Use this skill when you have multiple types of input (photos, audio, video, OBD codes) and need to
+synthesize a complete diagnosis.
 
 ## Synthesis Process
 
@@ -159,9 +159,8 @@ If issues are related, explain the chain of causation.
 
 ### Summary
 
-Your vehicle has a failing wheel bearing (right front) and worn brake pads on
-the front axle. The grinding noise you recorded is primarily the wheel bearing,
-not the brakes.
+Your vehicle has a failing wheel bearing (right front) and worn brake pads on the front axle. The
+grinding noise you recorded is primarily the wheel bearing, not the brakes.
 
 ### Evidence Review
 
@@ -174,10 +173,9 @@ not the brakes.
 
 **Confidence: High**
 
-The sound characteristics (speed-dependent, changes with turning) combined with
-the steering vibration are textbook wheel bearing symptoms. The noise being
-louder when turning right indicates the right side bearing, as this loads weight
-onto the failing bearing.
+The sound characteristics (speed-dependent, changes with turning) combined with the steering
+vibration are textbook wheel bearing symptoms. The noise being louder when turning right indicates
+the right side bearing, as this loads weight onto the failing bearing.
 
 **Severity: High** - Wheel bearings can seize, causing loss of vehicle control.
 
@@ -185,15 +183,15 @@ onto the failing bearing.
 
 **Confidence: High**
 
-The photos show approximately 3mm of pad material remaining. While not
-immediately dangerous, replacement should be scheduled.
+The photos show approximately 3mm of pad material remaining. While not immediately dangerous,
+replacement should be scheduled.
 
 **Severity: Medium** - Good for another 2,000-3,000 miles with normal driving.
 
 ### Root Cause Analysis
 
-These issues are not related. The wheel bearing failure is likely due to
-age/mileage. The brake wear is normal maintenance.
+These issues are not related. The wheel bearing failure is likely due to age/mileage. The brake wear
+is normal maintenance.
 
 ### Repair Priority
 
@@ -203,13 +201,11 @@ age/mileage. The brake wear is normal maintenance.
 
 ### Cost Considerations
 
-- Wheel bearing: $150-300 parts, 1-2 hours labor. Requires press, not
-  DIY-friendly.
+- Wheel bearing: $150-300 parts, 1-2 hours labor. Requires press, not DIY-friendly.
 - Brake pads: $30-80 parts, DIY possible with basic tools
 - Rotors: Add $60-120 if replacing
 
 ### Follow-Up
 
-After wheel bearing replacement, test drive at highway speed to confirm noise is
-resolved. Monitor brake feel and schedule pad replacement before wear indicators
-contact rotors."
+After wheel bearing replacement, test drive at highway speed to confirm noise is resolved. Monitor
+brake feel and schedule pad replacement before wear indicators contact rotors."

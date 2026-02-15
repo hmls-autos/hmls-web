@@ -34,5 +34,4 @@ Adjust prices internally based on:
 - **Vehicle age**: Older vehicles may need additional work
 - **Issue complexity**: Complex issues use higher end of range
 
-**Do NOT explain these adjustments to customers.** Just provide the final price
-in a friendly way.
+**Do NOT explain these adjustments to customers.** Just provide the final price in a friendly way.

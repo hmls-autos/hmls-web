@@ -1,17 +1,16 @@
 # Estimate Skill Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
-> implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan
+> task-by-task.
 
-**Goal:** Build a comprehensive estimate skill for the HMLS agent that generates
-downloadable PDF estimates with vehicle-based pricing.
+**Goal:** Build a comprehensive estimate skill for the HMLS agent that generates downloadable PDF
+estimates with vehicle-based pricing.
 
-**Architecture:** Modular skill pattern exporting tools + prompt. Server-side
-PDF generation via React-PDF. Dual-access API (authenticated + shareable
-tokens). Pricing engine with make/model multipliers and tiered parts markup.
+**Architecture:** Modular skill pattern exporting tools + prompt. Server-side PDF generation via
+React-PDF. Dual-access API (authenticated + shareable tokens). Pricing engine with make/model
+multipliers and tiered parts markup.
 
-**Tech Stack:** Deno/TypeScript (agent), Hono (API), React-PDF, Drizzle ORM,
-PostgreSQL
+**Tech Stack:** Deno/TypeScript (agent), Hono (API), React-PDF, Drizzle ORM, PostgreSQL
 
 **Design Document:** `docs/plans/2026-01-17-estimate-skill-design.md`
 
@@ -106,9 +105,7 @@ export const estimates = pgTable("estimates", {
   shareToken: varchar("share_token", { length: 32 }).unique(),
   validDays: integer("valid_days").notNull().default(14),
   expiresAt: timestamp("expires_at").notNull(),
-  convertedToQuoteId: integer("converted_to_quote_id").references(() =>
-    quotes.id
-  ),
+  convertedToQuoteId: integer("converted_to_quote_id").references(() => quotes.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -145,8 +142,8 @@ git commit -m "feat(db): add estimates table schema"
 
 **Step 1: Push schema to database**
 
-Run: `bun run db:push` Expected: Tables created successfully (pricing_config,
-vehicle_pricing, estimates)
+Run: `bun run db:push` Expected: Tables created successfully (pricing_config, vehicle_pricing,
+estimates)
 
 **Step 2: Seed pricing config**
 
@@ -258,8 +255,7 @@ export const estimateSkill = {
 
 **Step 3: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/types.ts` Expected: No
-errors
+Run: `cd apps/agent && deno check src/skills/estimate/types.ts` Expected: No errors
 
 **Step 4: Commit**
 
@@ -313,8 +309,7 @@ export function clearConfigCache(): void {
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts` Expected: No
-errors
+Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -381,8 +376,7 @@ export async function getVehicleMultiplier(
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts` Expected: No
-errors
+Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -453,8 +447,7 @@ export async function calculatePrice(
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts` Expected: No
-errors
+Run: `cd apps/agent && deno check src/skills/estimate/pricing.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -480,11 +473,7 @@ import { z } from "zod";
 import { nanoid } from "npm:nanoid";
 import { db, schema } from "../../db/client.ts";
 import { eq } from "drizzle-orm";
-import {
-  calculatePrice,
-  getPricingConfig,
-  getVehicleMultiplier,
-} from "./pricing.ts";
+import { calculatePrice, getPricingConfig, getVehicleMultiplier } from "./pricing.ts";
 import type { EstimateResult } from "./types.ts";
 
 export const createEstimateTool = {
@@ -626,9 +615,7 @@ export const createEstimateTool = {
       downloadUrl: `${baseUrl}/${estimate.id}/pdf`,
       shareUrl: `${baseUrl}/${estimate.id}/pdf?token=${shareToken}`,
       subtotal: subtotal / 100,
-      priceRange: `$${(rangeLow / 100).toFixed(2)} - $${
-        (rangeHigh / 100).toFixed(2)
-      }`,
+      priceRange: `$${(rangeLow / 100).toFixed(2)} - $${(rangeHigh / 100).toFixed(2)}`,
       expiresAt,
     };
   },
@@ -637,8 +624,7 @@ export const createEstimateTool = {
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/tools.ts` Expected: No
-errors
+Run: `cd apps/agent && deno check src/skills/estimate/tools.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -693,8 +679,7 @@ export const getEstimateTool = {
         isExpired,
         convertedToQuote: estimate.convertedToQuoteId !== null,
         downloadUrl: `/api/estimates/${estimate.id}/pdf`,
-        shareUrl:
-          `/api/estimates/${estimate.id}/pdf?token=${estimate.shareToken}`,
+        shareUrl: `/api/estimates/${estimate.id}/pdf?token=${estimate.shareToken}`,
       },
     };
   },
@@ -703,8 +688,7 @@ export const getEstimateTool = {
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/tools.ts` Expected: No
-errors
+Run: `cd apps/agent && deno check src/skills/estimate/tools.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -774,8 +758,7 @@ This estimate is valid for 14 days. Would you like me to send you a formal quote
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/prompt.ts` Expected: No
-errors
+Run: `cd apps/agent && deno check src/skills/estimate/prompt.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -816,8 +799,7 @@ export * from "./pricing.ts";
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/agent && deno check src/skills/estimate/index.ts` Expected: No
-errors
+Run: `cd apps/agent && deno check src/skills/estimate/index.ts` Expected: No errors
 
 **Step 3: Commit**
 
@@ -1149,15 +1131,9 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
             <Text style={styles.customerName}>
               {customer.name || "Customer"}
             </Text>
-            {customer.phone && (
-              <Text style={styles.customerDetail}>{customer.phone}</Text>
-            )}
-            {customer.email && (
-              <Text style={styles.customerDetail}>{customer.email}</Text>
-            )}
-            {customer.address && (
-              <Text style={styles.customerDetail}>{customer.address}</Text>
-            )}
+            {customer.phone && <Text style={styles.customerDetail}>{customer.phone}</Text>}
+            {customer.email && <Text style={styles.customerDetail}>{customer.email}</Text>}
+            {customer.address && <Text style={styles.customerDetail}>{customer.address}</Text>}
             <View style={styles.vehicleInfo}>
               <Text style={styles.customerDetail}>
                 Vehicle: {formatVehicle(customer.vehicleInfo)}
@@ -1195,8 +1171,7 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Estimated Range:</Text>
               <Text style={styles.rangeValue}>
-                {formatPrice(estimate.priceRangeLow)} -{" "}
-                {formatPrice(estimate.priceRangeHigh)}
+                {formatPrice(estimate.priceRangeLow)} - {formatPrice(estimate.priceRangeHigh)}
               </Text>
             </View>
           </View>
@@ -1214,9 +1189,8 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
         <View style={styles.footer}>
           <Text style={styles.disclaimer}>
             This estimate is valid until{" "}
-            {formatDate(estimate.expiresAt)}. Final price may vary based on
-            actual conditions found during service. Payment is due upon
-            completion of service.
+            {formatDate(estimate.expiresAt)}. Final price may vary based on actual conditions found
+            during service. Payment is due upon completion of service.
           </Text>
           <Text style={styles.cta}>
             Ready to proceed? Reply in chat or call us to schedule your service.
@@ -1233,8 +1207,7 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/api && bun run typecheck` Expected: No errors (or pre-existing
-bun-types error only)
+Run: `cd apps/api && bun run typecheck` Expected: No errors (or pre-existing bun-types error only)
 
 **Step 3: Commit**
 
@@ -1352,8 +1325,7 @@ export default estimates;
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/api && bun run typecheck` Expected: No errors (or pre-existing
-errors only)
+Run: `cd apps/api && bun run typecheck` Expected: No errors (or pre-existing errors only)
 
 **Step 3: Commit**
 
@@ -1382,13 +1354,11 @@ app.route("/api/estimates", estimates);
 
 **Step 2: Run typecheck**
 
-Run: `cd apps/api && bun run typecheck` Expected: No errors (or pre-existing
-errors only)
+Run: `cd apps/api && bun run typecheck` Expected: No errors (or pre-existing errors only)
 
 **Step 3: Test the API starts**
 
-Run: `cd apps/api && timeout 5 bun run dev || true` Expected: Server starts
-without import errors
+Run: `cd apps/api && timeout 5 bun run dev || true` Expected: Server starts without import errors
 
 **Step 4: Commit**
 
@@ -1449,8 +1419,8 @@ Run in separate terminals:
 **Step 2: Test estimate flow**
 
 1. Open chat at http://localhost:3000/chat
-2. Create a customer: "I need a quote for brake service. My name is John, phone
-   555-1234, I have a 2020 BMW M3"
+2. Create a customer: "I need a quote for brake service. My name is John, phone 555-1234, I have a
+   2020 BMW M3"
 3. Request estimate: "How much would front brake pads cost?"
 4. Verify agent calls create_estimate tool
 5. Verify download link is returned

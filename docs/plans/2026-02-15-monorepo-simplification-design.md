@@ -1,18 +1,20 @@
 # Monorepo Simplification Design
 
-**Date:** 2026-02-15
-**Status:** Approved
-**Approach:** Conservative Cleanup
+**Date:** 2026-02-15 **Status:** Approved **Approach:** Conservative Cleanup
 
 ## Overview
 
-Simplify the hmls-web monorepo by removing unused packages, redundant configuration files, and outdated documentation while preserving all functional code and the existing Deno workspace structure.
+Simplify the hmls-web monorepo by removing unused packages, redundant configuration files, and
+outdated documentation while preserving all functional code and the existing Deno workspace
+structure.
 
 ## Motivation
 
 The current monorepo contains:
+
 - Two unused packages (`packages/proto/`, `packages/shared/`) with no imports in any app
-- Outdated documentation files (`CONTRIBUTING.md`, `DEVELOPMENT.md`) with information that conflicts with or duplicates `CLAUDE.md`
+- Outdated documentation files (`CONTRIBUTING.md`, `DEVELOPMENT.md`) with information that conflicts
+  with or duplicates `CLAUDE.md`
 - Redundant configuration (`apps/web/deno.json` when web uses Bun/package.json primarily)
 
 This creates confusion for developers and makes the project harder to understand.
@@ -24,7 +26,8 @@ This creates confusion for developers and makes the project harder to understand
 1. **`packages/proto/`** - Contains only `agent.proto` file, not imported anywhere
 2. **`packages/shared/`** - Has types for websocket/entities, but no imports found in apps
 3. **`CONTRIBUTING.md`** - Branch strategy and commit conventions (already covered in CLAUDE.md)
-4. **`DEVELOPMENT.md`** - Setup instructions (outdated, references old `bun` commands instead of `deno task`)
+4. **`DEVELOPMENT.md`** - Setup instructions (outdated, references old `bun` commands instead of
+   `deno task`)
 5. **`apps/web/deno.json`** - Redundant since web app uses `package.json` and Bun as primary tooling
 
 ### What We'll Update
@@ -67,6 +70,7 @@ This creates confusion for developers and makes the project harder to understand
 ### Verification Steps
 
 After each change, verify:
+
 - Run `deno task check:api` - ensure API still type-checks
 - Run `deno task check:diagnostic` - ensure diagnostic agent still type-checks
 - Run `deno task typecheck:web` - ensure web still type-checks
@@ -75,6 +79,7 @@ After each change, verify:
 ### Rollback Plan
 
 Since we're only deleting files, git can restore everything with:
+
 ```bash
 git checkout HEAD -- packages/ CONTRIBUTING.md DEVELOPMENT.md apps/web/deno.json
 ```
@@ -133,15 +138,15 @@ The architecture section should be updated to:
 ```markdown
 ## Architecture
 
-Deno workspace monorepo for a mobile mechanic business with an AI-powered chat
-agent. All apps deploy to **Deno Deploy** via GitHub integration. Root config is
-`deno.json`; web app uses Bun/Next.js internally.
-
+Deno workspace monorepo for a mobile mechanic business with an AI-powered chat agent. All apps
+deploy to **Deno Deploy** via GitHub integration. Root config is `deno.json`; web app uses
+Bun/Next.js internally.
 ```
-apps/
-├── web/                # Next.js 16 frontend (React 19, Tailwind CSS 4) → Deno Deploy
-├── api/                # Deno AI agent (Zypher framework, Claude Sonnet 4, AG-UI protocol) → Deno Deploy
-└── diagnostic-agent/   # Deno diagnostic agent → Deno Deploy
+
+apps/ ├── web/ # Next.js 16 frontend (React 19, Tailwind CSS 4) → Deno Deploy ├── api/ # Deno AI
+agent (Zypher framework, Claude Sonnet 4, AG-UI protocol) → Deno Deploy └── diagnostic-agent/ # Deno
+diagnostic agent → Deno Deploy
+
 ```
 ```
 

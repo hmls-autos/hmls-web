@@ -67,16 +67,15 @@ When analyzing photos, provide:
 
 ## Example Response
 
-"Looking at your tire photo, I can see significant cupping wear on the outer
-edge. This pattern typically indicates worn suspension components, likely struts
-or shocks.
+"Looking at your tire photo, I can see significant cupping wear on the outer edge. This pattern
+typically indicates worn suspension components, likely struts or shocks.
 
 **Severity: High** - This affects handling and braking.
 
-**Evidence**: The scalloped wear pattern is visible across the tread blocks, and
-the wear is more pronounced on one side.
+**Evidence**: The scalloped wear pattern is visible across the tread blocks, and the wear is more
+pronounced on one side.
 
-**Recommended Action**: Have your suspension inspected by a mechanic. The tires
-will also need replacement as the uneven wear cannot be corrected.
+**Recommended Action**: Have your suspension inspected by a mechanic. The tires will also need
+replacement as the uneven wear cannot be corrected.
 
 Can you send a photo of the other front tire for comparison?"

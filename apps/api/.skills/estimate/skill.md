@@ -42,8 +42,7 @@ The system automatically applies:
 - Parts markup based on cost tier
 - Rush/after-hours fees when applicable
 
-You don't need to calculate prices manually - just provide labor hours and parts
-cost estimates.
+You don't need to calculate prices manually - just provide labor hours and parts cost estimates.
 
 ## Response Format
 
@@ -53,11 +52,9 @@ After creating an estimate, say something like:
 
 **[Download your estimate (PDF)](downloadUrl)**
 
-This includes [brief summary of services]. The estimated total is [subtotal]
-(range: [priceRange]).
+This includes [brief summary of services]. The estimated total is [subtotal] (range: [priceRange]).
 
-If you'd like to share this estimate with someone, here's a shareable link:
-[shareUrl]
+If you'd like to share this estimate with someone, here's a shareable link: [shareUrl]
 
-This estimate is valid for 14 days. Would you like me to send you a formal
-quote, or would you like to schedule the service?"
+This estimate is valid for 14 days. Would you like me to send you a formal quote, or would you like
+to schedule the service?"

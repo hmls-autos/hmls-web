@@ -34,6 +34,7 @@ export async function createDiagnosticAgent() {
     // Use /tmp for Deno Deploy (source dir is read-only)
     context: isDenoDeploy ? { zypherDir: "/tmp/.zypher" } : undefined,
     overrides: {
+      // deno-lint-ignore require-await
       systemPromptLoader: async () => SYSTEM_PROMPT,
     },
   });

@@ -1,5 +1,6 @@
 // apps/agent/src/pdf/EstimatePdf.tsx
 
+// deno-lint-ignore verbatim-module-syntax
 import React from "react";
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
@@ -237,15 +238,9 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
             <Text style={styles.customerName}>
               {customer.name || "Customer"}
             </Text>
-            {customer.phone && (
-              <Text style={styles.customerDetail}>{customer.phone}</Text>
-            )}
-            {customer.email && (
-              <Text style={styles.customerDetail}>{customer.email}</Text>
-            )}
-            {customer.address && (
-              <Text style={styles.customerDetail}>{customer.address}</Text>
-            )}
+            {customer.phone && <Text style={styles.customerDetail}>{customer.phone}</Text>}
+            {customer.email && <Text style={styles.customerDetail}>{customer.email}</Text>}
+            {customer.address && <Text style={styles.customerDetail}>{customer.address}</Text>}
             <View style={styles.vehicleInfo}>
               <Text style={styles.customerDetail}>
                 Vehicle: {formatVehicle(customer.vehicleInfo)}
@@ -283,8 +278,7 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Estimated Range:</Text>
               <Text style={styles.rangeValue}>
-                {formatPrice(estimate.priceRangeLow)} -{" "}
-                {formatPrice(estimate.priceRangeHigh)}
+                {formatPrice(estimate.priceRangeLow)} - {formatPrice(estimate.priceRangeHigh)}
               </Text>
             </View>
           </View>
@@ -302,9 +296,8 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
         <View style={styles.footer}>
           <Text style={styles.disclaimer}>
             This estimate is valid until{" "}
-            {formatDate(estimate.expiresAt)}. Final price may vary based on
-            actual conditions found during service. Payment is due upon
-            completion of service.
+            {formatDate(estimate.expiresAt)}. Final price may vary based on actual conditions found
+            during service. Payment is due upon completion of service.
           </Text>
           <Text style={styles.cta}>
             Ready to proceed? Reply in chat or call us to schedule your service.

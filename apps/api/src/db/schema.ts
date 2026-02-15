@@ -104,9 +104,7 @@ export const estimates = pgTable("estimates", {
   shareToken: varchar("share_token", { length: 64 }).notNull(),
   validDays: integer("valid_days").notNull().default(14),
   expiresAt: timestamp("expires_at").notNull(),
-  convertedToQuoteId: integer("converted_to_quote_id").references(() =>
-    quotes.id
-  ),
+  convertedToQuoteId: integer("converted_to_quote_id").references(() => quotes.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

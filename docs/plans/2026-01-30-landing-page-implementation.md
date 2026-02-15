@@ -1,14 +1,14 @@
 # Landing Page Redesign Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
-> implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan
+> task-by-task.
 
-**Goal:** Redesign the HMLS landing page with a premium neutral luxury
-aesthetic, SSR-first architecture, and CSS-only animations.
+**Goal:** Redesign the HMLS landing page with a premium neutral luxury aesthetic, SSR-first
+architecture, and CSS-only animations.
 
-**Architecture:** Replace Framer Motion animations with CSS transitions, convert
-all sections to React Server Components, use Tailwind for styling with new color
-tokens. Map component lazy-loaded with next/dynamic.
+**Architecture:** Replace Framer Motion animations with CSS transitions, convert all sections to
+React Server Components, use Tailwind for styling with new color tokens. Map component lazy-loaded
+with next/dynamic.
 
 **Tech Stack:** Next.js 16, React 19, Tailwind CSS 4, next/image, next/dynamic
 
@@ -475,8 +475,8 @@ export default function HeroNew() {
           </h1>
 
           <p className="text-lg md:text-xl text-charcoal-light mb-10 max-w-xl mx-auto">
-            Expert auto repair at your home or office. No towing. No waiting
-            rooms. Just convenience.
+            Expert auto repair at your home or office. No towing. No waiting rooms. Just
+            convenience.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -739,8 +739,7 @@ export default function ServicesNew() {
             What we can help with
           </h2>
           <p className="text-charcoal-light text-center max-w-xl mx-auto mb-16">
-            From routine maintenance to complex repairs, we handle it all at
-            your location.
+            From routine maintenance to complex repairs, we handle it all at your location.
           </p>
         </RevealOnScroll>
 
@@ -810,14 +809,12 @@ export default function AboutNew() {
                 20+ years of experience
               </h2>
               <p className="text-charcoal-light mb-6 leading-relaxed">
-                I started HMLS to give Orange County a better alternative to
-                traditional auto shops. With over two decades of hands-on
-                experience, including time at Fortune 100 dealerships, I bring
-                expert-level care right to your doorstep.
+                I started HMLS to give Orange County a better alternative to traditional auto shops.
+                With over two decades of hands-on experience, including time at Fortune 100
+                dealerships, I bring expert-level care right to your doorstep.
               </p>
               <p className="text-charcoal-light leading-relaxed">
-                Personal service, fair prices, no dealership overhead. That's
-                the HMLS difference.
+                Personal service, fair prices, no dealership overhead. That's the HMLS difference.
               </p>
               <p className="mt-6 text-charcoal font-medium">
                 — Owner, HMLS Mobile Mechanic
@@ -855,9 +852,7 @@ import RevealOnScroll from "@/components/ui/RevealOnScroll";
 
 const Map = dynamic(() => import("@/components/ui/RealMap"), {
   ssr: false,
-  loading: () => (
-    <div className="w-full h-full bg-cream-200 animate-pulse rounded-xl" />
-  ),
+  loading: () => <div className="w-full h-full bg-cream-200 animate-pulse rounded-xl" />,
 });
 
 const cities = [
@@ -883,9 +878,7 @@ export default function ServiceAreaNew() {
         <RevealOnScroll delay={1}>
           <div className="w-full h-[400px] rounded-xl overflow-hidden border border-cream-200 mb-8">
             <Suspense
-              fallback={
-                <div className="w-full h-full bg-cream-200 animate-pulse" />
-              }
+              fallback={<div className="w-full h-full bg-cream-200 animate-pulse" />}
             >
               <Map className="w-full h-full" />
             </Suspense>
@@ -1007,8 +1000,7 @@ export default function Home() {
 
 **Step 2: Verify page renders**
 
-Run: `cd apps/web && bun run dev` Expected: Page loads without errors, new
-design visible
+Run: `cd apps/web && bun run dev` Expected: Page loads without errors, new design visible
 
 **Step 3: Commit**
 
@@ -1089,8 +1081,8 @@ git commit -m "chore(web): remove framer-motion dependency"
 
 **Step 1: Create placeholder images or use existing**
 
-Check if suitable images exist in `public/images/`. If not, create placeholders
-or note that real images are needed.
+Check if suitable images exist in `public/images/`. If not, create placeholders or note that real
+images are needed.
 
 **Step 2: Commit if new images added**
 

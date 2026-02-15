@@ -68,8 +68,7 @@ export async function uploadMedia(
 
   return {
     key,
-    url:
-      `https://${bucketName}.${getAccountId()}.r2.cloudflarestorage.com/${key}`,
+    url: `https://${bucketName}.${getAccountId()}.r2.cloudflarestorage.com/${key}`,
   };
 }
 

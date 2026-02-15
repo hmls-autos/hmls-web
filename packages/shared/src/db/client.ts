@@ -5,7 +5,9 @@ import postgres from "postgres";
  * Create a lazy-initialized database client with the given schema.
  * Each app passes its own schema for type-safe queries.
  */
-export function createDbClient<T extends Record<string, unknown>>(schema: T) {
+export function createDbClient<T extends Record<string, unknown>>(
+  schema: T,
+): ReturnType<typeof drizzle<T>> {
   let _db: ReturnType<typeof drizzle<T>> | null = null;
   let _client: ReturnType<typeof postgres> | null = null;
 

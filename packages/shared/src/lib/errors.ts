@@ -36,7 +36,7 @@ export class AppError extends Error {
     return statusCodes[this.code];
   }
 
-  toJSON() {
+  toJSON(): { error: { code: ErrorCode; message: string; details?: unknown } } {
     const error: { code: ErrorCode; message: string; details?: unknown } = {
       code: this.code,
       message: this.message,
@@ -50,24 +50,23 @@ export class AppError extends Error {
 
 // Convenience factories
 export const Errors = {
-  notFound: (resource: string, id?: string | number) =>
+  notFound: (resource: string, id?: string | number): AppError =>
     new AppError(
       ErrorCode.NOT_FOUND,
       id ? `${resource} ${id} not found` : `${resource} not found`,
     ),
 
-  badRequest: (message: string, details?: unknown) =>
+  badRequest: (message: string, details?: unknown): AppError =>
     new AppError(ErrorCode.BAD_REQUEST, message, details),
 
-  validation: (message: string, details?: unknown) =>
+  validation: (message: string, details?: unknown): AppError =>
     new AppError(ErrorCode.VALIDATION_ERROR, message, details),
 
-  internal: (message = "Internal server error") =>
+  internal: (message = "Internal server error"): AppError =>
     new AppError(ErrorCode.INTERNAL_ERROR, message),
 
-  external: (service: string, message: string) =>
+  external: (service: string, message: string): AppError =>
     new AppError(ErrorCode.EXTERNAL_SERVICE_ERROR, `${service}: ${message}`),
 
-  database: (message: string) =>
-    new AppError(ErrorCode.DATABASE_ERROR, message),
+  database: (message: string): AppError => new AppError(ErrorCode.DATABASE_ERROR, message),
 };

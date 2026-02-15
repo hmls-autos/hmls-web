@@ -2,9 +2,9 @@
 
 ## Background
 
-The current agent design has audience confusion - it mixes customer-facing and
-mechanic-facing functionality. This redesign clarifies the agent's role as a
-customer-facing receptionist for the mobile mechanic business.
+The current agent design has audience confusion - it mixes customer-facing and mechanic-facing
+functionality. This redesign clarifies the agent's role as a customer-facing receptionist for the
+mobile mechanic business.
 
 ## Two Separate Products
 
@@ -58,8 +58,8 @@ User logs in → Enters chat → Agent knows user info (name, phone, email)
 - Vehicle model
 - Vehicle year
 
-This design supports customers with multiple vehicles - each conversation can be
-about a different car.
+This design supports customers with multiple vehicles - each conversation can be about a different
+car.
 
 ### Tools
 
@@ -101,14 +101,13 @@ src/system-prompt.ts     # Simple identity + role + context
 - Vehicle age
 - Issue complexity
 
-**Important:** Agent should NOT explain pricing adjustments to customers. Just
-provide the final price range in a friendly way.
+**Important:** Agent should NOT explain pricing adjustments to customers. Just provide the final
+price range in a friendly way.
 
 ### Implementation Changes
 
 1. **Modify:**
-   - `src/tools/customer.ts` - Keep only `get_services`, rename export to
-     `serviceTools`
+   - `src/tools/customer.ts` - Keep only `get_services`, rename export to `serviceTools`
    - `src/tools/stripe.ts` - Remove `create_invoice` tool
    - `src/agent.ts` - Update tool imports
    - `src/system-prompt.ts` - Simplified receptionist prompt

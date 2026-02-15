@@ -1,7 +1,7 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with
-code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this
+repository.
 
 ## Build & Development Commands
 
@@ -35,11 +35,10 @@ deno task --cwd apps/api db:reset  # Migrate + seed database
 
 ## Architecture
 
-Deno workspace monorepo for a mobile mechanic business with an AI-powered chat
-agent. All apps deploy to **Deno Deploy** (console.deno.com) via GitHub integration. Root config is
-`deno.json`; web app uses Bun/Next.js internally. Root `deno.json` `imports`
-are inherited by all workspace members — shared deps go there, app-specific
-deps in each app's `deno.json`.
+Deno workspace monorepo for a mobile mechanic business with an AI-powered chat agent. All apps
+deploy to **Deno Deploy** (console.deno.com) via GitHub integration. Root config is `deno.json`; web
+app uses Bun/Next.js internally. Root `deno.json` `imports` are inherited by all workspace members —
+shared deps go there, app-specific deps in each app's `deno.json`.
 
 ```
 apps/
@@ -50,14 +49,12 @@ apps/
 
 ### Service Communication
 
-- **Web → Agent**: Direct AG-UI protocol connection via `@ag-ui/client`
-  (port 8080)
+- **Web → Agent**: Direct AG-UI protocol connection via `@ag-ui/client` (port 8080)
 - **Agent → DB**: Direct PostgreSQL connection for tools
 
 ### Key Patterns
 
-**Agent Tools** (`apps/api/src/tools/`): Zod-validated functions the AI can
-call
+**Agent Tools** (`apps/api/src/tools/`): Zod-validated functions the AI can call
 
 - `customer.ts` - Customer CRUD
 - `stripe.ts` - Payments/invoices
@@ -76,8 +73,7 @@ call
 
 - `services.json`, `pricing-config.json`, `vehicle-pricing.json`
 
-**PDF Generation** (`apps/api/src/pdf/`): React-PDF templates served by API
-routes
+**PDF Generation** (`apps/api/src/pdf/`): React-PDF templates served by API routes
 
 ## Code Style
 

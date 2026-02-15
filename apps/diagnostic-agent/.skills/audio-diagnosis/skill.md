@@ -102,17 +102,13 @@ When analyzing audio, provide:
 
 ## Example Response
 
-"The audio reveals a rhythmic grinding sound that increases with vehicle speed
-but is independent of engine RPM. This pattern is characteristic of a wheel
-bearing issue.
+"The audio reveals a rhythmic grinding sound that increases with vehicle speed but is independent of
+engine RPM. This pattern is characteristic of a wheel bearing issue.
 
 **Likely Cause**: Worn front wheel bearing (based on sound location)
 
-**Severity: High** - Wheel bearings can fail catastrophically, causing loss of
-vehicle control.
+**Severity: High** - Wheel bearings can fail catastrophically, causing loss of vehicle control.
 
-**Additional Diagnostics**: Check for play in the wheel, feel for heat after
-driving.
+**Additional Diagnostics**: Check for play in the wheel, feel for heat after driving.
 
-**Action Required**: Have this inspected immediately. Avoid highway driving
-until diagnosed."
+**Action Required**: Have this inspected immediately. Avoid highway driving until diagnosed."

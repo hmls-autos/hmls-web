@@ -1,7 +1,7 @@
 # Landing Page Redesign
 
-A complete redesign of the HMLS landing page with a premium, neutral luxury
-aesthetic and SSR-first architecture.
+A complete redesign of the HMLS landing page with a premium, neutral luxury aesthetic and SSR-first
+architecture.
 
 ## Design Direction
 

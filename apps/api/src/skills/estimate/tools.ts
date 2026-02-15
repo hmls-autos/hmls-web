@@ -4,11 +4,7 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db, schema } from "../../db/client.ts";
 import { eq, ilike, or } from "drizzle-orm";
-import {
-  calculatePrice,
-  getPricingConfig,
-  getVehicleMultiplier,
-} from "./pricing.ts";
+import { calculatePrice, getPricingConfig, getVehicleMultiplier } from "./pricing.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 
 export const listServicesTool = {
@@ -67,8 +63,7 @@ export const listServicesTool = {
         category: s.category,
       })),
       count: services.length,
-      note:
-        "Use serviceId when creating estimates for consistent pricing based on labor hours",
+      note: "Use serviceId when creating estimates for consistent pricing based on labor hours",
     });
   },
 };
@@ -212,9 +207,7 @@ export const createEstimateTool = {
       downloadUrl: `${baseUrl}/${estimate.id}/pdf`,
       shareUrl: `${baseUrl}/${estimate.id}/pdf?token=${shareToken}`,
       subtotal: subtotal / 100,
-      priceRange: `$${(rangeLow / 100).toFixed(2)} - $${
-        (rangeHigh / 100).toFixed(2)
-      }`,
+      priceRange: `$${(rangeLow / 100).toFixed(2)} - $${(rangeHigh / 100).toFixed(2)}`,
       expiresAt,
     });
   },
@@ -253,8 +246,7 @@ export const getEstimateTool = {
         isExpired,
         convertedToQuote: estimate.convertedToQuoteId !== null,
         downloadUrl: `/api/estimates/${estimate.id}/pdf`,
-        shareUrl:
-          `/api/estimates/${estimate.id}/pdf?token=${estimate.shareToken}`,
+        shareUrl: `/api/estimates/${estimate.id}/pdf?token=${estimate.shareToken}`,
       },
     });
   },

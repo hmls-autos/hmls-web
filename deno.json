@@ -12,11 +12,25 @@
     "drizzle-orm/postgres-js": "npm:drizzle-orm@^0.45.1/postgres-js",
     "postgres": "npm:postgres@^3.4.8"
   },
+  "fmt": {
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "semiColons": true,
+    "singleQuote": false,
+    "exclude": ["apps/web/"]
+  },
+  "lint": {
+    "exclude": ["apps/web/"]
+  },
   "tasks": {
     "dev:api": "deno task --cwd apps/api dev",
     "dev:diagnostic": "deno task --cwd apps/diagnostic-agent dev",
     "check:api": "deno check apps/api/src/index.ts",
     "check:diagnostic": "deno check apps/diagnostic-agent/src/main.ts",
+    "check": "deno task check:api && deno task check:diagnostic",
+    "fmt": "deno fmt",
+    "fmt:check": "deno fmt --check",
+    "lint": "deno lint",
     "db:up": "docker compose up -d postgres"
   }
 }

@@ -1,13 +1,13 @@
 # Diagnostic Agent Design
 
-A standalone multimodal diagnostic agent for vehicle troubleshooting, deployed
-separately from the existing HMLS agent.
+A standalone multimodal diagnostic agent for vehicle troubleshooting, deployed separately from the
+existing HMLS agent.
 
 ## Overview
 
-The diagnostic agent analyzes photos, audio, video, and OBD-II codes to help
-customers diagnose vehicle issues. It operates on a credit-based subscription
-model and is designed for future mobile app integration.
+The diagnostic agent analyzes photos, audio, video, and OBD-II codes to help customers diagnose
+vehicle issues. It operates on a credit-based subscription model and is designed for future mobile
+app integration.
 
 ## Architecture
 

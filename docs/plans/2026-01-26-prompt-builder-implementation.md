@@ -1,13 +1,13 @@
 # Prompt Builder Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
-> implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan
+> task-by-task.
 
-**Goal:** Create a modular, type-safe system prompt builder for HMLS agents that
-supports both Mobile Mechanic Agent and future AI Diagnostic Agent.
+**Goal:** Create a modular, type-safe system prompt builder for HMLS agents that supports both
+Mobile Mechanic Agent and future AI Diagnostic Agent.
 
-**Architecture:** Section-based prompt builder where each section is a function
-that returns string[]. Sections can be shared or customized per agent type.
+**Architecture:** Section-based prompt builder where each section is a function that returns
+string[]. Sections can be shared or customized per agent type.
 
 **Tech Stack:** TypeScript, Deno
 
@@ -384,13 +384,7 @@ export function buildSystemPrompt(
 // apps/api/src/prompts/index.ts
 
 export { buildSystemPrompt } from "./builder.ts";
-export type {
-  AgentType,
-  PromptConfig,
-  PromptSection,
-  ToolInfo,
-  UserContext,
-} from "./types.ts";
+export type { AgentType, PromptConfig, PromptSection, ToolInfo, UserContext } from "./types.ts";
 ```
 
 **agent.ts changes:**
@@ -402,11 +396,7 @@ export type {
 ```typescript
 import { anthropic, createZypherAgent } from "@corespeed/zypher";
 import { env } from "./env.ts";
-import {
-  buildSystemPrompt,
-  type PromptConfig,
-  type UserContext,
-} from "./prompts/index.ts";
+import { buildSystemPrompt, type PromptConfig, type UserContext } from "./prompts/index.ts";
 import { calcomTools } from "./tools/calcom.ts";
 import { serviceTools } from "./tools/customer.ts";
 import { stripeTools } from "./tools/stripe.ts";
@@ -481,7 +471,6 @@ export async function createHmlsAgent(options: CreateAgentOptions = {}) {
 After completing all tasks:
 
 - Modular prompt builder in `apps/api/src/prompts/`
-- 7 reusable sections (identity, business, role, user-context, workflow,
-  pricing, guidelines)
+- 7 reusable sections (identity, business, role, user-context, workflow, pricing, guidelines)
 - Type-safe configuration via `PromptConfig`
 - Ready for AI Diagnostic Agent (just change `agentType: "diagnostic"`)

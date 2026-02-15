@@ -1,10 +1,12 @@
 # Code Simplification Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan
+> task-by-task.
 
 **Goal:** Reduce duplication across the monorepo with three targeted refactors.
 
-**Architecture:** Extract shared constants, consolidate Deno workspace imports, and split a massive seed file into data + logic.
+**Architecture:** Extract shared constants, consolidate Deno workspace imports, and split a massive
+seed file into data + logic.
 
 **Tech Stack:** TypeScript, Deno workspace imports, Next.js, JSON
 
@@ -13,6 +15,7 @@
 ### Task 1: Extract `toolDisplayNames` to shared constant
 
 **Files:**
+
 - Create: `apps/web/lib/agent-tools.ts`
 - Modify: `apps/web/app/chat/page.tsx:43-54`
 - Modify: `apps/web/components/ChatWidget.tsx:41-52`
@@ -39,6 +42,7 @@ export const toolDisplayNames: Record<string, string> = {
 **Step 2: Update `apps/web/app/chat/page.tsx`**
 
 Add import at top (after other imports):
+
 ```typescript
 import { toolDisplayNames } from "@/lib/agent-tools";
 ```
@@ -48,6 +52,7 @@ Remove lines 43-54 (the inline `toolDisplayNames` declaration inside the compone
 **Step 3: Update `apps/web/components/ChatWidget.tsx`**
 
 Add import at top (after other imports):
+
 ```typescript
 import { toolDisplayNames } from "@/lib/agent-tools";
 ```
@@ -56,11 +61,9 @@ Remove lines 41-52 (the inline `toolDisplayNames` declaration inside the compone
 
 **Step 4: Verify web app**
 
-Run: `deno task typecheck:web`
-Expected: No type errors
+Run: `deno task typecheck:web` Expected: No type errors
 
-Run: `deno task lint:web`
-Expected: No lint errors
+Run: `deno task lint:web` Expected: No lint errors
 
 **Step 5: Commit**
 
@@ -74,6 +77,7 @@ git commit -m "refactor(web): extract toolDisplayNames to shared constant"
 ### Task 2: Consolidate shared Deno imports to root workspace
 
 **Files:**
+
 - Modify: `deno.json` (add imports section)
 - Modify: `apps/api/deno.json` (remove 10 shared imports, keep 4 app-specific)
 - Modify: `apps/diagnostic-agent/deno.json` (remove 10 shared imports, keep 4 app-specific)
@@ -168,11 +172,9 @@ Keep only these 4 imports that are unique to the diagnostic agent:
 
 **Step 4: Verify both apps resolve imports correctly**
 
-Run: `deno task check:api`
-Expected: No errors
+Run: `deno task check:api` Expected: No errors
 
-Run: `deno task check:diagnostic`
-Expected: No errors
+Run: `deno task check:diagnostic` Expected: No errors
 
 **Step 5: Commit**
 
@@ -186,6 +188,7 @@ git commit -m "refactor: consolidate shared Deno imports to root workspace"
 ### Task 3: Extract seed data to JSON files
 
 **Files:**
+
 - Create: `apps/api/src/db/seed-data/services.json`
 - Create: `apps/api/src/db/seed-data/pricing-config.json`
 - Create: `apps/api/src/db/seed-data/vehicle-pricing.json`
@@ -193,19 +196,22 @@ git commit -m "refactor: consolidate shared Deno imports to root workspace"
 
 **Step 1: Extract `servicesRaw` array to `seed-data/services.json`**
 
-Copy lines 36-3105 of `seed.ts` (the `servicesRaw` array contents) to a new JSON file. The array contains objects with `name`, `description`, `minPrice`, `maxPrice`, `duration`, `category` fields.
+Copy lines 36-3105 of `seed.ts` (the `servicesRaw` array contents) to a new JSON file. The array
+contains objects with `name`, `description`, `minPrice`, `maxPrice`, `duration`, `category` fields.
 
 Save as `apps/api/src/db/seed-data/services.json`.
 
 **Step 2: Extract `pricingConfig` array to `seed-data/pricing-config.json`**
 
-Copy lines 3108-3260 of `seed.ts` (the `pricingConfig` array contents) to a new JSON file. Objects have `key`, `value`, `description` fields.
+Copy lines 3108-3260 of `seed.ts` (the `pricingConfig` array contents) to a new JSON file. Objects
+have `key`, `value`, `description` fields.
 
 Save as `apps/api/src/db/seed-data/pricing-config.json`.
 
 **Step 3: Extract `vehiclePricing` array to `seed-data/vehicle-pricing.json`**
 
-Copy lines 3263-5796 of `seed.ts` (the `vehiclePricing` array contents) to a new JSON file. Objects have `make`, `model`, `multiplier`, `notes` fields.
+Copy lines 3263-5796 of `seed.ts` (the `vehiclePricing` array contents) to a new JSON file. Objects
+have `make`, `model`, `multiplier`, `notes` fields.
 
 Save as `apps/api/src/db/seed-data/vehicle-pricing.json`.
 
@@ -312,8 +318,7 @@ seed().catch((err) => {
 
 **Step 5: Verify API still type-checks**
 
-Run: `deno task check:api`
-Expected: No errors
+Run: `deno task check:api` Expected: No errors
 
 **Step 6: Commit**
 
@@ -328,14 +333,11 @@ git commit -m "refactor(api): extract seed data to JSON files"
 
 **Step 1: Run all checks**
 
-Run: `deno task check:api`
-Run: `deno task check:diagnostic`
-Run: `deno task typecheck:web`
-Run: `deno task lint:web`
+Run: `deno task check:api` Run: `deno task check:diagnostic` Run: `deno task typecheck:web` Run:
+`deno task lint:web`
 
 All should pass with no errors.
 
 **Step 2: Verify build**
 
-Run: `deno task build:web`
-Expected: Successful build
+Run: `deno task build:web` Expected: Successful build

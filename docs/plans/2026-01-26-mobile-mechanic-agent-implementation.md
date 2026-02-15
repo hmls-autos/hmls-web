@@ -1,14 +1,14 @@
 # Mobile Mechanic Agent Redesign - Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
-> implement this plan task-by-task.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan
+> task-by-task.
 
-**Goal:** Simplify the HMLS agent to be a customer-facing receptionist that
-handles service inquiries, estimates, quotes, and booking.
+**Goal:** Simplify the HMLS agent to be a customer-facing receptionist that handles service
+inquiries, estimates, quotes, and booking.
 
-**Architecture:** Remove customer CRUD tools (user info comes from session),
-remove invoice tool (owner handles post-service), keep estimate/quote/booking
-tools. Add session context injection for logged-in user info.
+**Architecture:** Remove customer CRUD tools (user info comes from session), remove invoice tool
+(owner handles post-service), keep estimate/quote/booking tools. Add session context injection for
+logged-in user info.
 
 **Tech Stack:** Deno, Hono, Zypher Agent Framework, Stripe, Cal.com
 
@@ -62,8 +62,8 @@ export const serviceTools = [getServicesTool];
 
 **Step 2: Run typecheck**
 
-Run: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api` Expected: May
-fail due to agent.ts still importing customerTools
+Run: `cd /home/spenc/hmls && turbo typecheck --filter=@hmls/api` Expected: May fail due to agent.ts
+still importing customerTools
 
 **Step 3: Commit**
 
@@ -82,11 +82,10 @@ git commit -m "refactor(api): remove customer CRUD tools, keep only get_services
 
 **Step 1: Edit stripe.ts to remove createInvoiceTool**
 
-Remove the `createInvoiceTool` definition and its export. Keep `createQuoteTool`
-and `getQuoteStatusTool`.
+Remove the `createInvoiceTool` definition and its export. Keep `createQuoteTool` and
+`getQuoteStatusTool`.
 
-Remove lines 156-237 (the entire `createInvoiceTool` definition) and update the
-export:
+Remove lines 156-237 (the entire `createInvoiceTool` definition) and update the export:
 
 ```typescript
 export const stripeTools = [
@@ -365,9 +364,8 @@ git commit -m "feat(api): add user context injection to agent"
 
 **Step 1: Update the /task endpoint to extract and pass user context**
 
-The user context will come from a header (set by the web frontend after
-authentication). Update the agent creation to be per-request instead of
-singleton when user context is present.
+The user context will come from a header (set by the web frontend after authentication). Update the
+agent creation to be per-request instead of singleton when user context is present.
 
 ```typescript
 // Near the top, add import
@@ -463,13 +461,11 @@ git commit -m "feat(api): pass user context from header to agent"
 
 **Step 1: Start the dev server**
 
-Run: `cd /home/spenc/hmls/apps/api && deno task dev` Expected: Server starts
-without errors
+Run: `cd /home/spenc/hmls/apps/api && deno task dev` Expected: Server starts without errors
 
 **Step 2: Test health endpoint**
 
-Run: `curl http://localhost:8080/health` Expected:
-`{"status":"ok","timestamp":"..."}`
+Run: `curl http://localhost:8080/health` Expected: `{"status":"ok","timestamp":"..."}`
 
 **Step 3: Commit all changes**
 
@@ -490,8 +486,8 @@ git commit -m "feat(api): complete Mobile Mechanic Agent redesign
 
 After completing all tasks, the agent will:
 
-1. Only expose 6 tools: `get_services`, `create_estimate`, `get_estimate`,
-   `create_quote`, `get_quote_status`, `get_availability`, `create_booking`
+1. Only expose 6 tools: `get_services`, `create_estimate`, `get_estimate`, `create_quote`,
+   `get_quote_status`, `get_availability`, `create_booking`
 2. Receive logged-in user context via `X-User-Context` header
 3. Have a simplified receptionist-focused system prompt
 4. No longer handle customer creation or invoicing

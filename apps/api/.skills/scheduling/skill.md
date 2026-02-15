@@ -50,5 +50,5 @@ Monday - Saturday: 8:00 AM - 12:00 AM (midnight)
 
 ## Service Area
 
-Orange County only: Irvine, Newport Beach, Anaheim, Santa Ana, Costa Mesa,
-Fullerton, Huntington Beach, Lake Forest, Mission Viejo
+Orange County only: Irvine, Newport Beach, Anaheim, Santa Ana, Costa Mesa, Fullerton, Huntington
+Beach, Lake Forest, Mission Viejo
