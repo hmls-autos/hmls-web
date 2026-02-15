@@ -39,11 +39,11 @@ jobs:
       - name: Install web dependencies
         run: cd apps/web && bun install --frozen-lockfile
 
-      - name: Lint
-        run: deno task lint:web
+      - name: Lint (web)
+        run: cd apps/web && bun run lint
 
-      - name: Type Check
-        run: deno task typecheck:web
+      - name: Type Check (web)
+        run: cd apps/web && bun run typecheck
 
       - name: Check API
         run: deno task check:api
