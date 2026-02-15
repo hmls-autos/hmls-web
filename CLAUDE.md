@@ -110,7 +110,7 @@ packages/
 deno install
 
 # Web app
-cd apps/web && npx npm-check-updates -u && bun install
+cd apps/web && bunx npm-check-updates -u && bun install
 ```
 
 ## Environment Variables
