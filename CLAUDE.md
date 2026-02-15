@@ -32,6 +32,7 @@ deno task --cwd apps/api db:reset     # Migrate + seed
 cd apps/web && bun install       # Install web dependencies
 deno task db:up                  # Start PostgreSQL
 deno task --cwd apps/api db:reset  # Migrate + seed database
+git config core.hooksPath .githooks  # Enable pre-commit hook
 ```
 
 ## Architecture

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -e
+
+echo "Running pre-commit checks..."
+
+echo ">> Biome lint (web)"
+cd apps/web && bun run lint
+cd - > /dev/null
+
+echo ">> TypeScript check (web)"
+cd apps/web && bun run typecheck
+cd - > /dev/null
+
+echo ">> Next.js build (web)"
+cd apps/web && bun run build
+cd - > /dev/null
+
+echo ">> Deno check (api)"
+deno task check:api
+
+echo ">> Deno check (diagnostic)"
+deno task check:diagnostic
+
+echo "All checks passed!"
