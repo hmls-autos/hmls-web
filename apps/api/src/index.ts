@@ -2,10 +2,18 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { AppError } from "@hmls/shared/errors";
-import { env } from "./env.ts";
 import { estimates } from "./routes/estimates.ts";
 import { customers } from "./routes/customers.ts";
-import { chat } from "./routes/chat.ts";
+import { chat, initChat } from "./routes/chat.ts";
+
+// Read all env vars in one place
+initChat({
+  anthropicApiKey: Deno.env.get("ANTHROPIC_API_KEY") ?? "",
+  stripeSecretKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
+  calcomApiKey: Deno.env.get("CALCOM_API_KEY") ?? "",
+  calcomEventTypeId: Deno.env.get("CALCOM_EVENT_TYPE_ID") ?? "",
+  agentModel: Deno.env.get("AGENT_MODEL"),
+});
 
 // Create Hono app
 const app = new Hono();
@@ -48,14 +56,12 @@ app.route("/api/customers", customers);
 app.route("/task", chat);
 
 // Start server
-// Deno Deploy manages its own port, only specify port for local dev
 const isDenoDeploy = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
 if (isDenoDeploy) {
   Deno.serve(app.fetch);
   console.log(`[server] HMLS Agent running on Deno Deploy`);
 } else {
-  Deno.serve({ port: env.HTTP_PORT }, app.fetch);
-  console.log(
-    `[server] HMLS Agent running on http://localhost:${env.HTTP_PORT}`,
-  );
+  const port = Number(Deno.env.get("HTTP_PORT")) || 8080;
+  Deno.serve({ port }, app.fetch);
+  console.log(`[server] HMLS Agent running on http://localhost:${port}`);
 }

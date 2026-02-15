@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { eachValueFrom } from "rxjs-for-await";
-import { createHmlsAgent } from "../agent.ts";
+import { createHmlsAgent, type AgentConfig } from "../agent.ts";
 import { Errors } from "@hmls/shared/errors";
 import { createAguiEventStream, parseRunAgentInput } from "@zypher/agui";
 import type { UserContext } from "../types/user-context.ts";
@@ -12,11 +12,17 @@ const agentCache = new Map<
   Awaited<ReturnType<typeof createHmlsAgent>>
 >();
 
+let _config: AgentConfig;
+
+export function initChat(config: AgentConfig) {
+  _config = config;
+}
+
 async function getAgent(userContext?: UserContext) {
   const cacheKey = userContext ? `user:${userContext.id}` : "anonymous";
 
   if (!agentCache.has(cacheKey)) {
-    const agent = await createHmlsAgent({ userContext });
+    const agent = await createHmlsAgent({ config: _config, userContext });
     agentCache.set(cacheKey, agent);
   }
 
