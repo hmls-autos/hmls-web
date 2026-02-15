@@ -1,0 +1,142 @@
+[
+  {
+    "key": "hourly_rate",
+    "value": 14000,
+    "description": "Base hourly labor rate in cents ($140/hr)"
+  },
+  {
+    "key": "diagnostic_fee",
+    "value": 9500,
+    "description": "Base diagnostic fee in cents ($95)"
+  },
+  {
+    "key": "after_hours_fee",
+    "value": 5000,
+    "description": "After-hours service fee in cents ($50) - evenings 6pm-10pm"
+  },
+  {
+    "key": "rush_fee",
+    "value": 7500,
+    "description": "Same-day rush service fee in cents ($75)"
+  },
+  {
+    "key": "weekend_fee",
+    "value": 3500,
+    "description": "Weekend service fee in cents ($35) - Saturday service"
+  },
+  {
+    "key": "sunday_fee",
+    "value": 5000,
+    "description": "Sunday service fee in cents ($50)"
+  },
+  {
+    "key": "holiday_fee",
+    "value": 10000,
+    "description": "Holiday service fee in cents ($100)"
+  },
+  {
+    "key": "early_morning_fee",
+    "value": 2500,
+    "description": "Early morning fee in cents ($25) - before 8am"
+  },
+  {
+    "key": "base_travel_miles",
+    "value": 15,
+    "description": "Miles included in base price (no extra charge)"
+  },
+  {
+    "key": "per_mile_fee",
+    "value": 100,
+    "description": "Fee per mile beyond base travel in cents ($1.00/mile)"
+  },
+  {
+    "key": "minimum_service_fee",
+    "value": 7500,
+    "description": "Minimum service charge in cents ($75)"
+  },
+  {
+    "key": "parts_markup_tier1_pct",
+    "value": 40,
+    "description": "Parts markup % for items under $50"
+  },
+  {
+    "key": "parts_markup_tier2_pct",
+    "value": 30,
+    "description": "Parts markup % for items $50-$200"
+  },
+  {
+    "key": "parts_markup_tier3_pct",
+    "value": 20,
+    "description": "Parts markup % for items over $200"
+  },
+  {
+    "key": "parts_markup_tier4_pct",
+    "value": 15,
+    "description": "Parts markup % for items over $500"
+  },
+  {
+    "key": "multi_service_discount_pct",
+    "value": 10,
+    "description": "Discount % for 3+ services in one visit"
+  },
+  {
+    "key": "returning_customer_discount_pct",
+    "value": 5,
+    "description": "Discount % for returning customers"
+  },
+  {
+    "key": "referral_discount_pct",
+    "value": 10,
+    "description": "Discount % for referred customers"
+  },
+  {
+    "key": "fleet_discount_pct",
+    "value": 15,
+    "description": "Discount % for fleet accounts (5+ vehicles)"
+  },
+  {
+    "key": "senior_discount_pct",
+    "value": 10,
+    "description": "Senior discount % (65+)"
+  },
+  {
+    "key": "military_discount_pct",
+    "value": 10,
+    "description": "Military/veteran discount %"
+  },
+  {
+    "key": "first_responder_discount_pct",
+    "value": 10,
+    "description": "First responder discount %"
+  },
+  {
+    "key": "shop_supplies_pct",
+    "value": 5,
+    "description": "Shop supplies fee % of labor (max $25)"
+  },
+  {
+    "key": "shop_supplies_max",
+    "value": 2500,
+    "description": "Maximum shop supplies fee in cents ($25)"
+  },
+  {
+    "key": "hazmat_disposal_fee",
+    "value": 1500,
+    "description": "Hazardous material disposal fee in cents ($15)"
+  },
+  {
+    "key": "tire_disposal_fee",
+    "value": 500,
+    "description": "Tire disposal fee per tire in cents ($5)"
+  },
+  {
+    "key": "battery_core_charge",
+    "value": 2500,
+    "description": "Battery core charge if old not returned in cents ($25)"
+  },
+  {
+    "key": "no_show_fee",
+    "value": 5000,
+    "description": "No-show/late cancellation fee in cents ($50)"
+  }
+]

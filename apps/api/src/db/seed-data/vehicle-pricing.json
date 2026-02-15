@@ -1,0 +1,2864 @@
+[
+  {
+    "make": "BMW",
+    "model": null,
+    "multiplier": "1.30",
+    "notes": "European luxury - base"
+  },
+  {
+    "make": "BMW",
+    "model": "M3",
+    "multiplier": "1.45",
+    "notes": "BMW M Performance"
+  },
+  {
+    "make": "BMW",
+    "model": "M4",
+    "multiplier": "1.45",
+    "notes": "BMW M Performance"
+  },
+  {
+    "make": "BMW",
+    "model": "M5",
+    "multiplier": "1.50",
+    "notes": "BMW M Performance"
+  },
+  {
+    "make": "BMW",
+    "model": "X5 M",
+    "multiplier": "1.50",
+    "notes": "BMW M Performance SUV"
+  },
+  {
+    "make": "BMW",
+    "model": "X6 M",
+    "multiplier": "1.50",
+    "notes": "BMW M Performance SUV"
+  },
+  {
+    "make": "BMW",
+    "model": "7 Series",
+    "multiplier": "1.40",
+    "notes": "BMW flagship sedan"
+  },
+  {
+    "make": "BMW",
+    "model": "i4",
+    "multiplier": "1.35",
+    "notes": "BMW electric"
+  },
+  {
+    "make": "BMW",
+    "model": "iX",
+    "multiplier": "1.40",
+    "notes": "BMW electric SUV"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": null,
+    "multiplier": "1.35",
+    "notes": "European luxury - base"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "AMG GT",
+    "multiplier": "1.60",
+    "notes": "Mercedes-AMG sports car"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "C63 AMG",
+    "multiplier": "1.50",
+    "notes": "Mercedes-AMG"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "E63 AMG",
+    "multiplier": "1.55",
+    "notes": "Mercedes-AMG"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "S-Class",
+    "multiplier": "1.50",
+    "notes": "Mercedes flagship"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "G-Class",
+    "multiplier": "1.55",
+    "notes": "Mercedes G-Wagon"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "GLE 63 AMG",
+    "multiplier": "1.50",
+    "notes": "Mercedes-AMG SUV"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "EQS",
+    "multiplier": "1.45",
+    "notes": "Mercedes electric flagship"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "Maybach",
+    "multiplier": "1.70",
+    "notes": "Ultra luxury"
+  },
+  {
+    "make": "Audi",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "European luxury - base"
+  },
+  {
+    "make": "Audi",
+    "model": "RS3",
+    "multiplier": "1.40",
+    "notes": "Audi RS Performance"
+  },
+  {
+    "make": "Audi",
+    "model": "RS5",
+    "multiplier": "1.45",
+    "notes": "Audi RS Performance"
+  },
+  {
+    "make": "Audi",
+    "model": "RS6",
+    "multiplier": "1.50",
+    "notes": "Audi RS Performance"
+  },
+  {
+    "make": "Audi",
+    "model": "RS7",
+    "multiplier": "1.50",
+    "notes": "Audi RS Performance"
+  },
+  {
+    "make": "Audi",
+    "model": "R8",
+    "multiplier": "1.65",
+    "notes": "Audi supercar"
+  },
+  {
+    "make": "Audi",
+    "model": "e-tron GT",
+    "multiplier": "1.45",
+    "notes": "Audi electric GT"
+  },
+  {
+    "make": "Audi",
+    "model": "A8",
+    "multiplier": "1.40",
+    "notes": "Audi flagship"
+  },
+  {
+    "make": "Audi",
+    "model": "Q8",
+    "multiplier": "1.35",
+    "notes": "Audi flagship SUV"
+  },
+  {
+    "make": "Porsche",
+    "model": null,
+    "multiplier": "1.50",
+    "notes": "European sports/luxury - base"
+  },
+  {
+    "make": "Porsche",
+    "model": "911 Turbo",
+    "multiplier": "1.70",
+    "notes": "Porsche 911 Turbo"
+  },
+  {
+    "make": "Porsche",
+    "model": "911 GT3",
+    "multiplier": "1.75",
+    "notes": "Porsche track focused"
+  },
+  {
+    "make": "Porsche",
+    "model": "GT4 RS",
+    "multiplier": "1.75",
+    "notes": "Porsche track focused"
+  },
+  {
+    "make": "Porsche",
+    "model": "Taycan",
+    "multiplier": "1.55",
+    "notes": "Porsche electric"
+  },
+  {
+    "make": "Porsche",
+    "model": "Cayenne Turbo",
+    "multiplier": "1.60",
+    "notes": "Porsche performance SUV"
+  },
+  {
+    "make": "Porsche",
+    "model": "Panamera",
+    "multiplier": "1.55",
+    "notes": "Porsche sedan"
+  },
+  {
+    "make": "Volkswagen",
+    "model": null,
+    "multiplier": "1.15",
+    "notes": "European - base"
+  },
+  {
+    "make": "Volkswagen",
+    "model": "Golf R",
+    "multiplier": "1.25",
+    "notes": "VW performance"
+  },
+  {
+    "make": "Volkswagen",
+    "model": "GTI",
+    "multiplier": "1.20",
+    "notes": "VW performance"
+  },
+  {
+    "make": "Volvo",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "Swedish luxury"
+  },
+  {
+    "make": "Volvo",
+    "model": "XC90",
+    "multiplier": "1.25",
+    "notes": "Volvo flagship SUV"
+  },
+  {
+    "make": "Volvo",
+    "model": "Polestar",
+    "multiplier": "1.35",
+    "notes": "Volvo performance"
+  },
+  {
+    "make": "Land Rover",
+    "model": null,
+    "multiplier": "1.40",
+    "notes": "British luxury SUV - base"
+  },
+  {
+    "make": "Land Rover",
+    "model": "Range Rover",
+    "multiplier": "1.50",
+    "notes": "Range Rover flagship"
+  },
+  {
+    "make": "Land Rover",
+    "model": "Range Rover Sport",
+    "multiplier": "1.45",
+    "notes": "Range Rover Sport"
+  },
+  {
+    "make": "Land Rover",
+    "model": "Defender",
+    "multiplier": "1.40",
+    "notes": "Land Rover Defender"
+  },
+  {
+    "make": "Jaguar",
+    "model": null,
+    "multiplier": "1.35",
+    "notes": "British luxury"
+  },
+  {
+    "make": "Jaguar",
+    "model": "F-Type",
+    "multiplier": "1.50",
+    "notes": "Jaguar sports car"
+  },
+  {
+    "make": "Jaguar",
+    "model": "F-Pace SVR",
+    "multiplier": "1.50",
+    "notes": "Jaguar performance SUV"
+  },
+  {
+    "make": "Mini",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "BMW-owned European"
+  },
+  {
+    "make": "Mini",
+    "model": "John Cooper Works",
+    "multiplier": "1.30",
+    "notes": "Mini performance"
+  },
+  {
+    "make": "Alfa Romeo",
+    "model": null,
+    "multiplier": "1.35",
+    "notes": "Italian"
+  },
+  {
+    "make": "Alfa Romeo",
+    "model": "Giulia Quadrifoglio",
+    "multiplier": "1.50",
+    "notes": "Alfa performance"
+  },
+  {
+    "make": "Maserati",
+    "model": null,
+    "multiplier": "1.55",
+    "notes": "Italian luxury"
+  },
+  {
+    "make": "Maserati",
+    "model": "MC20",
+    "multiplier": "1.75",
+    "notes": "Maserati supercar"
+  },
+  {
+    "make": "Ferrari",
+    "model": null,
+    "multiplier": "2.00",
+    "notes": "Italian supercar"
+  },
+  {
+    "make": "Lamborghini",
+    "model": null,
+    "multiplier": "2.00",
+    "notes": "Italian supercar"
+  },
+  {
+    "make": "Bentley",
+    "model": null,
+    "multiplier": "1.80",
+    "notes": "British ultra luxury"
+  },
+  {
+    "make": "Rolls-Royce",
+    "model": null,
+    "multiplier": "2.00",
+    "notes": "British ultra luxury"
+  },
+  {
+    "make": "Aston Martin",
+    "model": null,
+    "multiplier": "1.85",
+    "notes": "British sports/luxury"
+  },
+  {
+    "make": "McLaren",
+    "model": null,
+    "multiplier": "2.00",
+    "notes": "British supercar"
+  },
+  {
+    "make": "Lexus",
+    "model": null,
+    "multiplier": "1.15",
+    "notes": "Japanese luxury - base"
+  },
+  {
+    "make": "Lexus",
+    "model": "LC",
+    "multiplier": "1.30",
+    "notes": "Lexus grand tourer"
+  },
+  {
+    "make": "Lexus",
+    "model": "LX",
+    "multiplier": "1.25",
+    "notes": "Lexus flagship SUV"
+  },
+  {
+    "make": "Lexus",
+    "model": "LS",
+    "multiplier": "1.25",
+    "notes": "Lexus flagship sedan"
+  },
+  {
+    "make": "Lexus",
+    "model": "IS F",
+    "multiplier": "1.25",
+    "notes": "Lexus F performance"
+  },
+  {
+    "make": "Lexus",
+    "model": "RC F",
+    "multiplier": "1.30",
+    "notes": "Lexus F performance"
+  },
+  {
+    "make": "Infiniti",
+    "model": null,
+    "multiplier": "1.15",
+    "notes": "Japanese luxury - base"
+  },
+  {
+    "make": "Infiniti",
+    "model": "Q60 Red Sport",
+    "multiplier": "1.25",
+    "notes": "Infiniti performance"
+  },
+  {
+    "make": "Acura",
+    "model": null,
+    "multiplier": "1.10",
+    "notes": "Japanese luxury - base"
+  },
+  {
+    "make": "Acura",
+    "model": "NSX",
+    "multiplier": "1.60",
+    "notes": "Acura supercar"
+  },
+  {
+    "make": "Acura",
+    "model": "Type S",
+    "multiplier": "1.20",
+    "notes": "Acura Type S performance"
+  },
+  {
+    "make": "Toyota",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Toyota",
+    "model": "Supra",
+    "multiplier": "1.20",
+    "notes": "Toyota sports car"
+  },
+  {
+    "make": "Toyota",
+    "model": "GR86",
+    "multiplier": "1.10",
+    "notes": "Toyota sports car"
+  },
+  {
+    "make": "Toyota",
+    "model": "GR Corolla",
+    "multiplier": "1.15",
+    "notes": "Toyota GR performance"
+  },
+  {
+    "make": "Toyota",
+    "model": "Land Cruiser",
+    "multiplier": "1.15",
+    "notes": "Toyota flagship SUV"
+  },
+  {
+    "make": "Toyota",
+    "model": "Tundra TRD Pro",
+    "multiplier": "1.10",
+    "notes": "Toyota performance truck"
+  },
+  {
+    "make": "Honda",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Honda",
+    "model": "Civic Type R",
+    "multiplier": "1.15",
+    "notes": "Honda performance"
+  },
+  {
+    "make": "Honda",
+    "model": "S2000",
+    "multiplier": "1.20",
+    "notes": "Honda sports car (classic)"
+  },
+  {
+    "make": "Nissan",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Nissan",
+    "model": "GT-R",
+    "multiplier": "1.50",
+    "notes": "Nissan supercar"
+  },
+  {
+    "make": "Nissan",
+    "model": "Z",
+    "multiplier": "1.15",
+    "notes": "Nissan sports car"
+  },
+  {
+    "make": "Nissan",
+    "model": "370Z",
+    "multiplier": "1.15",
+    "notes": "Nissan sports car"
+  },
+  {
+    "make": "Mazda",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Mazda",
+    "model": "MX-5 Miata",
+    "multiplier": "1.05",
+    "notes": "Mazda sports car"
+  },
+  {
+    "make": "Mazda",
+    "model": "CX-90",
+    "multiplier": "1.10",
+    "notes": "Mazda flagship SUV"
+  },
+  {
+    "make": "Subaru",
+    "model": null,
+    "multiplier": "1.05",
+    "notes": "Boxer engine - base"
+  },
+  {
+    "make": "Subaru",
+    "model": "WRX STI",
+    "multiplier": "1.20",
+    "notes": "Subaru performance"
+  },
+  {
+    "make": "Subaru",
+    "model": "BRZ",
+    "multiplier": "1.10",
+    "notes": "Subaru sports car"
+  },
+  {
+    "make": "Mitsubishi",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard"
+  },
+  {
+    "make": "Mitsubishi",
+    "model": "Lancer Evolution",
+    "multiplier": "1.25",
+    "notes": "Mitsubishi performance (classic)"
+  },
+  {
+    "make": "Hyundai",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Hyundai",
+    "model": "Elantra N",
+    "multiplier": "1.10",
+    "notes": "Hyundai N performance"
+  },
+  {
+    "make": "Hyundai",
+    "model": "Veloster N",
+    "multiplier": "1.10",
+    "notes": "Hyundai N performance"
+  },
+  {
+    "make": "Hyundai",
+    "model": "Ioniq 5 N",
+    "multiplier": "1.15",
+    "notes": "Hyundai electric performance"
+  },
+  {
+    "make": "Hyundai",
+    "model": "Palisade",
+    "multiplier": "1.05",
+    "notes": "Hyundai flagship SUV"
+  },
+  {
+    "make": "Kia",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Kia",
+    "model": "Stinger GT",
+    "multiplier": "1.15",
+    "notes": "Kia performance"
+  },
+  {
+    "make": "Kia",
+    "model": "EV6 GT",
+    "multiplier": "1.15",
+    "notes": "Kia electric performance"
+  },
+  {
+    "make": "Kia",
+    "model": "Telluride",
+    "multiplier": "1.05",
+    "notes": "Kia flagship SUV"
+  },
+  {
+    "make": "Genesis",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "Korean luxury"
+  },
+  {
+    "make": "Genesis",
+    "model": "G90",
+    "multiplier": "1.30",
+    "notes": "Genesis flagship"
+  },
+  {
+    "make": "Genesis",
+    "model": "GV80",
+    "multiplier": "1.25",
+    "notes": "Genesis flagship SUV"
+  },
+  {
+    "make": "Cadillac",
+    "model": null,
+    "multiplier": "1.15",
+    "notes": "American luxury - base"
+  },
+  {
+    "make": "Cadillac",
+    "model": "CT5-V Blackwing",
+    "multiplier": "1.35",
+    "notes": "Cadillac V performance"
+  },
+  {
+    "make": "Cadillac",
+    "model": "CT4-V Blackwing",
+    "multiplier": "1.30",
+    "notes": "Cadillac V performance"
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade",
+    "multiplier": "1.25",
+    "notes": "Cadillac flagship SUV"
+  },
+  {
+    "make": "Cadillac",
+    "model": "Escalade V",
+    "multiplier": "1.35",
+    "notes": "Cadillac V performance SUV"
+  },
+  {
+    "make": "Lincoln",
+    "model": null,
+    "multiplier": "1.10",
+    "notes": "American luxury - base"
+  },
+  {
+    "make": "Lincoln",
+    "model": "Navigator",
+    "multiplier": "1.20",
+    "notes": "Lincoln flagship SUV"
+  },
+  {
+    "make": "Ford",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Ford",
+    "model": "Mustang GT",
+    "multiplier": "1.10",
+    "notes": "Ford performance"
+  },
+  {
+    "make": "Ford",
+    "model": "Mustang Shelby GT500",
+    "multiplier": "1.30",
+    "notes": "Ford Shelby performance"
+  },
+  {
+    "make": "Ford",
+    "model": "Mustang Mach-E GT",
+    "multiplier": "1.15",
+    "notes": "Ford electric performance"
+  },
+  {
+    "make": "Ford",
+    "model": "F-150 Raptor",
+    "multiplier": "1.20",
+    "notes": "Ford performance truck"
+  },
+  {
+    "make": "Ford",
+    "model": "Bronco Raptor",
+    "multiplier": "1.20",
+    "notes": "Ford performance SUV"
+  },
+  {
+    "make": "Ford",
+    "model": "GT",
+    "multiplier": "1.90",
+    "notes": "Ford supercar"
+  },
+  {
+    "make": "Chevrolet",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Corvette",
+    "multiplier": "1.25",
+    "notes": "Chevrolet sports car"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Corvette Z06",
+    "multiplier": "1.40",
+    "notes": "Corvette track focused"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Camaro ZL1",
+    "multiplier": "1.25",
+    "notes": "Chevrolet performance"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Camaro SS",
+    "multiplier": "1.15",
+    "notes": "Chevrolet performance"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Silverado ZR2",
+    "multiplier": "1.15",
+    "notes": "Chevrolet performance truck"
+  },
+  {
+    "make": "GMC",
+    "model": null,
+    "multiplier": "1.05",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "GMC",
+    "model": "Hummer EV",
+    "multiplier": "1.30",
+    "notes": "GMC electric truck"
+  },
+  {
+    "make": "GMC",
+    "model": "Yukon Denali",
+    "multiplier": "1.15",
+    "notes": "GMC premium SUV"
+  },
+  {
+    "make": "Dodge",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Dodge",
+    "model": "Challenger Hellcat",
+    "multiplier": "1.30",
+    "notes": "Dodge Hellcat performance"
+  },
+  {
+    "make": "Dodge",
+    "model": "Charger Hellcat",
+    "multiplier": "1.30",
+    "notes": "Dodge Hellcat performance"
+  },
+  {
+    "make": "Dodge",
+    "model": "Challenger Demon",
+    "multiplier": "1.40",
+    "notes": "Dodge Demon performance"
+  },
+  {
+    "make": "Dodge",
+    "model": "Durango SRT",
+    "multiplier": "1.20",
+    "notes": "Dodge SRT performance SUV"
+  },
+  {
+    "make": "Ram",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Ram",
+    "model": "TRX",
+    "multiplier": "1.25",
+    "notes": "Ram performance truck"
+  },
+  {
+    "make": "Jeep",
+    "model": null,
+    "multiplier": "1.05",
+    "notes": "Standard - base"
+  },
+  {
+    "make": "Jeep",
+    "model": "Grand Cherokee SRT",
+    "multiplier": "1.20",
+    "notes": "Jeep SRT performance"
+  },
+  {
+    "make": "Jeep",
+    "model": "Wrangler Rubicon 392",
+    "multiplier": "1.25",
+    "notes": "Jeep V8 performance"
+  },
+  {
+    "make": "Chrysler",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Standard"
+  },
+  {
+    "make": "Buick",
+    "model": null,
+    "multiplier": "1.05",
+    "notes": "Standard"
+  },
+  {
+    "make": "Tesla",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "Electric - base"
+  },
+  {
+    "make": "Tesla",
+    "model": "Model S Plaid",
+    "multiplier": "1.35",
+    "notes": "Tesla performance"
+  },
+  {
+    "make": "Tesla",
+    "model": "Model X Plaid",
+    "multiplier": "1.35",
+    "notes": "Tesla performance SUV"
+  },
+  {
+    "make": "Tesla",
+    "model": "Model 3 Performance",
+    "multiplier": "1.25",
+    "notes": "Tesla performance"
+  },
+  {
+    "make": "Tesla",
+    "model": "Cybertruck",
+    "multiplier": "1.30",
+    "notes": "Tesla truck"
+  },
+  {
+    "make": "Tesla",
+    "model": "Roadster",
+    "multiplier": "1.50",
+    "notes": "Tesla supercar"
+  },
+  {
+    "make": "Rivian",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "Electric startup"
+  },
+  {
+    "make": "Rivian",
+    "model": "R1T",
+    "multiplier": "1.25",
+    "notes": "Rivian electric truck"
+  },
+  {
+    "make": "Rivian",
+    "model": "R1S",
+    "multiplier": "1.25",
+    "notes": "Rivian electric SUV"
+  },
+  {
+    "make": "Rivian",
+    "model": "R2",
+    "multiplier": "1.20",
+    "notes": "Rivian compact"
+  },
+  {
+    "make": "Lucid",
+    "model": null,
+    "multiplier": "1.40",
+    "notes": "Electric luxury"
+  },
+  {
+    "make": "Lucid",
+    "model": "Air Sapphire",
+    "multiplier": "1.60",
+    "notes": "Lucid performance"
+  },
+  {
+    "make": "Lucid",
+    "model": "Air Grand Touring",
+    "multiplier": "1.45",
+    "notes": "Lucid GT"
+  },
+  {
+    "make": "Lucid",
+    "model": "Gravity",
+    "multiplier": "1.45",
+    "notes": "Lucid SUV"
+  },
+  {
+    "make": "Polestar",
+    "model": null,
+    "multiplier": "1.30",
+    "notes": "Electric performance"
+  },
+  {
+    "make": "Polestar",
+    "model": "Polestar 1",
+    "multiplier": "1.50",
+    "notes": "Polestar hybrid GT"
+  },
+  {
+    "make": "Polestar",
+    "model": "Polestar 2",
+    "multiplier": "1.30",
+    "notes": "Polestar sedan"
+  },
+  {
+    "make": "Polestar",
+    "model": "Polestar 3",
+    "multiplier": "1.35",
+    "notes": "Polestar SUV"
+  },
+  {
+    "make": "Polestar",
+    "model": "Polestar 4",
+    "multiplier": "1.35",
+    "notes": "Polestar coupe SUV"
+  },
+  {
+    "make": "Fisker",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "Electric startup"
+  },
+  {
+    "make": "Fisker",
+    "model": "Ocean",
+    "multiplier": "1.25",
+    "notes": "Fisker SUV"
+  },
+  {
+    "make": "VinFast",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "Vietnamese electric"
+  },
+  {
+    "make": "VinFast",
+    "model": "VF8",
+    "multiplier": "1.20",
+    "notes": "VinFast midsize SUV"
+  },
+  {
+    "make": "VinFast",
+    "model": "VF9",
+    "multiplier": "1.25",
+    "notes": "VinFast large SUV"
+  },
+  {
+    "make": "Canoo",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "Electric startup"
+  },
+  {
+    "make": "Lordstown",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "Electric truck startup"
+  },
+  {
+    "make": "Faraday Future",
+    "model": null,
+    "multiplier": "1.40",
+    "notes": "Electric luxury startup"
+  },
+  {
+    "make": "Karma",
+    "model": null,
+    "multiplier": "1.45",
+    "notes": "Luxury hybrid/electric"
+  },
+  {
+    "make": "Karma",
+    "model": "Revero",
+    "multiplier": "1.45",
+    "notes": "Karma GT"
+  },
+  {
+    "make": "BYD",
+    "model": null,
+    "multiplier": "1.15",
+    "notes": "Chinese electric"
+  },
+  {
+    "make": "NIO",
+    "model": null,
+    "multiplier": "1.30",
+    "notes": "Chinese electric luxury"
+  },
+  {
+    "make": "Xpeng",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "Chinese electric"
+  },
+  {
+    "make": "Zeekr",
+    "model": null,
+    "multiplier": "1.30",
+    "notes": "Chinese electric luxury (Geely)"
+  },
+  {
+    "make": "Fiat",
+    "model": null,
+    "multiplier": "1.15",
+    "notes": "Italian compact"
+  },
+  {
+    "make": "Fiat",
+    "model": "500 Abarth",
+    "multiplier": "1.25",
+    "notes": "Fiat performance"
+  },
+  {
+    "make": "Fiat",
+    "model": "500e",
+    "multiplier": "1.20",
+    "notes": "Fiat electric"
+  },
+  {
+    "make": "Fiat",
+    "model": "124 Spider",
+    "multiplier": "1.20",
+    "notes": "Fiat sports car"
+  },
+  {
+    "make": "Smart",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "Mercedes microcar"
+  },
+  {
+    "make": "Lotus",
+    "model": null,
+    "multiplier": "1.60",
+    "notes": "British sports car"
+  },
+  {
+    "make": "Lotus",
+    "model": "Elise",
+    "multiplier": "1.55",
+    "notes": "Lotus lightweight"
+  },
+  {
+    "make": "Lotus",
+    "model": "Exige",
+    "multiplier": "1.60",
+    "notes": "Lotus track car"
+  },
+  {
+    "make": "Lotus",
+    "model": "Evora",
+    "multiplier": "1.60",
+    "notes": "Lotus GT"
+  },
+  {
+    "make": "Lotus",
+    "model": "Emira",
+    "multiplier": "1.65",
+    "notes": "Lotus sports car"
+  },
+  {
+    "make": "Lotus",
+    "model": "Eletre",
+    "multiplier": "1.55",
+    "notes": "Lotus electric SUV"
+  },
+  {
+    "make": "Cupra",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "Spanish performance (SEAT)"
+  },
+  {
+    "make": "Cupra",
+    "model": "Formentor",
+    "multiplier": "1.25",
+    "notes": "Cupra crossover"
+  },
+  {
+    "make": "Cupra",
+    "model": "Born",
+    "multiplier": "1.25",
+    "notes": "Cupra electric"
+  },
+  {
+    "make": "Skoda",
+    "model": null,
+    "multiplier": "1.10",
+    "notes": "Czech (VW Group)"
+  },
+  {
+    "make": "SEAT",
+    "model": null,
+    "multiplier": "1.10",
+    "notes": "Spanish (VW Group)"
+  },
+  {
+    "make": "Bugatti",
+    "model": null,
+    "multiplier": "2.50",
+    "notes": "Hypercar"
+  },
+  {
+    "make": "Koenigsegg",
+    "model": null,
+    "multiplier": "2.50",
+    "notes": "Swedish hypercar"
+  },
+  {
+    "make": "Pagani",
+    "model": null,
+    "multiplier": "2.50",
+    "notes": "Italian hypercar"
+  },
+  {
+    "make": "Rimac",
+    "model": null,
+    "multiplier": "2.50",
+    "notes": "Croatian electric hypercar"
+  },
+  {
+    "make": "Morgan",
+    "model": null,
+    "multiplier": "1.60",
+    "notes": "British classic sports"
+  },
+  {
+    "make": "TVR",
+    "model": null,
+    "multiplier": "1.65",
+    "notes": "British sports car"
+  },
+  {
+    "make": "Wiesmann",
+    "model": null,
+    "multiplier": "1.70",
+    "notes": "German boutique sports"
+  },
+  {
+    "make": "Donkervoort",
+    "model": null,
+    "multiplier": "1.75",
+    "notes": "Dutch lightweight sports"
+  },
+  {
+    "make": "Pontiac",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Classic American (discontinued)"
+  },
+  {
+    "make": "Pontiac",
+    "model": "GTO",
+    "multiplier": "1.15",
+    "notes": "Pontiac muscle"
+  },
+  {
+    "make": "Pontiac",
+    "model": "Firebird",
+    "multiplier": "1.10",
+    "notes": "Pontiac sports"
+  },
+  {
+    "make": "Pontiac",
+    "model": "Trans Am",
+    "multiplier": "1.15",
+    "notes": "Pontiac performance"
+  },
+  {
+    "make": "Pontiac",
+    "model": "G8 GXP",
+    "multiplier": "1.15",
+    "notes": "Pontiac performance sedan"
+  },
+  {
+    "make": "Pontiac",
+    "model": "Solstice GXP",
+    "multiplier": "1.10",
+    "notes": "Pontiac roadster"
+  },
+  {
+    "make": "Saturn",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Classic American (discontinued)"
+  },
+  {
+    "make": "Saturn",
+    "model": "Sky",
+    "multiplier": "1.05",
+    "notes": "Saturn roadster"
+  },
+  {
+    "make": "Oldsmobile",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Classic American (discontinued)"
+  },
+  {
+    "make": "Oldsmobile",
+    "model": "442",
+    "multiplier": "1.20",
+    "notes": "Oldsmobile classic muscle"
+  },
+  {
+    "make": "Mercury",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Classic American (discontinued)"
+  },
+  {
+    "make": "Mercury",
+    "model": "Marauder",
+    "multiplier": "1.10",
+    "notes": "Mercury performance"
+  },
+  {
+    "make": "Hummer",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "Classic Hummer (pre-GMC)"
+  },
+  {
+    "make": "Hummer",
+    "model": "H1",
+    "multiplier": "1.35",
+    "notes": "Original Hummer"
+  },
+  {
+    "make": "Hummer",
+    "model": "H2",
+    "multiplier": "1.20",
+    "notes": "Hummer SUV"
+  },
+  {
+    "make": "Plymouth",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Classic American (discontinued)"
+  },
+  {
+    "make": "Plymouth",
+    "model": "Barracuda",
+    "multiplier": "1.25",
+    "notes": "Plymouth muscle"
+  },
+  {
+    "make": "Plymouth",
+    "model": "Road Runner",
+    "multiplier": "1.25",
+    "notes": "Plymouth muscle"
+  },
+  {
+    "make": "AMC",
+    "model": null,
+    "multiplier": "1.10",
+    "notes": "Classic American (discontinued)"
+  },
+  {
+    "make": "AMC",
+    "model": "Javelin",
+    "multiplier": "1.20",
+    "notes": "AMC muscle"
+  },
+  {
+    "make": "DeLorean",
+    "model": null,
+    "multiplier": "1.50",
+    "notes": "Classic DeLorean DMC-12"
+  },
+  {
+    "make": "Scion",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Toyota brand (discontinued)"
+  },
+  {
+    "make": "Scion",
+    "model": "FR-S",
+    "multiplier": "1.05",
+    "notes": "Scion sports car"
+  },
+  {
+    "make": "Scion",
+    "model": "tC",
+    "multiplier": "1.00",
+    "notes": "Scion coupe"
+  },
+  {
+    "make": "Suzuki",
+    "model": null,
+    "multiplier": "1.00",
+    "notes": "Japanese (discontinued in US)"
+  },
+  {
+    "make": "Suzuki",
+    "model": "Samurai",
+    "multiplier": "1.10",
+    "notes": "Suzuki off-road"
+  },
+  {
+    "make": "Isuzu",
+    "model": null,
+    "multiplier": "1.05",
+    "notes": "Japanese (discontinued in US)"
+  },
+  {
+    "make": "Daihatsu",
+    "model": null,
+    "multiplier": "1.10",
+    "notes": "Japanese kei"
+  },
+  {
+    "make": "SsangYong",
+    "model": null,
+    "multiplier": "1.10",
+    "notes": "Korean SUV specialist"
+  },
+  {
+    "make": "Freightliner",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "Commercial truck"
+  },
+  {
+    "make": "International",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "Commercial truck"
+  },
+  {
+    "make": "Kenworth",
+    "model": null,
+    "multiplier": "1.30",
+    "notes": "Commercial truck"
+  },
+  {
+    "make": "Peterbilt",
+    "model": null,
+    "multiplier": "1.30",
+    "notes": "Commercial truck"
+  },
+  {
+    "make": "Western Star",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "Commercial truck"
+  },
+  {
+    "make": "Mack",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "Commercial truck"
+  },
+  {
+    "make": "Tata",
+    "model": null,
+    "multiplier": "1.10",
+    "notes": "Indian manufacturer"
+  },
+  {
+    "make": "Mahindra",
+    "model": null,
+    "multiplier": "1.10",
+    "notes": "Indian manufacturer"
+  },
+  {
+    "make": "Toyota",
+    "model": "4Runner TRD Pro",
+    "multiplier": "1.10",
+    "notes": "Toyota off-road"
+  },
+  {
+    "make": "Toyota",
+    "model": "Tacoma TRD Pro",
+    "multiplier": "1.10",
+    "notes": "Toyota off-road truck"
+  },
+  {
+    "make": "Toyota",
+    "model": "Sequoia",
+    "multiplier": "1.10",
+    "notes": "Toyota full-size SUV"
+  },
+  {
+    "make": "Toyota",
+    "model": "Crown",
+    "multiplier": "1.10",
+    "notes": "Toyota luxury sedan"
+  },
+  {
+    "make": "Toyota",
+    "model": "Mirai",
+    "multiplier": "1.20",
+    "notes": "Toyota hydrogen fuel cell"
+  },
+  {
+    "make": "Toyota",
+    "model": "bZ4X",
+    "multiplier": "1.15",
+    "notes": "Toyota electric SUV"
+  },
+  {
+    "make": "Honda",
+    "model": "Prologue",
+    "multiplier": "1.15",
+    "notes": "Honda electric SUV"
+  },
+  {
+    "make": "Honda",
+    "model": "HR-V",
+    "multiplier": "1.00",
+    "notes": "Honda subcompact SUV"
+  },
+  {
+    "make": "Honda",
+    "model": "Pilot TrailSport",
+    "multiplier": "1.05",
+    "notes": "Honda off-road SUV"
+  },
+  {
+    "make": "Ford",
+    "model": "Maverick",
+    "multiplier": "1.00",
+    "notes": "Ford compact truck"
+  },
+  {
+    "make": "Ford",
+    "model": "Lightning",
+    "multiplier": "1.20",
+    "notes": "Ford electric truck"
+  },
+  {
+    "make": "Ford",
+    "model": "Expedition",
+    "multiplier": "1.10",
+    "notes": "Ford full-size SUV"
+  },
+  {
+    "make": "Ford",
+    "model": "Explorer ST",
+    "multiplier": "1.15",
+    "notes": "Ford ST performance"
+  },
+  {
+    "make": "Ford",
+    "model": "Edge ST",
+    "multiplier": "1.10",
+    "notes": "Ford ST performance"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Blazer EV",
+    "multiplier": "1.15",
+    "notes": "Chevrolet electric"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Equinox EV",
+    "multiplier": "1.10",
+    "notes": "Chevrolet electric"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Silverado EV",
+    "multiplier": "1.20",
+    "notes": "Chevrolet electric truck"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Colorado ZR2",
+    "multiplier": "1.15",
+    "notes": "Chevrolet off-road truck"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Trailblazer",
+    "multiplier": "1.00",
+    "notes": "Chevrolet compact SUV"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "GLA 35 AMG",
+    "multiplier": "1.40",
+    "notes": "Mercedes-AMG compact"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "GLB 35 AMG",
+    "multiplier": "1.40",
+    "notes": "Mercedes-AMG compact SUV"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "GLC 63 AMG",
+    "multiplier": "1.50",
+    "notes": "Mercedes-AMG mid SUV"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "EQE",
+    "multiplier": "1.40",
+    "notes": "Mercedes electric sedan"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "EQB",
+    "multiplier": "1.35",
+    "notes": "Mercedes electric SUV"
+  },
+  {
+    "make": "BMW",
+    "model": "M2",
+    "multiplier": "1.40",
+    "notes": "BMW M Performance"
+  },
+  {
+    "make": "BMW",
+    "model": "M8",
+    "multiplier": "1.55",
+    "notes": "BMW M Performance GT"
+  },
+  {
+    "make": "BMW",
+    "model": "X3 M",
+    "multiplier": "1.45",
+    "notes": "BMW M Performance SUV"
+  },
+  {
+    "make": "BMW",
+    "model": "X4 M",
+    "multiplier": "1.45",
+    "notes": "BMW M Performance coupe SUV"
+  },
+  {
+    "make": "BMW",
+    "model": "i5",
+    "multiplier": "1.35",
+    "notes": "BMW electric sedan"
+  },
+  {
+    "make": "BMW",
+    "model": "i7",
+    "multiplier": "1.45",
+    "notes": "BMW electric flagship"
+  },
+  {
+    "make": "BMW",
+    "model": "XM",
+    "multiplier": "1.55",
+    "notes": "BMW M Performance SUV flagship"
+  },
+  {
+    "make": "Audi",
+    "model": "SQ5",
+    "multiplier": "1.30",
+    "notes": "Audi S performance SUV"
+  },
+  {
+    "make": "Audi",
+    "model": "SQ7",
+    "multiplier": "1.35",
+    "notes": "Audi S performance large SUV"
+  },
+  {
+    "make": "Audi",
+    "model": "SQ8",
+    "multiplier": "1.40",
+    "notes": "Audi S performance coupe SUV"
+  },
+  {
+    "make": "Audi",
+    "model": "RS e-tron GT",
+    "multiplier": "1.50",
+    "notes": "Audi RS electric"
+  },
+  {
+    "make": "Audi",
+    "model": "Q4 e-tron",
+    "multiplier": "1.25",
+    "notes": "Audi electric compact SUV"
+  },
+  {
+    "make": "Audi",
+    "model": "Q8 e-tron",
+    "multiplier": "1.35",
+    "notes": "Audi electric large SUV"
+  },
+  {
+    "make": "Porsche",
+    "model": "Macan",
+    "multiplier": "1.45",
+    "notes": "Porsche compact SUV"
+  },
+  {
+    "make": "Porsche",
+    "model": "Macan Turbo",
+    "multiplier": "1.55",
+    "notes": "Porsche performance compact SUV"
+  },
+  {
+    "make": "Porsche",
+    "model": "Cayenne Turbo GT",
+    "multiplier": "1.70",
+    "notes": "Porsche ultimate SUV"
+  },
+  {
+    "make": "Porsche",
+    "model": "718 Cayman GT4",
+    "multiplier": "1.65",
+    "notes": "Porsche track focused"
+  },
+  {
+    "make": "Porsche",
+    "model": "718 Spyder",
+    "multiplier": "1.65",
+    "notes": "Porsche open top sports"
+  },
+  {
+    "make": "Porsche",
+    "model": "Taycan Turbo S",
+    "multiplier": "1.65",
+    "notes": "Porsche electric performance"
+  },
+  {
+    "make": "Lexus",
+    "model": "LFA",
+    "multiplier": "1.80",
+    "notes": "Lexus supercar (classic)"
+  },
+  {
+    "make": "Lexus",
+    "model": "IS 500",
+    "multiplier": "1.25",
+    "notes": "Lexus V8 sedan"
+  },
+  {
+    "make": "Lexus",
+    "model": "TX",
+    "multiplier": "1.20",
+    "notes": "Lexus large SUV"
+  },
+  {
+    "make": "Lexus",
+    "model": "GX",
+    "multiplier": "1.20",
+    "notes": "Lexus off-road SUV"
+  },
+  {
+    "make": "Lexus",
+    "model": "RZ",
+    "multiplier": "1.25",
+    "notes": "Lexus electric"
+  },
+  {
+    "make": "Land Rover",
+    "model": "Range Rover Velar",
+    "multiplier": "1.40",
+    "notes": "Range Rover mid-size"
+  },
+  {
+    "make": "Land Rover",
+    "model": "Discovery",
+    "multiplier": "1.35",
+    "notes": "Land Rover Discovery"
+  },
+  {
+    "make": "Land Rover",
+    "model": "Defender V8",
+    "multiplier": "1.50",
+    "notes": "Land Rover V8 Defender"
+  },
+  {
+    "make": "Genesis",
+    "model": "G70",
+    "multiplier": "1.20",
+    "notes": "Genesis sports sedan"
+  },
+  {
+    "make": "Genesis",
+    "model": "G80",
+    "multiplier": "1.25",
+    "notes": "Genesis luxury sedan"
+  },
+  {
+    "make": "Genesis",
+    "model": "GV60",
+    "multiplier": "1.25",
+    "notes": "Genesis electric crossover"
+  },
+  {
+    "make": "Genesis",
+    "model": "GV70",
+    "multiplier": "1.25",
+    "notes": "Genesis compact SUV"
+  },
+  {
+    "make": "Genesis",
+    "model": "Electrified G80",
+    "multiplier": "1.30",
+    "notes": "Genesis electric sedan"
+  },
+  {
+    "make": "Acura",
+    "model": "Integra Type S",
+    "multiplier": "1.20",
+    "notes": "Acura Type S performance"
+  },
+  {
+    "make": "Acura",
+    "model": "TLX Type S",
+    "multiplier": "1.20",
+    "notes": "Acura Type S performance"
+  },
+  {
+    "make": "Acura",
+    "model": "MDX Type S",
+    "multiplier": "1.20",
+    "notes": "Acura Type S SUV"
+  },
+  {
+    "make": "Acura",
+    "model": "ZDX",
+    "multiplier": "1.25",
+    "notes": "Acura electric SUV"
+  },
+  {
+    "make": "Infiniti",
+    "model": "Q50 Red Sport 400",
+    "multiplier": "1.25",
+    "notes": "Infiniti performance"
+  },
+  {
+    "make": "Infiniti",
+    "model": "Q60 Red Sport 400",
+    "multiplier": "1.25",
+    "notes": "Infiniti performance coupe"
+  },
+  {
+    "make": "Infiniti",
+    "model": "QX80",
+    "multiplier": "1.25",
+    "notes": "Infiniti flagship SUV"
+  },
+  {
+    "make": "Cadillac",
+    "model": "Lyriq",
+    "multiplier": "1.25",
+    "notes": "Cadillac electric SUV"
+  },
+  {
+    "make": "Cadillac",
+    "model": "Celestiq",
+    "multiplier": "1.60",
+    "notes": "Cadillac electric flagship"
+  },
+  {
+    "make": "Cadillac",
+    "model": "CT5-V",
+    "multiplier": "1.25",
+    "notes": "Cadillac V performance"
+  },
+  {
+    "make": "Cadillac",
+    "model": "XT6",
+    "multiplier": "1.20",
+    "notes": "Cadillac 3-row SUV"
+  },
+  {
+    "make": "Volvo",
+    "model": "XC40 Recharge",
+    "multiplier": "1.25",
+    "notes": "Volvo electric"
+  },
+  {
+    "make": "Volvo",
+    "model": "C40 Recharge",
+    "multiplier": "1.25",
+    "notes": "Volvo electric coupe"
+  },
+  {
+    "make": "Volvo",
+    "model": "EX90",
+    "multiplier": "1.30",
+    "notes": "Volvo electric flagship"
+  },
+  {
+    "make": "Volvo",
+    "model": "EX30",
+    "multiplier": "1.20",
+    "notes": "Volvo compact electric"
+  },
+  {
+    "make": "Nissan",
+    "model": "Ariya",
+    "multiplier": "1.10",
+    "notes": "Nissan electric SUV"
+  },
+  {
+    "make": "Nissan",
+    "model": "Pathfinder Rock Creek",
+    "multiplier": "1.05",
+    "notes": "Nissan off-road"
+  },
+  {
+    "make": "Nissan",
+    "model": "Titan PRO-4X",
+    "multiplier": "1.10",
+    "notes": "Nissan off-road truck"
+  },
+  {
+    "make": "Mazda",
+    "model": "MX-30",
+    "multiplier": "1.10",
+    "notes": "Mazda electric"
+  },
+  {
+    "make": "Mazda",
+    "model": "CX-70",
+    "multiplier": "1.10",
+    "notes": "Mazda 2-row SUV"
+  },
+  {
+    "make": "Mazda",
+    "model": "CX-50",
+    "multiplier": "1.05",
+    "notes": "Mazda rugged crossover"
+  },
+  {
+    "make": "Subaru",
+    "model": "Solterra",
+    "multiplier": "1.15",
+    "notes": "Subaru electric SUV"
+  },
+  {
+    "make": "Subaru",
+    "model": "WRX",
+    "multiplier": "1.15",
+    "notes": "Subaru sports sedan"
+  },
+  {
+    "make": "Subaru",
+    "model": "Outback Wilderness",
+    "multiplier": "1.10",
+    "notes": "Subaru off-road"
+  },
+  {
+    "make": "Subaru",
+    "model": "Forester Wilderness",
+    "multiplier": "1.10",
+    "notes": "Subaru off-road"
+  },
+  {
+    "make": "Nissan",
+    "model": "Skyline GT-R R32",
+    "multiplier": "1.45",
+    "notes": "JDM import - Godzilla"
+  },
+  {
+    "make": "Nissan",
+    "model": "Skyline GT-R R33",
+    "multiplier": "1.50",
+    "notes": "JDM import"
+  },
+  {
+    "make": "Nissan",
+    "model": "Skyline GT-R R34",
+    "multiplier": "1.60",
+    "notes": "JDM import - highly sought"
+  },
+  {
+    "make": "Nissan",
+    "model": "Silvia S13",
+    "multiplier": "1.25",
+    "notes": "JDM import - drift car"
+  },
+  {
+    "make": "Nissan",
+    "model": "Silvia S14",
+    "multiplier": "1.30",
+    "notes": "JDM import - drift car"
+  },
+  {
+    "make": "Nissan",
+    "model": "Silvia S15",
+    "multiplier": "1.35",
+    "notes": "JDM import - drift car"
+  },
+  {
+    "make": "Nissan",
+    "model": "180SX",
+    "multiplier": "1.25",
+    "notes": "JDM import"
+  },
+  {
+    "make": "Nissan",
+    "model": "Stagea",
+    "multiplier": "1.25",
+    "notes": "JDM import wagon"
+  },
+  {
+    "make": "Nissan",
+    "model": "Pulsar GTI-R",
+    "multiplier": "1.35",
+    "notes": "JDM import AWD hot hatch"
+  },
+  {
+    "make": "Toyota",
+    "model": "MR2 SW20",
+    "multiplier": "1.20",
+    "notes": "JDM import mid-engine"
+  },
+  {
+    "make": "Toyota",
+    "model": "Soarer",
+    "multiplier": "1.25",
+    "notes": "JDM import luxury coupe"
+  },
+  {
+    "make": "Toyota",
+    "model": "Chaser JZX100",
+    "multiplier": "1.35",
+    "notes": "JDM import drift sedan"
+  },
+  {
+    "make": "Toyota",
+    "model": "Mark II JZX100",
+    "multiplier": "1.30",
+    "notes": "JDM import drift sedan"
+  },
+  {
+    "make": "Toyota",
+    "model": "Cresta",
+    "multiplier": "1.25",
+    "notes": "JDM import"
+  },
+  {
+    "make": "Toyota",
+    "model": "Aristo",
+    "multiplier": "1.30",
+    "notes": "JDM import (Lexus GS)"
+  },
+  {
+    "make": "Toyota",
+    "model": "Altezza",
+    "multiplier": "1.20",
+    "notes": "JDM import (Lexus IS)"
+  },
+  {
+    "make": "Toyota",
+    "model": "Celica GT-Four",
+    "multiplier": "1.30",
+    "notes": "JDM import AWD turbo"
+  },
+  {
+    "make": "Toyota",
+    "model": "Century",
+    "multiplier": "1.50",
+    "notes": "JDM import ultra luxury"
+  },
+  {
+    "make": "Honda",
+    "model": "NSX-R",
+    "multiplier": "1.75",
+    "notes": "JDM import - rare"
+  },
+  {
+    "make": "Honda",
+    "model": "Integra Type R DC2",
+    "multiplier": "1.35",
+    "notes": "JDM import"
+  },
+  {
+    "make": "Honda",
+    "model": "Civic Type R EK9",
+    "multiplier": "1.30",
+    "notes": "JDM import"
+  },
+  {
+    "make": "Honda",
+    "model": "Beat",
+    "multiplier": "1.25",
+    "notes": "JDM kei car roadster"
+  },
+  {
+    "make": "Mazda",
+    "model": "RX-7 FD",
+    "multiplier": "1.40",
+    "notes": "JDM import - rotary"
+  },
+  {
+    "make": "Mazda",
+    "model": "RX-7 FC",
+    "multiplier": "1.25",
+    "notes": "JDM import - rotary"
+  },
+  {
+    "make": "Mazda",
+    "model": "Cosmo",
+    "multiplier": "1.50",
+    "notes": "JDM import - twin turbo rotary"
+  },
+  {
+    "make": "Mazda",
+    "model": "Eunos Roadster",
+    "multiplier": "1.15",
+    "notes": "JDM Miata"
+  },
+  {
+    "make": "Mazda",
+    "model": "Autozam AZ-1",
+    "multiplier": "1.40",
+    "notes": "JDM kei car gullwing"
+  },
+  {
+    "make": "Mitsubishi",
+    "model": "Lancer Evo III",
+    "multiplier": "1.35",
+    "notes": "JDM import"
+  },
+  {
+    "make": "Mitsubishi",
+    "model": "Lancer Evo IV",
+    "multiplier": "1.35",
+    "notes": "JDM import"
+  },
+  {
+    "make": "Mitsubishi",
+    "model": "Lancer Evo V",
+    "multiplier": "1.40",
+    "notes": "JDM import"
+  },
+  {
+    "make": "Mitsubishi",
+    "model": "Lancer Evo VI",
+    "multiplier": "1.40",
+    "notes": "JDM import - TME"
+  },
+  {
+    "make": "Mitsubishi",
+    "model": "GTO/3000GT",
+    "multiplier": "1.25",
+    "notes": "Twin turbo AWD"
+  },
+  {
+    "make": "Mitsubishi",
+    "model": "FTO",
+    "multiplier": "1.20",
+    "notes": "JDM import coupe"
+  },
+  {
+    "make": "Mitsubishi",
+    "model": "Pajero Evolution",
+    "multiplier": "1.40",
+    "notes": "JDM import - rare"
+  },
+  {
+    "make": "Subaru",
+    "model": "Impreza WRX STI GC8",
+    "multiplier": "1.35",
+    "notes": "JDM import"
+  },
+  {
+    "make": "Subaru",
+    "model": "Impreza 22B STI",
+    "multiplier": "1.80",
+    "notes": "JDM import - extremely rare"
+  },
+  {
+    "make": "Subaru",
+    "model": "Legacy GT-B",
+    "multiplier": "1.20",
+    "notes": "JDM import wagon"
+  },
+  {
+    "make": "Subaru",
+    "model": "Forester STI",
+    "multiplier": "1.25",
+    "notes": "JDM import"
+  },
+  {
+    "make": "Suzuki",
+    "model": "Cappuccino",
+    "multiplier": "1.25",
+    "notes": "JDM kei car roadster"
+  },
+  {
+    "make": "Suzuki",
+    "model": "Jimny",
+    "multiplier": "1.15",
+    "notes": "JDM mini SUV"
+  },
+  {
+    "make": "Suzuki",
+    "model": "Alto Works",
+    "multiplier": "1.20",
+    "notes": "JDM kei turbo"
+  },
+  {
+    "make": "Daihatsu",
+    "model": "Copen",
+    "multiplier": "1.20",
+    "notes": "JDM kei roadster"
+  },
+  {
+    "make": "Daihatsu",
+    "model": "Mira",
+    "multiplier": "1.10",
+    "notes": "JDM kei car"
+  },
+  {
+    "make": "Honda",
+    "model": "Acty",
+    "multiplier": "1.15",
+    "notes": "JDM kei truck"
+  },
+  {
+    "make": "Suzuki",
+    "model": "Carry",
+    "multiplier": "1.10",
+    "notes": "JDM kei truck"
+  },
+  {
+    "make": "Daihatsu",
+    "model": "Hijet",
+    "multiplier": "1.10",
+    "notes": "JDM kei truck"
+  },
+  {
+    "make": "Mitsubishi",
+    "model": "Minicab",
+    "multiplier": "1.10",
+    "notes": "JDM kei truck"
+  },
+  {
+    "make": "Subaru",
+    "model": "Sambar",
+    "multiplier": "1.15",
+    "notes": "JDM kei truck"
+  },
+  {
+    "make": "Holden",
+    "model": null,
+    "multiplier": "1.15",
+    "notes": "Australian (discontinued)"
+  },
+  {
+    "make": "Holden",
+    "model": "Commodore SS",
+    "multiplier": "1.20",
+    "notes": "Australian muscle"
+  },
+  {
+    "make": "Holden",
+    "model": "Monaro",
+    "multiplier": "1.25",
+    "notes": "Australian muscle coupe"
+  },
+  {
+    "make": "Holden",
+    "model": "Ute SS",
+    "multiplier": "1.20",
+    "notes": "Australian sport truck"
+  },
+  {
+    "make": "Holden",
+    "model": "Maloo",
+    "multiplier": "1.30",
+    "notes": "Australian performance ute"
+  },
+  {
+    "make": "HSV",
+    "model": null,
+    "multiplier": "1.35",
+    "notes": "Holden Special Vehicles"
+  },
+  {
+    "make": "HSV",
+    "model": "GTS",
+    "multiplier": "1.45",
+    "notes": "HSV performance"
+  },
+  {
+    "make": "HSV",
+    "model": "Clubsport",
+    "multiplier": "1.40",
+    "notes": "HSV performance"
+  },
+  {
+    "make": "Ford Australia",
+    "model": "Falcon XR6 Turbo",
+    "multiplier": "1.25",
+    "notes": "Australian turbo"
+  },
+  {
+    "make": "Ford Australia",
+    "model": "Falcon XR8",
+    "multiplier": "1.30",
+    "notes": "Australian V8"
+  },
+  {
+    "make": "FPV",
+    "model": null,
+    "multiplier": "1.35",
+    "notes": "Ford Performance Vehicles"
+  },
+  {
+    "make": "FPV",
+    "model": "GT",
+    "multiplier": "1.45",
+    "notes": "FPV performance"
+  },
+  {
+    "make": "FPV",
+    "model": "F6",
+    "multiplier": "1.40",
+    "notes": "FPV turbo"
+  },
+  {
+    "make": "Vauxhall",
+    "model": null,
+    "multiplier": "1.10",
+    "notes": "UK Opel"
+  },
+  {
+    "make": "Vauxhall",
+    "model": "VXR8",
+    "multiplier": "1.35",
+    "notes": "UK Holden rebadge"
+  },
+  {
+    "make": "MG",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "British sports car"
+  },
+  {
+    "make": "MG",
+    "model": "MGB",
+    "multiplier": "1.30",
+    "notes": "Classic British roadster"
+  },
+  {
+    "make": "MG",
+    "model": "Midget",
+    "multiplier": "1.25",
+    "notes": "Classic British roadster"
+  },
+  {
+    "make": "Triumph",
+    "model": null,
+    "multiplier": "1.30",
+    "notes": "Classic British"
+  },
+  {
+    "make": "Triumph",
+    "model": "TR6",
+    "multiplier": "1.40",
+    "notes": "Classic British roadster"
+  },
+  {
+    "make": "Triumph",
+    "model": "Spitfire",
+    "multiplier": "1.35",
+    "notes": "Classic British roadster"
+  },
+  {
+    "make": "Austin-Healey",
+    "model": null,
+    "multiplier": "1.50",
+    "notes": "Classic British sports"
+  },
+  {
+    "make": "Austin-Healey",
+    "model": "3000",
+    "multiplier": "1.60",
+    "notes": "Big Healey"
+  },
+  {
+    "make": "Sunbeam",
+    "model": "Tiger",
+    "multiplier": "1.55",
+    "notes": "Classic British V8"
+  },
+  {
+    "make": "Jensen",
+    "model": "Interceptor",
+    "multiplier": "1.60",
+    "notes": "Classic British GT"
+  },
+  {
+    "make": "Bristol",
+    "model": null,
+    "multiplier": "1.70",
+    "notes": "Ultra-rare British"
+  },
+  {
+    "make": "Noble",
+    "model": null,
+    "multiplier": "1.60",
+    "notes": "British supercar"
+  },
+  {
+    "make": "Ariel",
+    "model": "Atom",
+    "multiplier": "1.65",
+    "notes": "British lightweight"
+  },
+  {
+    "make": "Caterham",
+    "model": "Seven",
+    "multiplier": "1.45",
+    "notes": "British lightweight"
+  },
+  {
+    "make": "BAC",
+    "model": "Mono",
+    "multiplier": "1.80",
+    "notes": "British single-seater"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Chevelle SS",
+    "multiplier": "1.35",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Nova SS",
+    "multiplier": "1.25",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "El Camino SS",
+    "multiplier": "1.25",
+    "notes": "Classic muscle truck"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Impala SS",
+    "multiplier": "1.20",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Chevrolet",
+    "model": "Bel Air",
+    "multiplier": "1.25",
+    "notes": "Classic cruiser"
+  },
+  {
+    "make": "Ford",
+    "model": "Mustang Boss 302",
+    "multiplier": "1.40",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Ford",
+    "model": "Mustang Boss 429",
+    "multiplier": "1.60",
+    "notes": "Rare classic muscle"
+  },
+  {
+    "make": "Ford",
+    "model": "Mustang Mach 1",
+    "multiplier": "1.35",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Ford",
+    "model": "Torino Cobra",
+    "multiplier": "1.30",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Ford",
+    "model": "Fairlane",
+    "multiplier": "1.20",
+    "notes": "Classic"
+  },
+  {
+    "make": "Ford",
+    "model": "Galaxie",
+    "multiplier": "1.20",
+    "notes": "Classic"
+  },
+  {
+    "make": "Dodge",
+    "model": "Charger R/T",
+    "multiplier": "1.35",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Dodge",
+    "model": "Challenger R/T",
+    "multiplier": "1.35",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Dodge",
+    "model": "Super Bee",
+    "multiplier": "1.40",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Dodge",
+    "model": "Dart GTS",
+    "multiplier": "1.25",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Plymouth",
+    "model": "Cuda",
+    "multiplier": "1.45",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Plymouth",
+    "model": "GTX",
+    "multiplier": "1.35",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Plymouth",
+    "model": "Superbird",
+    "multiplier": "1.80",
+    "notes": "Rare aero warrior"
+  },
+  {
+    "make": "Dodge",
+    "model": "Daytona",
+    "multiplier": "1.80",
+    "notes": "Rare aero warrior"
+  },
+  {
+    "make": "Buick",
+    "model": "GSX",
+    "multiplier": "1.40",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Buick",
+    "model": "Gran Sport",
+    "multiplier": "1.30",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Oldsmobile",
+    "model": "Cutlass 442",
+    "multiplier": "1.35",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Oldsmobile",
+    "model": "Hurst/Olds",
+    "multiplier": "1.45",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Pontiac",
+    "model": "GTO Judge",
+    "multiplier": "1.45",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "Pontiac",
+    "model": "Firebird Trans Am",
+    "multiplier": "1.35",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "AMC",
+    "model": "AMX",
+    "multiplier": "1.30",
+    "notes": "Classic muscle"
+  },
+  {
+    "make": "AMC",
+    "model": "Rebel Machine",
+    "multiplier": "1.40",
+    "notes": "Rare muscle"
+  },
+  {
+    "make": "Shelby",
+    "model": "GT350",
+    "multiplier": "1.60",
+    "notes": "Classic Shelby"
+  },
+  {
+    "make": "Shelby",
+    "model": "GT500",
+    "multiplier": "1.70",
+    "notes": "Classic Shelby"
+  },
+  {
+    "make": "Shelby",
+    "model": "Cobra",
+    "multiplier": "2.00",
+    "notes": "Classic Shelby supercar"
+  },
+  {
+    "make": "Porsche",
+    "model": "356",
+    "multiplier": "1.70",
+    "notes": "Classic Porsche"
+  },
+  {
+    "make": "Porsche",
+    "model": "911 (930) Turbo",
+    "multiplier": "1.80",
+    "notes": "Widowmaker"
+  },
+  {
+    "make": "Porsche",
+    "model": "911 (964)",
+    "multiplier": "1.60",
+    "notes": "Classic air-cooled"
+  },
+  {
+    "make": "Porsche",
+    "model": "911 (993)",
+    "multiplier": "1.65",
+    "notes": "Last air-cooled"
+  },
+  {
+    "make": "Porsche",
+    "model": "914",
+    "multiplier": "1.35",
+    "notes": "Classic mid-engine"
+  },
+  {
+    "make": "Porsche",
+    "model": "944 Turbo",
+    "multiplier": "1.35",
+    "notes": "Classic front-engine"
+  },
+  {
+    "make": "Porsche",
+    "model": "928",
+    "multiplier": "1.40",
+    "notes": "Classic GT"
+  },
+  {
+    "make": "BMW",
+    "model": "2002",
+    "multiplier": "1.40",
+    "notes": "Classic BMW"
+  },
+  {
+    "make": "BMW",
+    "model": "E30 M3",
+    "multiplier": "1.60",
+    "notes": "Classic M car"
+  },
+  {
+    "make": "BMW",
+    "model": "E28 M5",
+    "multiplier": "1.50",
+    "notes": "Classic M car"
+  },
+  {
+    "make": "BMW",
+    "model": "E34 M5",
+    "multiplier": "1.45",
+    "notes": "Classic M car"
+  },
+  {
+    "make": "BMW",
+    "model": "E36 M3",
+    "multiplier": "1.35",
+    "notes": "Classic M car"
+  },
+  {
+    "make": "BMW",
+    "model": "E39 M5",
+    "multiplier": "1.45",
+    "notes": "Classic M car"
+  },
+  {
+    "make": "BMW",
+    "model": "E46 M3",
+    "multiplier": "1.40",
+    "notes": "Classic M car"
+  },
+  {
+    "make": "BMW",
+    "model": "Z8",
+    "multiplier": "1.70",
+    "notes": "Rare BMW roadster"
+  },
+  {
+    "make": "BMW",
+    "model": "850CSi",
+    "multiplier": "1.55",
+    "notes": "Classic GT"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "190E 2.5-16",
+    "multiplier": "1.45",
+    "notes": "Classic sports sedan"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "W124 500E",
+    "multiplier": "1.50",
+    "notes": "Porsche-built sedan"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "R107 SL",
+    "multiplier": "1.45",
+    "notes": "Classic roadster"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "W113 Pagoda",
+    "multiplier": "1.65",
+    "notes": "Classic roadster"
+  },
+  {
+    "make": "Mercedes-Benz",
+    "model": "300SL Gullwing",
+    "multiplier": "2.50",
+    "notes": "Ultra classic"
+  },
+  {
+    "make": "Volkswagen",
+    "model": "Beetle",
+    "multiplier": "1.15",
+    "notes": "Classic VW"
+  },
+  {
+    "make": "Volkswagen",
+    "model": "Bus/Van",
+    "multiplier": "1.30",
+    "notes": "Classic VW"
+  },
+  {
+    "make": "Volkswagen",
+    "model": "Karmann Ghia",
+    "multiplier": "1.35",
+    "notes": "Classic VW"
+  },
+  {
+    "make": "Volkswagen",
+    "model": "Corrado VR6",
+    "multiplier": "1.25",
+    "notes": "Classic VW sports"
+  },
+  {
+    "make": "Alfa Romeo",
+    "model": "GTV6",
+    "multiplier": "1.40",
+    "notes": "Classic Alfa"
+  },
+  {
+    "make": "Alfa Romeo",
+    "model": "Spider",
+    "multiplier": "1.35",
+    "notes": "Classic Alfa roadster"
+  },
+  {
+    "make": "Alfa Romeo",
+    "model": "164",
+    "multiplier": "1.30",
+    "notes": "Classic Alfa sedan"
+  },
+  {
+    "make": "Lancia",
+    "model": "Delta Integrale",
+    "multiplier": "1.60",
+    "notes": "Rally legend"
+  },
+  {
+    "make": "Lancia",
+    "model": "Stratos",
+    "multiplier": "2.00",
+    "notes": "Rally supercar"
+  },
+  {
+    "make": "Ferrari",
+    "model": "308",
+    "multiplier": "1.80",
+    "notes": "Classic Ferrari"
+  },
+  {
+    "make": "Ferrari",
+    "model": "328",
+    "multiplier": "1.85",
+    "notes": "Classic Ferrari"
+  },
+  {
+    "make": "Ferrari",
+    "model": "Testarossa",
+    "multiplier": "1.90",
+    "notes": "Classic Ferrari"
+  },
+  {
+    "make": "Ferrari",
+    "model": "F40",
+    "multiplier": "2.50",
+    "notes": "Legendary supercar"
+  },
+  {
+    "make": "Ferrari",
+    "model": "F50",
+    "multiplier": "2.50",
+    "notes": "Legendary supercar"
+  },
+  {
+    "make": "Lamborghini",
+    "model": "Countach",
+    "multiplier": "2.20",
+    "notes": "Iconic supercar"
+  },
+  {
+    "make": "Lamborghini",
+    "model": "Diablo",
+    "multiplier": "2.00",
+    "notes": "Classic supercar"
+  },
+  {
+    "make": "Lamborghini",
+    "model": "Miura",
+    "multiplier": "2.50",
+    "notes": "Original supercar"
+  },
+  {
+    "make": "De Tomaso",
+    "model": "Pantera",
+    "multiplier": "1.60",
+    "notes": "Italian-American GT"
+  },
+  {
+    "make": "De Tomaso",
+    "model": "Mangusta",
+    "multiplier": "1.70",
+    "notes": "Rare Italian GT"
+  },
+  {
+    "make": "Iso",
+    "model": "Grifo",
+    "multiplier": "1.75",
+    "notes": "Rare Italian GT"
+  },
+  {
+    "make": "Bizzarrini",
+    "model": "5300 GT",
+    "multiplier": "2.00",
+    "notes": "Ultra-rare Italian"
+  },
+  {
+    "make": "Saab",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "Swedish (discontinued)"
+  },
+  {
+    "make": "Saab",
+    "model": "900 Turbo",
+    "multiplier": "1.25",
+    "notes": "Classic Saab"
+  },
+  {
+    "make": "Saab",
+    "model": "9-3 Viggen",
+    "multiplier": "1.30",
+    "notes": "Performance Saab"
+  },
+  {
+    "make": "Peugeot",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "French (limited US)"
+  },
+  {
+    "make": "Peugeot",
+    "model": "205 GTI",
+    "multiplier": "1.35",
+    "notes": "Hot hatch legend"
+  },
+  {
+    "make": "Renault",
+    "model": null,
+    "multiplier": "1.20",
+    "notes": "French (limited US)"
+  },
+  {
+    "make": "Renault",
+    "model": "5 Turbo",
+    "multiplier": "1.50",
+    "notes": "Mid-engine hot hatch"
+  },
+  {
+    "make": "Citroen",
+    "model": null,
+    "multiplier": "1.25",
+    "notes": "French (rare in US)"
+  },
+  {
+    "make": "Citroen",
+    "model": "DS",
+    "multiplier": "1.50",
+    "notes": "Classic French"
+  },
+  {
+    "make": "Citroen",
+    "model": "SM",
+    "multiplier": "1.60",
+    "notes": "Maserati-powered GT"
+  },
+  {
+    "make": "smart",
+    "model": "fortwo",
+    "multiplier": "1.15",
+    "notes": "Microcar"
+  },
+  {
+    "make": "Scion",
+    "model": "iQ",
+    "multiplier": "1.05",
+    "notes": "Microcar"
+  },
+  {
+    "make": "Fiat",
+    "model": "500",
+    "multiplier": "1.10",
+    "notes": "City car"
+  },
+  {
+    "make": "Mini",
+    "model": "Classic",
+    "multiplier": "1.40",
+    "notes": "Original Mini"
+  }
+]
