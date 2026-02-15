@@ -1,0 +1,122 @@
+import { Hono } from "hono";
+import { eachValueFrom } from "rxjs-for-await";
+import { db } from "../db/client.ts";
+import { diagnosticMedia, diagnosticSessions, obdCodes } from "../db/schema.ts";
+import { eq } from "drizzle-orm";
+import { uploadMedia } from "../lib/r2.ts";
+import type { InputType } from "../lib/stripe.ts";
+import { processCredits } from "../middleware/credits.ts";
+import { getAgent } from "../lib/agent-cache.ts";
+import { createAguiEventStream } from "@zypher/agui";
+import type { AuthContext } from "../middleware/auth.ts";
+
+type Variables = { auth: AuthContext };
+
+const input = new Hono<{ Variables: Variables }>();
+
+// POST /diagnostics/:id/input - Process input (non-streaming)
+input.post("/:id/input", async (c) => {
+  const auth = c.get("auth");
+  const sessionId = parseInt(c.req.param("id"));
+
+  const [session] = await db
+    .select()
+    .from(diagnosticSessions)
+    .where(eq(diagnosticSessions.id, sessionId))
+    .limit(1);
+
+  if (!session || session.customerId !== auth.customerId) {
+    return c.json({ error: "Session not found" }, 404);
+  }
+
+  const body = await c.req.json();
+  const { type, content, filename, contentType, durationSeconds } = body;
+
+  // Validate input type
+  const validTypes = ["text", "obd", "photo", "audio", "video"];
+  if (!validTypes.includes(type)) {
+    return c.json({ error: "Invalid input type" }, 400);
+  }
+
+  // Check and deduct credits
+  const creditResult = await processCredits(
+    auth.stripeCustomerId,
+    type as InputType,
+    sessionId,
+    durationSeconds,
+  );
+  if (creditResult instanceof Response) {
+    return creditResult;
+  }
+
+  // Update session credits
+  await db
+    .update(diagnosticSessions)
+    .set({
+      creditsCharged: session.creditsCharged + creditResult.charged,
+      status: "processing",
+    })
+    .where(eq(diagnosticSessions.id, sessionId));
+
+  // Handle different input types
+  let agentInput: string;
+
+  if (type === "text") {
+    agentInput = content;
+  } else if (type === "obd") {
+    await db.insert(obdCodes).values({
+      sessionId,
+      code: content,
+      source: "manual",
+    });
+    agentInput = `OBD-II Code: ${content}`;
+  } else if (type === "photo" || type === "audio" || type === "video") {
+    const binaryData = Uint8Array.from(atob(content), (ch) => ch.charCodeAt(0));
+    const uploadResult = await uploadMedia(
+      binaryData,
+      filename,
+      contentType,
+      String(sessionId),
+    );
+
+    await db.insert(diagnosticMedia).values({
+      sessionId,
+      type: type === "photo" ? "photo" : type === "audio" ? "audio" : "video",
+      r2Key: uploadResult.key,
+      creditCost: creditResult.charged,
+      metadata: { filename, contentType, durationSeconds },
+    });
+
+    agentInput = `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
+  } else {
+    agentInput = content;
+  }
+
+  // Use AG-UI stream but collect final response
+  const agentInstance = await getAgent();
+  const messageId = crypto.randomUUID();
+  const aguiStream = createAguiEventStream({
+    agent: agentInstance,
+    messages: [{ id: messageId, role: "user", content: agentInput }],
+    threadId: `session-${sessionId}`,
+    runId: crypto.randomUUID(),
+  });
+
+  // Collect the final text response
+  let responseText = "";
+  for await (const event of eachValueFrom(aguiStream)) {
+    // Type assertion for events with delta property
+    const evt = event as { type: string; delta?: string };
+    if (evt.type === "TEXT_MESSAGE_CONTENT" && evt.delta) {
+      responseText += evt.delta;
+    }
+  }
+
+  return c.json({
+    response: responseText,
+    creditsCharged: creditResult.charged,
+    sessionCreditsTotal: session.creditsCharged + creditResult.charged,
+  });
+});
+
+export { input };
