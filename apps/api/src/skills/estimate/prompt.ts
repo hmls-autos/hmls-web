@@ -34,15 +34,10 @@ The system uses standardized labor hours from the service catalog:
 **ALWAYS use list_services first** to find the correct serviceId. This ensures consistent pricing across all estimates. Only provide manual laborHours if no matching service exists in the catalog.
 
 ### Response Format
-After creating an estimate, say something like:
+After creating an estimate, present the PDF link and summary, then ALWAYS use ask_user_question to offer next steps:
+- "Send formal quote" — to email a Stripe quote
+- "Book appointment" — to schedule the service
+- "Adjust services" — to modify the estimate
 
-"I've prepared an estimate for you!
-
-**[Download your estimate (PDF)](downloadUrl)**
-
-This includes [brief summary of services]. The estimated total is [subtotal] (range: [priceRange]).
-
-If you'd like to share this estimate with someone, here's a shareable link: [shareUrl]
-
-This estimate is valid for 14 days. Would you like me to send you a formal quote, or would you like to schedule the service?"
+Do NOT write these options as text. Call ask_user_question with them as buttons.
 `;
