@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { eachValueFrom } from "rxjs-for-await";
+import { eq } from "drizzle-orm";
 import { createHmlsAgent, type AgentConfig } from "../agent.ts";
+import { db, schema } from "../db/client.ts";
 import { Errors } from "@hmls/shared/errors";
 import {
   convertAguiMessagesToZypher,
@@ -14,6 +16,54 @@ let _config: AgentConfig;
 
 export function initChat(config: AgentConfig) {
   _config = config;
+}
+
+/** Look up customer by email, or create one if not found. */
+async function resolveCustomer(
+  header: string,
+): Promise<UserContext | undefined> {
+  let parsed: { email?: string; name?: string; phone?: string };
+  try {
+    parsed = JSON.parse(header);
+  } catch {
+    console.warn("[agent] Invalid X-User-Context header");
+    return undefined;
+  }
+
+  if (!parsed.email) return undefined;
+
+  // Try to find existing customer by email
+  const [existing] = await db
+    .select()
+    .from(schema.customers)
+    .where(eq(schema.customers.email, parsed.email))
+    .limit(1);
+
+  if (existing) {
+    return {
+      id: existing.id,
+      name: existing.name ?? parsed.name ?? "",
+      email: existing.email ?? parsed.email,
+      phone: existing.phone ?? parsed.phone ?? "",
+    };
+  }
+
+  // Create new customer
+  const [created] = await db
+    .insert(schema.customers)
+    .values({
+      name: parsed.name || null,
+      email: parsed.email,
+      phone: parsed.phone || null,
+    })
+    .returning();
+
+  return {
+    id: created.id,
+    name: created.name ?? "",
+    email: created.email ?? parsed.email,
+    phone: created.phone ?? "",
+  };
 }
 
 const chat = new Hono();
@@ -29,15 +79,11 @@ chat.post("/", async (c) => {
     throw Errors.validation("Invalid AG-UI input", String(parseError));
   }
 
-  // Extract user context from header (set by web frontend)
+  // Resolve authenticated user → customer record
   let userContext: UserContext | undefined;
   const userContextHeader = c.req.header("X-User-Context");
   if (userContextHeader) {
-    try {
-      userContext = JSON.parse(userContextHeader);
-    } catch {
-      console.warn("[agent] Invalid X-User-Context header");
-    }
+    userContext = await resolveCustomer(userContextHeader);
   }
 
   const { threadId, runId, messages } = input;

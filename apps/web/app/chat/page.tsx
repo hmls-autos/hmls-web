@@ -14,6 +14,14 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const agentUser = user
+    ? {
+        email: user.email ?? "",
+        name: user.user_metadata?.full_name ?? user.user_metadata?.name,
+        phone: user.user_metadata?.phone,
+      }
+    : null;
+
   const {
     messages,
     isLoading,
@@ -22,7 +30,7 @@ export default function ChatPage() {
     sendMessage,
     clearMessages,
     clearError,
-  } = useAgentChat();
+  } = useAgentChat({ user: agentUser });
 
   // Always connected when hook is mounted
   const isConnected = true;

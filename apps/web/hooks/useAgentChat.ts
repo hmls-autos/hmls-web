@@ -11,13 +11,20 @@ export interface Message {
   content: string;
 }
 
+export interface AgentUser {
+  email: string;
+  name?: string;
+  phone?: string;
+}
+
 interface UseAgentChatOptions {
   scrollRef?: RefObject<HTMLElement | null>;
   inputRef?: RefObject<HTMLInputElement | null>;
+  user?: AgentUser | null;
 }
 
 export function useAgentChat(options: UseAgentChatOptions = {}) {
-  const { scrollRef, inputRef } = options;
+  const { scrollRef, inputRef, user } = options;
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +41,11 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
 
   function getAgent() {
     if (!agentRef.current) {
-      agentRef.current = new HttpAgent({ url: `${AGENT_URL}/task` });
+      const headers: Record<string, string> = {};
+      if (user) {
+        headers["X-User-Context"] = JSON.stringify(user);
+      }
+      agentRef.current = new HttpAgent({ url: `${AGENT_URL}/task`, headers });
     }
     return agentRef.current;
   }

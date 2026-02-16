@@ -18,6 +18,14 @@ export function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const agentUser = user
+    ? {
+        email: user.email ?? "",
+        name: user.user_metadata?.full_name ?? user.user_metadata?.name,
+        phone: user.user_metadata?.phone,
+      }
+    : null;
+
   const {
     messages,
     isLoading,
@@ -26,7 +34,7 @@ export function ChatWidget() {
     sendMessage,
     clearMessages,
     clearError,
-  } = useAgentChat({ scrollRef: messagesEndRef, inputRef });
+  } = useAgentChat({ scrollRef: messagesEndRef, inputRef, user: agentUser });
 
   // Don't render on the dedicated chat page
   if (pathname === "/chat") {

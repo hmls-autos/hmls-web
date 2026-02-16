@@ -28,7 +28,7 @@ app.use(
       "http://localhost:3000",
     ],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "X-User-Context"],
   }),
 );
 app.use("*", logger());
