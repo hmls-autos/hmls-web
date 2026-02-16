@@ -1,7 +1,14 @@
 import { Mail, MapPin, Phone } from "lucide-react";
+import type { Metadata } from "next";
 import FooterNew from "@/components/FooterNew";
 import { FadeIn } from "@/components/ui/Animations";
 import RealMap from "@/components/ui/RealMap";
+
+export const metadata: Metadata = {
+  title: "Contact",
+  description:
+    "Get in touch for reliable auto care. We come to you anywhere in Orange County. Call (949) 213-7073.",
+};
 
 export default function Contact() {
   return (

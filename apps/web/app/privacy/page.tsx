@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import FooterNew from "@/components/FooterNew";
 import { FadeIn } from "@/components/ui/Animations";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Privacy policy for HMLS Mobile Mechanic.",
+};
 
 export default function Privacy() {
   return (

@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import FooterNew from "@/components/FooterNew";
 import { FadeIn } from "@/components/ui/Animations";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description: "Terms of service for HMLS Mobile Mechanic.",
+};
 
 export default function Terms() {
   return (
