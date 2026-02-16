@@ -48,12 +48,11 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
 
     const agent = getAgent();
 
-    agent.setMessages([
-      ...messages.map(
-        (m) => ({ id: m.id, role: m.role, content: m.content }) as AgentMessage,
-      ),
-      { id: userMsg.id, role: "user", content } as AgentMessage,
-    ]);
+    // Add the new user message to the agent's internal state.
+    // Don't use setMessages — it would overwrite the full message history
+    // (including tool calls from MESSAGES_SNAPSHOT) with stripped text-only versions,
+    // causing the backend to lose conversation context.
+    agent.addMessage({ id: userMsg.id, role: "user", content } as AgentMessage);
 
     let assistantId = "";
     let buffer = "";

@@ -1,4 +1,4 @@
-import { anthropic, createZypherAgent } from "@corespeed/zypher";
+import { anthropic, createZypherAgent, type Message as ZypherMessage } from "@corespeed/zypher";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { analyzeImageTool } from "./tools/analyzeImage.ts";
 import { transcribeAudioTool } from "./tools/transcribeAudio.ts";
@@ -17,7 +17,12 @@ const allTools = [
   getMediaTool,
 ];
 
-export async function createDiagnosticAgent() {
+export interface CreateDiagnosticAgentOptions {
+  /** Previous conversation messages to restore context */
+  initialMessages?: ZypherMessage[];
+}
+
+export async function createDiagnosticAgent(options?: CreateDiagnosticAgentOptions) {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY is required");
@@ -31,6 +36,7 @@ export async function createDiagnosticAgent() {
   const agent = await createZypherAgent({
     model: anthropic(modelId, { apiKey }),
     tools: allTools,
+    initialMessages: options?.initialMessages,
     // Use /tmp for Deno Deploy (source dir is read-only)
     context: isDenoDeploy ? { zypherDir: "/tmp/.zypher" } : undefined,
     overrides: {

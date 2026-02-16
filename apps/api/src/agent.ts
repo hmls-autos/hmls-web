@@ -1,4 +1,10 @@
-import { anthropic, createZypherAgent, ZypherAgent, type ZypherContext } from "@corespeed/zypher";
+import {
+  anthropic,
+  createZypherAgent,
+  type Message as ZypherMessage,
+  ZypherAgent,
+  type ZypherContext,
+} from "@corespeed/zypher";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { createCalcomTools } from "./tools/calcom.ts";
 import { serviceTools } from "./tools/customer.ts";
@@ -21,6 +27,8 @@ export interface AgentConfig {
 export interface CreateAgentOptions {
   config: AgentConfig;
   userContext?: UserContext;
+  /** Previous conversation messages to restore context */
+  initialMessages?: ZypherMessage[];
 }
 
 export async function createHmlsAgent(options: CreateAgentOptions) {
@@ -53,6 +61,7 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
       anthropic(modelId, { apiKey: config.anthropicApiKey }),
       {
         tools: allTools,
+        initialMessages: options.initialMessages,
         overrides: {
           // deno-lint-ignore require-await
           systemPromptLoader: async () => systemPrompt,
@@ -67,6 +76,7 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
   const agent = await createZypherAgent({
     model: anthropic(modelId, { apiKey: config.anthropicApiKey }),
     tools: allTools,
+    initialMessages: options.initialMessages,
     overrides: {
       // deno-lint-ignore require-await
       systemPromptLoader: async () => systemPrompt,

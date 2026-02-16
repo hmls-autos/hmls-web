@@ -3,37 +3,17 @@ import { streamSSE } from "hono/streaming";
 import { eachValueFrom } from "rxjs-for-await";
 import { createHmlsAgent, type AgentConfig } from "../agent.ts";
 import { Errors } from "@hmls/shared/errors";
-import { createAguiEventStream, parseRunAgentInput } from "@zypher/agui";
+import {
+  convertAguiMessagesToZypher,
+  createAguiEventStream,
+  parseRunAgentInput,
+} from "@zypher/agui";
 import type { UserContext } from "../types/user-context.ts";
-
-// Agent cache by user ID (or singleton for anonymous)
-const agentCache = new Map<
-  string,
-  Awaited<ReturnType<typeof createHmlsAgent>>
->();
 
 let _config: AgentConfig;
 
 export function initChat(config: AgentConfig) {
   _config = config;
-}
-
-async function getAgent(userContext?: UserContext) {
-  const cacheKey = userContext ? `user:${userContext.id}` : "anonymous";
-
-  if (!agentCache.has(cacheKey)) {
-    try {
-      const agent = await createHmlsAgent({ config: _config, userContext });
-      agentCache.set(cacheKey, agent);
-    } catch (error) {
-      console.error(`[agent] Failed to create agent for ${cacheKey}:`, error);
-      throw Errors.internal(
-        `Agent creation failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  }
-
-  return agentCache.get(cacheKey)!;
 }
 
 const chat = new Hono();
@@ -67,13 +47,30 @@ chat.post("/", async (c) => {
     }`,
   );
 
+  // Convert previous messages (all except last user message) to Zypher format
+  // so the agent has full conversation context on every request.
+  // This makes the endpoint stateless — no reliance on in-memory agent cache.
+  const historyMessages = messages.slice(0, -1);
+  const initialMessages = historyMessages.length > 0
+    ? convertAguiMessagesToZypher(historyMessages)
+    : undefined;
+
   let agent;
   try {
-    agent = await getAgent(userContext);
+    agent = await createHmlsAgent({
+      config: _config,
+      userContext,
+      initialMessages,
+    });
   } catch (error) {
     console.error(`[agent] Agent init failed:`, error);
     return c.json(
-      { error: { code: "AGENT_ERROR", message: error instanceof Error ? error.message : String(error) } },
+      {
+        error: {
+          code: "AGENT_ERROR",
+          message: error instanceof Error ? error.message : String(error),
+        },
+      },
       500,
     );
   }

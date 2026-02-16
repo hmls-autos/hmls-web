@@ -1,8 +1,12 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { eachValueFrom } from "rxjs-for-await";
-import { getAgent } from "../lib/agent-cache.ts";
-import { createAguiEventStream, parseRunAgentInput } from "@zypher/agui";
+import { createDiagnosticAgent } from "../agent.ts";
+import {
+  convertAguiMessagesToZypher,
+  createAguiEventStream,
+  parseRunAgentInput,
+} from "@zypher/agui";
 
 const chat = new Hono();
 
@@ -25,7 +29,14 @@ chat.post("/", async (c) => {
     `[diagnostic-agent] threadId=${threadId}, messages=${messages.length}`,
   );
 
-  const agentInstance = await getAgent();
+  // Convert previous messages to Zypher format for conversation context.
+  // Creates a fresh agent per request — stateless, no in-memory cache dependency.
+  const historyMessages = messages.slice(0, -1);
+  const initialMessages = historyMessages.length > 0
+    ? convertAguiMessagesToZypher(historyMessages)
+    : undefined;
+
+  const agentInstance = await createDiagnosticAgent({ initialMessages });
   const aguiStream = createAguiEventStream({
     agent: agentInstance,
     messages,
