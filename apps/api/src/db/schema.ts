@@ -30,6 +30,7 @@ export const customers = pgTable("customers", {
   address: text("address"),
   vehicleInfo: jsonb("vehicle_info"),
   stripeCustomerId: varchar("stripe_customer_id", { length: 100 }),
+  authUserId: varchar("auth_user_id", { length: 255 }).unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
