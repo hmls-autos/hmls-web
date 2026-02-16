@@ -2,6 +2,7 @@
 
 import { type Message as AgentMessage, HttpAgent } from "@ag-ui/client";
 import { type RefObject, useCallback, useRef, useState } from "react";
+import type { QuestionData } from "@/components/QuestionCard";
 
 const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
 
@@ -29,6 +30,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentTool, setCurrentTool] = useState<string | null>(null);
+  const [pendingQuestion, setPendingQuestion] = useState<QuestionData | null>(
+    null,
+  );
   const agentRef = useRef<HttpAgent | null>(null);
 
   const scrollToBottom = useCallback(() => {
@@ -92,7 +96,10 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           setCurrentTool(event.toolCallName);
           setTimeout(scrollToBottom, 0);
         },
-        onToolCallEndEvent: () => {
+        onToolCallEndEvent: ({ toolCallName, toolCallArgs }) => {
+          if (toolCallName === "ask_user_question") {
+            setPendingQuestion(toolCallArgs as QuestionData);
+          }
           setCurrentTool(null);
         },
         onRunFinishedEvent: () => {
@@ -119,8 +126,14 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     }
   }
 
+  function answerQuestion(answer: string) {
+    setPendingQuestion(null);
+    sendMessage(answer);
+  }
+
   function clearMessages() {
     setMessages([]);
+    setPendingQuestion(null);
     agentRef.current = null;
   }
 
@@ -133,7 +146,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     isLoading,
     error,
     currentTool,
+    pendingQuestion,
     sendMessage,
+    answerQuestion,
     clearMessages,
     clearError,
   };

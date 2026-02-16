@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, LogIn, Send, Wrench } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { QuestionCard } from "@/components/QuestionCard";
 import { Markdown } from "@/components/ui/Markdown";
 import { useAgentChat } from "@/hooks/useAgentChat";
 import { toolDisplayNames } from "@/lib/agent-tools";
@@ -27,7 +28,9 @@ export default function ChatPage() {
     isLoading,
     error,
     currentTool,
+    pendingQuestion,
     sendMessage,
+    answerQuestion,
     clearMessages,
     clearError,
   } = useAgentChat({ user: agentUser });
@@ -255,6 +258,17 @@ export default function ChatPage() {
             </motion.div>
           ))}
 
+          {/* Question card */}
+          <AnimatePresence>
+            {pendingQuestion && (
+              <QuestionCard
+                data={pendingQuestion}
+                onSelect={answerQuestion}
+                disabled={isLoading}
+              />
+            )}
+          </AnimatePresence>
+
           {/* Tool indicator */}
           <AnimatePresence>
             {currentTool && (
@@ -338,12 +352,14 @@ export default function ChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
-              disabled={!isConnected || isLoading}
+              disabled={!isConnected || isLoading || !!pendingQuestion}
               className="flex-1 bg-surface border border-border rounded-xl px-5 py-4 text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary disabled:opacity-50 transition-colors"
             />
             <motion.button
               type="submit"
-              disabled={!isConnected || isLoading || !input.trim()}
+              disabled={
+                !isConnected || isLoading || !input.trim() || !!pendingQuestion
+              }
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="w-14 h-14 rounded-xl bg-red-primary text-white flex items-center justify-center hover:bg-red-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"

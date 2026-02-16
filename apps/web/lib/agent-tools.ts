@@ -9,4 +9,5 @@ export const toolDisplayNames: Record<string, string> = {
   create_quote: "Creating quote",
   create_invoice: "Creating invoice",
   get_quote_status: "Checking quote status",
+  ask_user_question: "Asking a question",
 };

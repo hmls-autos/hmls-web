@@ -10,6 +10,7 @@ import { createCalcomTools } from "./tools/calcom.ts";
 import { serviceTools } from "./tools/customer.ts";
 import { createStripeTools } from "./tools/stripe.ts";
 import { estimateTools } from "./skills/estimate/tools.ts";
+import { askUserQuestionTools } from "./tools/ask-user-question.ts";
 import { formatUserContext, type UserContext } from "./types/user-context.ts";
 
 const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
@@ -41,6 +42,7 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
     : SYSTEM_PROMPT;
 
   const allTools = [
+    ...askUserQuestionTools,
     ...serviceTools,
     ...estimateTools,
     ...(config.stripeSecretKey ? createStripeTools(config.stripeSecretKey) : []),
