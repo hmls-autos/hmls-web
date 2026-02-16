@@ -19,20 +19,16 @@ deno task check                  # Deno check both apps
 deno task lint                   # Deno lint (excludes web)
 deno task fmt:check              # Deno format check (excludes web)
 
-# Database
-deno task db:up                       # Start PostgreSQL
-deno task --cwd apps/api db:migrate   # Run migrations
+# Database (Supabase PostgreSQL — no local DB needed)
 deno task --cwd apps/api db:seed      # Seed data
-deno task --cwd apps/api db:reset     # Migrate + seed
 ```
 
 ## Setup
 
 ```bash
 cd apps/web && bun install       # Install web dependencies
-deno task db:up                  # Start PostgreSQL
-deno task --cwd apps/api db:reset  # Migrate + seed database
 git config core.hooksPath .githooks  # Enable pre-commit hook
+# Set DATABASE_URL in .env.local to your Supabase connection string
 ```
 
 ## Architecture
@@ -54,7 +50,7 @@ packages/
 ### Service Communication
 
 - **Web → Agent**: Direct AG-UI protocol connection via `@ag-ui/client` (port 8080)
-- **Agent → DB**: Direct PostgreSQL connection for tools
+- **Agent → DB**: Direct Supabase PostgreSQL connection via Drizzle ORM
 
 ### Key Patterns
 
@@ -133,7 +129,7 @@ cd apps/web && bunx npm-check-updates -u && bun install
 Required in `.env`:
 
 ```
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres
+DATABASE_URL=postgres://postgres.[ref]:[password]@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
 ANTHROPIC_API_KEY=sk-ant-...
 STRIPE_SECRET_KEY=sk_test_...
 CALCOM_API_KEY=cal_live_...

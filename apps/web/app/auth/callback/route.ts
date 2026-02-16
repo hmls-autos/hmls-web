@@ -13,30 +13,10 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error && data.user) {
-      // Sync user to customer record via API
-      const agentUrl =
-        process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
-      try {
-        await fetch(`${agentUrl}/api/auth/sync`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            authUserId: data.user.id,
-            email: data.user.email,
-            name:
-              data.user.user_metadata?.full_name ||
-              data.user.user_metadata?.name,
-            phone: data.user.user_metadata?.phone,
-          }),
-        });
-      } catch {
-        // Non-blocking: customer sync failure shouldn't prevent login
-        console.error("Failed to sync customer record");
-      }
-
+    if (!error) {
+      // Customer record is auto-created/linked by DB trigger on auth.users INSERT
       return NextResponse.redirect(redirectTo);
     }
   }

@@ -5,7 +5,6 @@ import { AppError } from "@hmls/shared/errors";
 import { estimates } from "./routes/estimates.ts";
 import { customers } from "./routes/customers.ts";
 import { chat, initChat } from "./routes/chat.ts";
-import { auth } from "./routes/auth.ts";
 
 // Read all env vars in one place
 initChat({
@@ -65,7 +64,6 @@ app.get("/health", (c) => {
 // Mount routes
 app.route("/api/estimates", estimates);
 app.route("/api/customers", customers);
-app.route("/api/auth", auth);
 app.route("/task", chat);
 
 // Start server

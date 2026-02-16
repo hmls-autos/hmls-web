@@ -30,8 +30,7 @@
     "check": "deno task check:api && deno task check:diagnostic",
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",
-    "lint": "deno lint",
-    "db:up": "docker compose up -d postgres"
+    "lint": "deno lint"
   },
   "deploy": {
     "org": "spinsirr",
