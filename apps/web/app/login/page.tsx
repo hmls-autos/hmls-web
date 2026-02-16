@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Loader2, Lock, LogIn, Mail, Phone, User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function LoginPage() {
@@ -17,6 +17,48 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"login" | "signup">("login");
+
+  // Check for error from OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const callbackError = params.get("error");
+    if (callbackError) {
+      setError(callbackError);
+      window.history.replaceState({}, "", "/login");
+    }
+  }, []);
+
+  type OAuthProvider =
+    | "google"
+    | "apple"
+    | "facebook"
+    | "github"
+    | "discord"
+    | "twitter";
+
+  const providers: { id: OAuthProvider; label: string }[] = [
+    { id: "google", label: "Google" },
+    { id: "apple", label: "Apple" },
+    { id: "facebook", label: "Facebook" },
+    { id: "github", label: "GitHub" },
+    { id: "discord", label: "Discord" },
+    { id: "twitter", label: "X" },
+  ];
+
+  const handleOAuthLogin = async (provider: OAuthProvider) => {
+    setIsLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      setError(error.message);
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +134,35 @@ export default function LoginPage() {
                 ? "Sign in to access your account"
                 : "Sign up to get started"}
             </p>
+          </div>
+
+          {/* Social Login Buttons */}
+          <div className="space-y-3 mb-6">
+            {providers.map((provider) => (
+              <motion.button
+                key={provider.id}
+                type="button"
+                onClick={() => handleOAuthLogin(provider.id)}
+                disabled={isLoading}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-border bg-surface text-text font-medium hover:bg-surface/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue with {provider.label}
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-background px-4 text-text-secondary">
+                or continue with email
+              </span>
+            </div>
           </div>
 
           <motion.form

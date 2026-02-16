@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       const agentUrl =
         process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
       try {
-        await fetch(`${agentUrl}/auth/sync`, {
+        await fetch(`${agentUrl}/api/auth/sync`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
