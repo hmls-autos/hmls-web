@@ -20,6 +20,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const { scrollRef, inputRef } = options;
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [currentTool, setCurrentTool] = useState<string | null>(null);
   const agentRef = useRef<HttpAgent | null>(null);
 
@@ -42,6 +43,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     const userMsg: Message = { id: crypto.randomUUID(), role: "user", content };
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
+    setError(null);
     setTimeout(scrollToBottom, 0);
 
     const agent = getAgent();
@@ -87,12 +89,21 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           setIsLoading(false);
           focusInput();
         },
-        onRunErrorEvent: () => {
+        onRunErrorEvent: ({ event }) => {
+          const msg =
+            (event as { message?: string }).message ||
+            "Agent encountered an error";
+          console.error("[agent] Run error:", msg);
+          setError(msg);
           setIsLoading(false);
           focusInput();
         },
       });
-    } catch {
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Failed to connect to agent";
+      console.error("[agent] Connection error:", msg);
+      setError(msg);
       setIsLoading(false);
       focusInput();
     }
@@ -103,5 +114,17 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     agentRef.current = null;
   }
 
-  return { messages, isLoading, currentTool, sendMessage, clearMessages };
+  function clearError() {
+    setError(null);
+  }
+
+  return {
+    messages,
+    isLoading,
+    error,
+    currentTool,
+    sendMessage,
+    clearMessages,
+    clearError,
+  };
 }

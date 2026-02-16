@@ -22,8 +22,15 @@ async function getAgent(userContext?: UserContext) {
   const cacheKey = userContext ? `user:${userContext.id}` : "anonymous";
 
   if (!agentCache.has(cacheKey)) {
-    const agent = await createHmlsAgent({ config: _config, userContext });
-    agentCache.set(cacheKey, agent);
+    try {
+      const agent = await createHmlsAgent({ config: _config, userContext });
+      agentCache.set(cacheKey, agent);
+    } catch (error) {
+      console.error(`[agent] Failed to create agent for ${cacheKey}:`, error);
+      throw Errors.internal(
+        `Agent creation failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   return agentCache.get(cacheKey)!;
@@ -60,7 +67,17 @@ chat.post("/", async (c) => {
     }`,
   );
 
-  const agent = await getAgent(userContext);
+  let agent;
+  try {
+    agent = await getAgent(userContext);
+  } catch (error) {
+    console.error(`[agent] Agent init failed:`, error);
+    return c.json(
+      { error: { code: "AGENT_ERROR", message: error instanceof Error ? error.message : String(error) } },
+      500,
+    );
+  }
+
   const aguiStream = createAguiEventStream({
     agent,
     messages,

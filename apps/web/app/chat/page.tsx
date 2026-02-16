@@ -14,8 +14,15 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { messages, isLoading, currentTool, sendMessage, clearMessages } =
-    useAgentChat();
+  const {
+    messages,
+    isLoading,
+    error,
+    currentTool,
+    sendMessage,
+    clearMessages,
+    clearError,
+  } = useAgentChat();
 
   // Always connected when hook is mounted
   const isConnected = true;
@@ -254,6 +261,30 @@ export default function ChatPage() {
                   <span className="text-sm text-text-secondary">
                     {toolDisplayNames[currentTool] || currentTool}...
                   </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Error indicator */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex justify-start"
+              >
+                <div className="max-w-[80%] bg-red-50 border border-red-200 px-5 py-3 rounded-2xl rounded-bl-md">
+                  <p className="text-xs font-medium text-red-600 mb-1">Error</p>
+                  <p className="text-sm text-red-700">{error}</p>
+                  <button
+                    type="button"
+                    onClick={clearError}
+                    className="text-xs text-red-500 hover:text-red-700 mt-1 underline"
+                  >
+                    Dismiss
+                  </button>
                 </div>
               </motion.div>
             )}
