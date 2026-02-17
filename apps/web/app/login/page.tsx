@@ -33,11 +33,18 @@ function GoogleLogo() {
   );
 }
 
+type Step = "email" | "password";
+
 export default function LoginPage() {
   const router = useRouter();
   const { supabase, session } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [step, setStep] = useState<Step>("email");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [mode, setMode] = useState<"login" | "signup">("login");
 
   useEffect(() => {
     if (session) {
@@ -69,35 +76,186 @@ export default function LoginPage() {
     }
   };
 
+  const handleEmailNext = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setStep("password");
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      if (mode === "login") {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        router.push("/chat");
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
+        if (error) throw error;
+        setMessage("Check your email for the confirmation link!");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    setStep("email");
+    setPassword("");
+    setError(null);
+    setMessage(null);
+  };
+
   return (
     <main className="flex min-h-full flex-col bg-background text-text">
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-display font-bold mb-2">
-              Welcome to HMLS
+              {step === "password"
+                ? "Enter your password"
+                : mode === "login"
+                  ? "Welcome back"
+                  : "Create an account"}
             </h1>
             <p className="text-text-secondary text-sm">
-              Sign in to access your account
+              {step === "password"
+                ? email
+                : mode === "login"
+                  ? "Sign in to access your account"
+                  : "Sign up to get started"}
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-border bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-            ) : (
-              <GoogleLogo />
-            )}
-            Continue with Google
-          </button>
+          {step === "email" && (
+            <>
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-border bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                ) : (
+                  <GoogleLogo />
+                )}
+                Continue with Google
+              </button>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-background px-4 text-text-secondary">
+                    or
+                  </span>
+                </div>
+              </div>
+
+              <form onSubmit={handleEmailNext} className="space-y-4">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  required
+                  className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary transition-colors"
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-red-primary text-white font-medium py-3 rounded-xl hover:bg-red-dark transition-colors"
+                >
+                  Continue
+                </button>
+              </form>
+
+              <p className="text-center text-text-secondary text-sm mt-6">
+                {mode === "login" ? (
+                  <>
+                    Don&apos;t have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode("signup");
+                        setError(null);
+                      }}
+                      className="text-red-primary hover:text-red-dark font-medium"
+                    >
+                      Sign up
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Already have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode("login");
+                        setError(null);
+                      }}
+                      className="text-red-primary hover:text-red-dark font-medium"
+                    >
+                      Sign in
+                    </button>
+                  </>
+                )}
+              </p>
+            </>
+          )}
+
+          {step === "password" && (
+            <>
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  required
+                  minLength={6}
+                  className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-red-primary text-white font-medium py-3 rounded-xl hover:bg-red-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {mode === "login" ? "Sign In" : "Sign Up"}
+                </button>
+              </form>
+
+              <button
+                type="button"
+                onClick={handleBack}
+                className="w-full text-center text-text-secondary text-sm mt-4 hover:text-text"
+              >
+                Back
+              </button>
+            </>
+          )}
 
           {error && (
             <p className="text-sm text-red-primary text-center mt-4">{error}</p>
+          )}
+          {message && (
+            <p className="text-sm text-green-500 text-center mt-4">{message}</p>
           )}
         </div>
       </div>
