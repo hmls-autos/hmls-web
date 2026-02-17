@@ -47,7 +47,9 @@ export default function FooterNew() {
         </div>
 
         <div className="mt-8 pt-8 border-t border-footer-border text-sm text-footer-dim">
-          &copy; {new Date().getFullYear()} HMLS. All rights reserved.
+          <span suppressHydrationWarning>
+            &copy; {new Date().getFullYear()} HMLS. All rights reserved.
+          </span>
         </div>
       </div>
     </footer>

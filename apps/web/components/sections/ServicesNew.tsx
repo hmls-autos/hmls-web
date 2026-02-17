@@ -40,7 +40,7 @@ export default function ServicesNew() {
     <section id="services" className="w-full py-24 bg-background">
       <div className="max-w-7xl mx-auto px-6">
         <RevealOnScroll>
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-text text-center mb-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-text text-center mb-4 text-balance">
             What we can help with
           </h2>
           <p className="text-text-secondary text-center max-w-xl mx-auto mb-16">

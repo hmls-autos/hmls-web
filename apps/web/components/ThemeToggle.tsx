@@ -25,8 +25,15 @@ export default function ThemeToggle() {
         setOpen(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   const switchTheme = useCallback(
@@ -91,17 +98,23 @@ export default function ThemeToggle() {
         onClick={() => setOpen(!open)}
         className="w-9 h-9 flex items-center justify-center rounded-lg text-text-secondary hover:text-text hover:bg-surface-hover transition-colors"
         aria-label={`Theme: ${current.label}`}
+        aria-expanded={open}
+        aria-haspopup="true"
         title={`Theme: ${current.label}`}
       >
         <CurrentIcon className="w-4 h-4" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-36 rounded-lg border border-border bg-surface shadow-lg py-1 z-50">
+        <div
+          role="menu"
+          className="absolute right-0 top-full mt-2 w-36 rounded-lg border border-border bg-surface shadow-lg py-1 z-50"
+        >
           {options.map(({ value, label, icon: Icon }) => (
             <button
               key={value}
               type="button"
+              role="menuitem"
               onClick={() => switchTheme(value)}
               className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${
                 theme === value

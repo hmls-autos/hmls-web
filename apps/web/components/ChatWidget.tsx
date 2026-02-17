@@ -46,7 +46,7 @@ export function ChatWidget() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!isAuthenticated) {
-      window.location.href = "/login";
+      window.location.assign("/login");
       return;
     }
     if (!input.trim() || isLoading) return;
@@ -59,6 +59,7 @@ export function ChatWidget() {
       {/* Chat Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Close chat" : "Open chat"}
         className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-red-primary text-white shadow-lg hover:bg-red-dark transition-colors flex items-center justify-center"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -94,7 +95,7 @@ export function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-24 right-6 z-50 w-[380px] h-[500px] bg-surface border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-24 right-6 z-50 w-[380px] h-[500px] bg-surface border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden overscroll-contain"
           >
             {/* Header */}
             <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-surface">
@@ -111,7 +112,14 @@ export function ChatWidget() {
               </div>
               <button
                 type="button"
-                onClick={clearMessages}
+                onClick={() => {
+                  if (
+                    messages.length === 0 ||
+                    window.confirm("Clear chat history?")
+                  ) {
+                    clearMessages();
+                  }
+                }}
                 className="text-xs text-text-secondary hover:text-text transition-colors"
               >
                 Clear chat
@@ -227,21 +235,27 @@ export function ChatWidget() {
               className="p-4 border-t border-border bg-surface"
             >
               <div className="flex gap-2">
+                <label htmlFor="chat-widget-input" className="sr-only">
+                  Chat message
+                </label>
                 <input
                   ref={inputRef}
+                  id="chat-widget-input"
                   type="text"
+                  name="message"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={
                     isAuthenticated
-                      ? "Type a message..."
+                      ? "Type a message\u2026"
                       : "Sign in to start chatting"
                   }
                   disabled={isLoading || !isAuthenticated}
-                  className="flex-1 bg-surface-alt border border-border rounded-xl px-4 py-2 text-sm text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary disabled:opacity-50"
+                  className="flex-1 bg-surface-alt border border-border rounded-xl px-4 py-2 text-sm text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary focus-visible:border-red-primary disabled:opacity-50 transition-colors"
                 />
                 <button
                   type="submit"
+                  aria-label="Send message"
                   disabled={isLoading || !input.trim() || !isAuthenticated}
                   className="w-10 h-10 rounded-xl bg-red-primary text-white flex items-center justify-center hover:bg-red-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

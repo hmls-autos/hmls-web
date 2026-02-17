@@ -60,7 +60,7 @@ export default function RealMap({ className = "" }: MapProps) {
       <div
         className={`w-full h-full bg-surface-alt flex items-center justify-center ${className}`}
       >
-        <div className="text-red-primary animate-pulse">Loading Map...</div>
+        <div className="text-red-primary animate-pulse">Loading Map\u2026</div>
       </div>
     );
   }
@@ -86,7 +86,7 @@ export default function RealMap({ className = "" }: MapProps) {
         scrollWheelZoom={false}
         className="w-full h-full z-0"
         zoomControl={false}
-        attributionControl={false}
+        attributionControl={true}
       >
         {/* Light Positron Tile Layer */}
         <TileLayer

@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, LogIn, Send, Wrench } from "lucide-react";
+import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { QuestionCard } from "@/components/QuestionCard";
@@ -44,11 +45,13 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Focus input on mount and keep focus after loading
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger to refocus after loading
+  // Focus input on mount only (avoid autoFocus on every state change for mobile)
   useEffect(() => {
-    inputRef.current?.focus();
-  }, [isLoading]);
+    const isMobile = window.matchMedia("(pointer: coarse)").matches;
+    if (!isMobile) {
+      inputRef.current?.focus();
+    }
+  }, []);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -93,15 +96,13 @@ export default function ChatPage() {
               Log in to access our AI assistant for scheduling, quotes, and
               service questions.
             </p>
-            <motion.a
+            <Link
               href="/login"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-red-primary text-white font-medium hover:bg-red-dark transition-colors"
             >
-              <LogIn className="w-5 h-5" />
+              <LogIn className="w-5 h-5" aria-hidden="true" />
               Sign In
-            </motion.a>
+            </Link>
           </motion.div>
         </div>
       </main>
@@ -138,7 +139,14 @@ export default function ChatPage() {
           </div>
           <motion.button
             type="button"
-            onClick={clearMessages}
+            onClick={() => {
+              if (
+                messages.length === 0 ||
+                window.confirm("Clear chat history?")
+              ) {
+                clearMessages();
+              }
+            }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="text-sm text-text-secondary hover:text-text transition-colors px-4 py-2 rounded-lg hover:bg-surface-alt"
@@ -346,17 +354,23 @@ export default function ChatPage() {
           className="mt-4"
         >
           <div className="flex gap-3">
+            <label htmlFor="chat-input" className="sr-only">
+              Chat message
+            </label>
             <input
               ref={inputRef}
+              id="chat-input"
               type="text"
+              name="message"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
+              placeholder="Type your message\u2026"
               disabled={!isConnected || isLoading || !!pendingQuestion}
-              className="flex-1 bg-surface border border-border rounded-xl px-5 py-4 text-text placeholder-text-secondary/50 focus:outline-none focus:border-red-primary disabled:opacity-50 transition-colors"
+              className="flex-1 bg-surface border border-border rounded-xl px-5 py-4 text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary focus-visible:border-red-primary disabled:opacity-50 transition-colors"
             />
             <motion.button
               type="submit"
+              aria-label="Send message"
               disabled={
                 !isConnected || isLoading || !input.trim() || !!pendingQuestion
               }

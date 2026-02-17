@@ -23,7 +23,7 @@ export default function AboutNew() {
 
           <RevealOnScroll delay={1}>
             <div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-text mb-6">
+              <h2 className="text-3xl md:text-4xl font-display font-bold text-text mb-6 text-balance">
                 20+ years of experience
               </h2>
               <p className="text-text-secondary mb-6 leading-relaxed">

@@ -11,7 +11,7 @@ export default function TrustBar() {
         <div className="flex flex-wrap justify-center gap-8 md:gap-16">
           {stats.map((stat) => (
             <div key={stat.label} className="text-center">
-              <div className="text-2xl md:text-3xl font-display font-bold text-red-primary">
+              <div className="text-2xl md:text-3xl font-display font-bold text-red-primary tabular-nums">
                 {stat.value}
               </div>
               <div className="text-sm text-text-secondary uppercase tracking-wide">

@@ -6,7 +6,7 @@ export default function CTANew() {
     <section className="w-full py-24 bg-red-primary hazard-stripe">
       <div className="max-w-2xl mx-auto px-6 text-center">
         <RevealOnScroll>
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-6">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-6 text-balance">
             Ready to get started?
           </h2>
           <p className="text-white/80 mb-10">

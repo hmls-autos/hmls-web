@@ -26,7 +26,7 @@ export default function ServiceAreaNew() {
     <section className="w-full py-24 bg-background">
       <div className="max-w-7xl mx-auto px-6">
         <RevealOnScroll>
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-text text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-text text-center mb-12 text-balance">
             Serving Orange County
           </h2>
         </RevealOnScroll>

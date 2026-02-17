@@ -64,24 +64,24 @@ export default function Error({
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
             <motion.button
+              type="button"
               onClick={reset}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="flex items-center gap-2 px-6 py-3 bg-red-primary text-white rounded-xl font-medium hover:bg-red-dark transition-colors"
             >
-              <RefreshCw size={20} />
+              <RefreshCw size={20} aria-hidden="true" />
               Try Again
             </motion.button>
-            <Link href="/">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link
+                href="/"
                 className="flex items-center gap-2 px-6 py-3 bg-surface border border-border text-text rounded-xl font-medium hover:border-red-primary transition-colors"
               >
-                <Home size={20} />
+                <Home size={20} aria-hidden="true" />
                 Back to Home
-              </motion.button>
-            </Link>
+              </Link>
+            </motion.div>
           </motion.div>
         </motion.div>
       </div>

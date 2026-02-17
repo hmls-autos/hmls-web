@@ -22,7 +22,7 @@ export default function HowItWorks() {
   return (
     <section className="w-full py-24 bg-background">
       <div className="max-w-7xl mx-auto px-6">
-        <h2 className="text-3xl md:text-4xl font-display font-bold text-text text-center mb-16">
+        <h2 className="text-3xl md:text-4xl font-display font-bold text-text text-center mb-16 text-balance">
           How it works
         </h2>
 
