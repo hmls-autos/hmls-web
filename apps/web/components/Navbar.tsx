@@ -18,6 +18,9 @@ export default function Navbar() {
   const { user, supabase, isLoading } = useAuth();
   const isUserLoggedIn = !!user;
 
+  // Hide navbar on login page
+  if (pathname === "/login") return null;
+
   return (
     <header className="relative shrink-0 z-50 bg-surface/80 backdrop-blur-md border-b border-border">
       <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
