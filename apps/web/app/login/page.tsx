@@ -144,30 +144,34 @@ export default function LoginPage() {
 
           {step === "email" && (
             <>
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-border bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                ) : (
-                  <GoogleLogo />
-                )}
-                Continue with Google
-              </button>
+              {mode === "login" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleGoogleLogin}
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-border bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                    ) : (
+                      <GoogleLogo />
+                    )}
+                    Continue with Google
+                  </button>
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-background px-4 text-text-secondary">
-                    or
-                  </span>
-                </div>
-              </div>
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="bg-background px-4 text-text-secondary">
+                        or
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <form onSubmit={handleEmailNext} className="space-y-4">
                 <input
