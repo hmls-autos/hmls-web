@@ -3,13 +3,10 @@
 import { motion } from "framer-motion";
 import { Home, Search } from "lucide-react";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen flex-col bg-background text-text">
-      <Navbar />
-
+    <main className="flex flex-1 flex-col bg-background text-text">
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}

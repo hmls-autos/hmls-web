@@ -131,7 +131,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-full flex-col items-center justify-center bg-background text-text px-4 pb-16">
+    <main className="flex flex-1 flex-col items-center justify-center bg-background text-text px-4 pb-16">
       <div className="w-full max-w-sm">
         <Link
           href="/"

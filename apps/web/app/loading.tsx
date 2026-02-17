@@ -5,7 +5,7 @@ import { Wrench } from "lucide-react";
 
 export default function Loading() {
   return (
-    <main className="flex min-h-screen flex-col bg-background text-text">
+    <main className="flex flex-1 flex-col bg-background text-text">
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0 }}

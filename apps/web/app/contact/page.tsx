@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function Contact() {
   return (
-    <main className="flex min-h-full flex-col items-center bg-background text-text overflow-x-hidden">
+    <main className="flex flex-col items-center bg-background text-text overflow-x-hidden">
       <section className="w-full max-w-3xl px-6 pt-16 pb-20 flex-grow">
         <div className="flex flex-col items-center text-center">
           <FadeIn direction="up">

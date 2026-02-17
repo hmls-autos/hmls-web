@@ -86,7 +86,7 @@ export default function RealMap({ className = "" }: MapProps) {
         scrollWheelZoom={false}
         className="w-full h-full z-0"
         zoomControl={false}
-        attributionControl={true}
+        attributionControl={false}
       >
         {/* Light Positron Tile Layer */}
         <TileLayer

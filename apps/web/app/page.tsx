@@ -10,7 +10,7 @@ import TrustBar from "@/components/sections/TrustBar";
 
 export default function Home() {
   return (
-    <main className="min-h-full bg-background text-text">
+    <main className="bg-background text-text">
       <JsonLd
         data={{
           "@context": "https://schema.org",

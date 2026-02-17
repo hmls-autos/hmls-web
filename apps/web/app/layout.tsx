@@ -70,7 +70,7 @@ export default function RootLayout({
         <meta name="color-scheme" content="light dark" />
       </head>
       <body
-        className={`${inter.variable} ${barlow.variable} font-sans antialiased bg-background text-text h-screen overflow-hidden flex flex-col`}
+        className={`${inter.variable} ${barlow.variable} font-sans antialiased bg-background text-text min-h-dvh flex flex-col`}
       >
         <a
           href="#main-content"
@@ -89,7 +89,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <Navbar />
-            <div id="main-content" className="flex-1 overflow-y-auto">
+            <div id="main-content" className="flex-1 flex flex-col">
               {children}
               <ChatWidget />
             </div>

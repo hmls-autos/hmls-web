@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
-import Navbar from "@/components/Navbar";
 
 // biome-ignore lint/suspicious/noShadowRestrictedNames: Next.js requires this name
 export default function Error({
@@ -19,9 +18,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="flex min-h-screen flex-col bg-background text-text">
-      <Navbar />
-
+    <main className="flex flex-1 flex-col bg-background text-text">
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}

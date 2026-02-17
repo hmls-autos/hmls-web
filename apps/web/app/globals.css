@@ -18,8 +18,6 @@
   --red-dark: #991b1b;
   --red-light: #fef2f2;
   --red-glow: #dc262640;
-  --scrollbar-thumb: #d4d4d4;
-  --scrollbar-hover: #dc2626;
   --tread-color: #dc2626;
 }
 
@@ -39,8 +37,6 @@
   --red-dark: #dc2626;
   --red-light: #451a1a;
   --red-glow: #ef444440;
-  --scrollbar-thumb: #57534e;
-  --scrollbar-hover: #ef4444;
   --tread-color: #ef4444;
 }
 
@@ -89,34 +85,6 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
-}
-
-/* Custom scrollbar */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
-}
-
-*:hover {
-  scrollbar-color: var(--scrollbar-hover) transparent;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-hover);
 }
 
 /* Scroll reveal animations */
