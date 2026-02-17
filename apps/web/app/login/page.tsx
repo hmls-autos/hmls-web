@@ -131,180 +131,176 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-full flex-col bg-background text-text">
-      <div className="shrink-0 flex justify-center py-6">
+    <main className="flex min-h-full flex-col items-center justify-center bg-background text-text px-4 pb-16">
+      <div className="w-full max-w-sm">
         <Link
           href="/"
-          className="text-xl font-display font-bold tracking-tight text-text"
+          className="block text-center text-xl font-display font-bold tracking-tight text-text mb-10"
         >
           HMLS<span className="text-red-primary">.</span>
         </Link>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center px-4">
-        <div className="w-full max-w-sm">
-          <AnimatePresence mode="wait">
-            <motion.div key={`${step}-${mode}`} {...fadeSlide}>
-              <div className="text-center mb-8">
-                <h1 className="text-2xl font-display font-bold mb-2">
-                  {step === "password"
-                    ? "Enter your password"
-                    : mode === "login"
-                      ? "Welcome back"
-                      : "Create an account"}
-                </h1>
-                <p className="text-text-secondary text-sm">
-                  {step === "password"
-                    ? email
-                    : mode === "login"
-                      ? "Sign in to access your account"
-                      : "Sign up to get started"}
-                </p>
-              </div>
+        <AnimatePresence mode="wait">
+          <motion.div key={`${step}-${mode}`} {...fadeSlide}>
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-display font-bold mb-2">
+                {step === "password"
+                  ? "Enter your password"
+                  : mode === "login"
+                    ? "Welcome back"
+                    : "Create an account"}
+              </h1>
+              <p className="text-text-secondary text-sm">
+                {step === "password"
+                  ? email
+                  : mode === "login"
+                    ? "Sign in to access your account"
+                    : "Sign up to get started"}
+              </p>
+            </div>
 
-              {step === "email" && (
-                <>
-                  {mode === "login" && (
+            {step === "email" && (
+              <>
+                {mode === "login" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleGoogleLogin}
+                      disabled={isLoading}
+                      className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-border bg-surface text-text font-medium hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                      ) : (
+                        <GoogleLogo />
+                      )}
+                      Continue with Google
+                    </button>
+
+                    <div className="relative my-6">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-border" />
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="bg-background px-4 text-text-secondary">
+                          or
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <form onSubmit={handleEmailNext} className="space-y-4">
+                  <label htmlFor="login-email" className="sr-only">
+                    Email address
+                  </label>
+                  <input
+                    id="login-email"
+                    type="email"
+                    name="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    required
+                    autoComplete="email"
+                    spellCheck={false}
+                    className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary focus-visible:border-red-primary transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    className="w-full bg-red-primary text-white font-medium py-3 rounded-xl hover:bg-red-dark transition-colors"
+                  >
+                    Continue
+                  </button>
+                </form>
+
+                <p className="text-center text-text-secondary text-sm mt-6">
+                  {mode === "login" ? (
                     <>
+                      Don&apos;t have an account?{" "}
                       <button
                         type="button"
-                        onClick={handleGoogleLogin}
-                        disabled={isLoading}
-                        className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-border bg-surface text-text font-medium hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          setMode("signup");
+                          setError(null);
+                        }}
+                        className="text-red-primary hover:text-red-dark font-medium"
                       >
-                        {isLoading ? (
-                          <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-                        ) : (
-                          <GoogleLogo />
-                        )}
-                        Continue with Google
+                        Sign up
                       </button>
-
-                      <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-border" />
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                          <span className="bg-background px-4 text-text-secondary">
-                            or
-                          </span>
-                        </div>
-                      </div>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{" "}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode("login");
+                          setError(null);
+                        }}
+                        className="text-red-primary hover:text-red-dark font-medium"
+                      >
+                        Sign in
+                      </button>
                     </>
                   )}
+                </p>
+              </>
+            )}
 
-                  <form onSubmit={handleEmailNext} className="space-y-4">
-                    <label htmlFor="login-email" className="sr-only">
-                      Email address
-                    </label>
-                    <input
-                      id="login-email"
-                      type="email"
-                      name="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@example.com"
-                      required
-                      autoComplete="email"
-                      spellCheck={false}
-                      className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary focus-visible:border-red-primary transition-colors"
-                    />
-                    <button
-                      type="submit"
-                      className="w-full bg-red-primary text-white font-medium py-3 rounded-xl hover:bg-red-dark transition-colors"
-                    >
-                      Continue
-                    </button>
-                  </form>
-
-                  <p className="text-center text-text-secondary text-sm mt-6">
-                    {mode === "login" ? (
-                      <>
-                        Don&apos;t have an account?{" "}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMode("signup");
-                            setError(null);
-                          }}
-                          className="text-red-primary hover:text-red-dark font-medium"
-                        >
-                          Sign up
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        Already have an account?{" "}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMode("login");
-                            setError(null);
-                          }}
-                          className="text-red-primary hover:text-red-dark font-medium"
-                        >
-                          Sign in
-                        </button>
-                      </>
-                    )}
-                  </p>
-                </>
-              )}
-
-              {step === "password" && (
-                <>
-                  <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                    <label htmlFor="login-password" className="sr-only">
-                      Password
-                    </label>
-                    <input
-                      id="login-password"
-                      type="password"
-                      name="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Password\u2026"
-                      required
-                      minLength={6}
-                      autoComplete={
-                        mode === "login" ? "current-password" : "new-password"
-                      }
-                      className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary focus-visible:border-red-primary transition-colors"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full bg-red-primary text-white font-medium py-3 rounded-xl hover:bg-red-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {isLoading && (
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      )}
-                      {mode === "login" ? "Sign In" : "Sign Up"}
-                    </button>
-                  </form>
-
+            {step === "password" && (
+              <>
+                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                  <label htmlFor="login-password" className="sr-only">
+                    Password
+                  </label>
+                  <input
+                    id="login-password"
+                    type="password"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password\u2026"
+                    required
+                    minLength={6}
+                    autoComplete={
+                      mode === "login" ? "current-password" : "new-password"
+                    }
+                    className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary focus-visible:border-red-primary transition-colors"
+                  />
                   <button
-                    type="button"
-                    onClick={handleBack}
-                    className="w-full text-center text-text-secondary text-sm mt-4 hover:text-text"
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-red-primary text-white font-medium py-3 rounded-xl hover:bg-red-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Back
+                    {isLoading && (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    )}
+                    {mode === "login" ? "Sign In" : "Sign Up"}
                   </button>
-                </>
-              )}
+                </form>
 
-              {error && (
-                <p className="text-sm text-red-primary text-center mt-4">
-                  {error}
-                </p>
-              )}
-              {message && (
-                <p className="text-sm text-green-500 text-center mt-4">
-                  {message}
-                </p>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="w-full text-center text-text-secondary text-sm mt-4 hover:text-text"
+                >
+                  Back
+                </button>
+              </>
+            )}
+
+            {error && (
+              <p className="text-sm text-red-primary text-center mt-4">
+                {error}
+              </p>
+            )}
+            {message && (
+              <p className="text-sm text-green-500 text-center mt-4">
+                {message}
+              </p>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </main>
   );
