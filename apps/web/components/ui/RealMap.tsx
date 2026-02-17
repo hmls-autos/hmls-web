@@ -2,7 +2,7 @@
 
 import type * as L from "leaflet";
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "leaflet/dist/leaflet.css";
 
 // Leaflet components must be dynamically imported to avoid SSR issues
@@ -55,38 +55,39 @@ export default function RealMap({ className = "" }: MapProps) {
     })();
   }, []);
 
-  if (!isMounted || !Leaflet) {
+  // Create a single shared icon instance (stable across renders)
+  // Must be called unconditionally (before early return) to satisfy hooks rules
+  const customIcon = useMemo(
+    () =>
+      Leaflet?.divIcon({
+        className: "custom-map-marker",
+        html: '<div style="width:12px;height:12px;background:#dc2626;border-radius:50%;box-shadow:0 0 12px rgba(220,38,38,0.5);border:2px solid white;"></div>',
+        iconSize: [12, 12] as [number, number],
+        iconAnchor: [6, 6] as [number, number],
+      }),
+    [Leaflet],
+  );
+
+  if (!isMounted || !Leaflet || !customIcon) {
     return (
       <div
         className={`w-full h-full bg-surface-alt flex items-center justify-center ${className}`}
       >
-        <div className="text-red-primary animate-pulse">Loading Map\u2026</div>
+        <div className="text-red-primary animate-pulse">Loading Map…</div>
       </div>
     );
   }
-
-  // Red dot marker to match the theme
-  const createCustomIcon = () => {
-    return Leaflet.divIcon({
-      className: "custom-map-marker",
-      html: `<div style="width:12px;height:12px;background:#dc2626;border-radius:50%;box-shadow:0 0 12px rgba(220,38,38,0.5);border:2px solid white;"></div>`,
-      iconSize: [12, 12],
-      iconAnchor: [6, 6],
-    });
-  };
 
   return (
     <div
       className={`relative w-full h-full overflow-hidden rounded-2xl ${className}`}
     >
-      {/* @ts-ignore - Types for react-leaflet dynamic imports can be tricky */}
       <MapContainer
         center={CENTER}
         zoom={ZOOM}
         scrollWheelZoom={false}
         className="w-full h-full z-0"
         zoomControl={false}
-        attributionControl={false}
       >
         {/* Light Positron Tile Layer */}
         <TileLayer
@@ -111,7 +112,7 @@ export default function RealMap({ className = "" }: MapProps) {
           <Marker
             key={city.name}
             position={city.coords as [number, number]}
-            icon={createCustomIcon()}
+            icon={customIcon}
           >
             <Popup className="custom-popup">
               <div className="text-text font-medium text-sm">{city.name}</div>

@@ -16,7 +16,7 @@ export default function ServiceCard({
   return (
     <Link
       href={href}
-      className="flex flex-col h-full p-8 bg-surface border border-border rounded-xl card-hover hover:border-red-primary"
+      className="flex flex-col h-full p-8 bg-surface border border-border rounded-xl card-hover hover:border-red-primary focus-visible:ring-2 focus-visible:ring-red-primary"
     >
       <h3 className="text-lg font-display font-semibold text-text mb-2">
         {title}

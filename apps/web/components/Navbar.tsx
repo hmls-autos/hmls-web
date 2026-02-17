@@ -34,7 +34,7 @@ export default function Navbar() {
             <Link
               key={href}
               href={href}
-              className={`text-sm transition-colors ${
+              className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
                 pathname === href
                   ? "text-red-primary"
                   : "text-text-secondary hover:text-text"
@@ -49,7 +49,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => supabase.auth.signOut()}
-                className="flex items-center gap-2 text-sm text-text-secondary hover:text-text transition-colors"
+                className="flex items-center gap-2 text-sm text-text-secondary hover:text-text transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary"
               >
                 <LogOut className="w-4 h-4" />
                 Sign Out

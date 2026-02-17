@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -35,16 +35,20 @@ function GoogleLogo() {
   );
 }
 
-const fadeSlide = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -12 },
-  transition: { duration: 0.2 },
-};
+function useFadeSlide() {
+  const prefersReducedMotion = useReducedMotion();
+  return {
+    initial: prefersReducedMotion ? false : { opacity: 0, y: 12 },
+    animate: { opacity: 1, y: 0 },
+    exit: prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -12 },
+    transition: prefersReducedMotion ? { duration: 0 } : { duration: 0.2 },
+  };
+}
 
 type Step = "email" | "password";
 
 export default function LoginPage() {
+  const fadeSlide = useFadeSlide();
   const router = useRouter();
   const { supabase, session } = useAuth();
   const [email, setEmail] = useState("");
@@ -259,7 +263,7 @@ export default function LoginPage() {
                     name="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password\u2026"
+                    placeholder="Password…"
                     required
                     minLength={6}
                     autoComplete={

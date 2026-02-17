@@ -2318,6 +2318,7 @@
         "dependencies": [
           "npm:@anthropic-ai/sdk@0.74.0",
           "npm:@react-pdf/renderer@^4.3.2",
+          "npm:@supabase/supabase-js@^2.95.0",
           "npm:nanoid@^5.1.5",
           "npm:react@^19.2.3"
         ]

@@ -5,6 +5,7 @@
   "imports": {
     "@anthropic-ai/sdk": "npm:@anthropic-ai/sdk@0.74.0",
     "@react-pdf/renderer": "npm:@react-pdf/renderer@^4.3.2",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.95.0",
     "react": "npm:react@^19.2.3",
     "nanoid": "npm:nanoid@^5.1.5"
   },

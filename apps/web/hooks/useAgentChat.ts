@@ -12,20 +12,14 @@ export interface Message {
   content: string;
 }
 
-export interface AgentUser {
-  email: string;
-  name?: string;
-  phone?: string;
-}
-
 interface UseAgentChatOptions {
   scrollRef?: RefObject<HTMLElement | null>;
   inputRef?: RefObject<HTMLInputElement | null>;
-  user?: AgentUser | null;
+  accessToken?: string | null;
 }
 
 export function useAgentChat(options: UseAgentChatOptions = {}) {
-  const { scrollRef, inputRef, user } = options;
+  const { scrollRef, inputRef, accessToken } = options;
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +28,8 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     null,
   );
   const agentRef = useRef<HttpAgent | null>(null);
+  const tokenRef = useRef(accessToken);
+  tokenRef.current = accessToken;
 
   const scrollToBottom = useCallback(() => {
     scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,103 +39,117 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     inputRef?.current?.focus();
   }, [inputRef]);
 
-  function getAgent() {
+  const getAgent = useCallback(() => {
     if (!agentRef.current) {
       const headers: Record<string, string> = {};
-      if (user) {
-        headers["X-User-Context"] = JSON.stringify(user);
+      if (tokenRef.current) {
+        headers.Authorization = `Bearer ${tokenRef.current}`;
       }
       agentRef.current = new HttpAgent({ url: `${AGENT_URL}/task`, headers });
     }
     return agentRef.current;
-  }
+  }, []);
 
-  async function sendMessage(content: string) {
-    const userMsg: Message = { id: crypto.randomUUID(), role: "user", content };
-    setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
-    setError(null);
-    setTimeout(scrollToBottom, 0);
+  const sendMessage = useCallback(
+    async (content: string) => {
+      const userMsg: Message = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content,
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setIsLoading(true);
+      setError(null);
+      setTimeout(scrollToBottom, 0);
 
-    const agent = getAgent();
+      const agent = getAgent();
 
-    // Add the new user message to the agent's internal state.
-    // Don't use setMessages — it would overwrite the full message history
-    // (including tool calls from MESSAGES_SNAPSHOT) with stripped text-only versions,
-    // causing the backend to lose conversation context.
-    agent.addMessage({ id: userMsg.id, role: "user", content } as AgentMessage);
+      // Add the new user message to the agent's internal state.
+      // Don't use setMessages — it would overwrite the full message history
+      // (including tool calls from MESSAGES_SNAPSHOT) with stripped text-only versions,
+      // causing the backend to lose conversation context.
+      agent.addMessage({
+        id: userMsg.id,
+        role: "user",
+        content,
+      } as AgentMessage);
 
-    let assistantId = "";
-    let buffer = "";
+      let assistantId = "";
+      let buffer = "";
 
-    try {
-      await agent.runAgent(undefined, {
-        onTextMessageStartEvent: ({ event }) => {
-          assistantId = event.messageId;
-          buffer = "";
-          setMessages((m) => [
-            ...m,
-            { id: assistantId, role: "assistant", content: "" },
-          ]);
-          setTimeout(scrollToBottom, 0);
-        },
-        onTextMessageContentEvent: ({ event }) => {
-          buffer += event.delta;
-          setMessages((m) =>
-            m.map((msg) =>
-              msg.id === assistantId ? { ...msg, content: buffer } : msg,
-            ),
-          );
-          setTimeout(scrollToBottom, 0);
-        },
-        onToolCallStartEvent: ({ event }) => {
-          setCurrentTool(event.toolCallName);
-          setTimeout(scrollToBottom, 0);
-        },
-        onToolCallEndEvent: ({ toolCallName, toolCallArgs }) => {
-          if (toolCallName === "ask_user_question") {
-            setPendingQuestion(toolCallArgs as QuestionData);
-          }
-          setCurrentTool(null);
-        },
-        onRunFinishedEvent: () => {
-          setIsLoading(false);
-          focusInput();
-        },
-        onRunErrorEvent: ({ event }) => {
-          const msg =
-            (event as { message?: string }).message ||
-            "Agent encountered an error";
-          console.error("[agent] Run error:", msg);
-          setError(msg);
-          setIsLoading(false);
-          focusInput();
-        },
-      });
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Failed to connect to agent";
-      console.error("[agent] Connection error:", msg);
-      setError(msg);
-      setIsLoading(false);
-      focusInput();
-    }
-  }
+      try {
+        await agent.runAgent(undefined, {
+          onTextMessageStartEvent: ({ event }) => {
+            assistantId = event.messageId;
+            buffer = "";
+            setMessages((m) => [
+              ...m,
+              { id: assistantId, role: "assistant", content: "" },
+            ]);
+            setTimeout(scrollToBottom, 0);
+          },
+          onTextMessageContentEvent: ({ event }) => {
+            buffer += event.delta;
+            setMessages((m) =>
+              m.map((msg) =>
+                msg.id === assistantId ? { ...msg, content: buffer } : msg,
+              ),
+            );
+            setTimeout(scrollToBottom, 0);
+          },
+          onToolCallStartEvent: ({ event }) => {
+            setCurrentTool(event.toolCallName);
+            setTimeout(scrollToBottom, 0);
+          },
+          onToolCallEndEvent: ({ toolCallName, toolCallArgs }) => {
+            if (toolCallName === "ask_user_question") {
+              setPendingQuestion(toolCallArgs as QuestionData);
+            }
+            setCurrentTool(null);
+          },
+          onRunFinishedEvent: () => {
+            setIsLoading(false);
+            focusInput();
+          },
+          onRunErrorEvent: ({ event }) => {
+            const msg =
+              (event as { message?: string }).message ||
+              "Agent encountered an error";
+            console.error("[agent] Run error:", msg);
+            setError(msg);
+            setIsLoading(false);
+            focusInput();
+          },
+        });
+      } catch (err) {
+        const msg =
+          err instanceof Error ? err.message : "Failed to connect to agent";
+        console.error("[agent] Connection error:", msg);
+        setError(msg);
+        setIsLoading(false);
+        focusInput();
+      }
+    },
+    [scrollToBottom, focusInput, getAgent],
+  );
 
-  function answerQuestion(answer: string) {
-    setPendingQuestion(null);
-    sendMessage(answer);
-  }
+  const answerQuestion = useCallback(
+    (answer: string) => {
+      setPendingQuestion(null);
+      sendMessage(answer);
+    },
+    [sendMessage],
+  );
 
-  function clearMessages() {
+  const clearMessages = useCallback(() => {
     setMessages([]);
     setPendingQuestion(null);
     agentRef.current = null;
-  }
+  }, []);
 
-  function clearError() {
+  const clearError = useCallback(() => {
     setError(null);
-  }
+  }, []);
 
   return {
     messages,

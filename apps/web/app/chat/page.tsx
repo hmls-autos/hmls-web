@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Loader2, LogIn, Send, Wrench } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useEffect, useRef, useState } from "react";
@@ -11,18 +11,11 @@ import { useAgentChat } from "@/hooks/useAgentChat";
 import { toolDisplayNames } from "@/lib/agent-tools";
 
 export default function ChatPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const prefersReducedMotion = useReducedMotion();
+  const { user, session, isLoading: authLoading } = useAuth();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const agentUser = user
-    ? {
-        email: user.email ?? "",
-        name: user.user_metadata?.full_name ?? user.user_metadata?.name,
-        phone: user.user_metadata?.phone,
-      }
-    : null;
 
   const {
     messages,
@@ -34,7 +27,7 @@ export default function ChatPage() {
     answerQuestion,
     clearMessages,
     clearError,
-  } = useAgentChat({ user: agentUser });
+  } = useAgentChat({ accessToken: session?.access_token });
 
   // Always connected when hook is mounted
   const isConnected = true;
@@ -77,14 +70,18 @@ export default function ChatPage() {
       <main className="flex flex-col h-[calc(100dvh-4rem)] bg-background text-text">
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="text-center max-w-md"
           >
             <motion.div
-              initial={{ scale: 0 }}
+              initial={prefersReducedMotion ? false : { scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : { delay: 0.2, type: "spring", stiffness: 200 }
+              }
               className="w-20 h-20 rounded-full bg-red-light flex items-center justify-center mx-auto mb-6"
             >
               <Wrench className="w-10 h-10 text-red-primary" />
@@ -114,16 +111,22 @@ export default function ChatPage() {
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full pt-8 pb-4 px-4">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={
+            prefersReducedMotion ? { duration: 0 } : { duration: 0.4 }
+          }
           className="flex items-center justify-between mb-4 px-2"
         >
           <div className="flex items-center gap-3">
             <motion.div
-              initial={{ scale: 0 }}
+              initial={prefersReducedMotion ? false : { scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0 }
+                  : { delay: 0.2, type: "spring", stiffness: 200 }
+              }
               className="w-12 h-12 rounded-full bg-red-light flex items-center justify-center"
             >
               <Wrench className="w-6 h-6 text-red-primary" />
@@ -157,9 +160,13 @@ export default function ChatPage() {
 
         {/* Messages Area */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
+          transition={
+            prefersReducedMotion
+              ? { duration: 0 }
+              : { duration: 0.4, delay: 0.1 }
+          }
           className="flex-1 overflow-y-auto rounded-2xl border border-border bg-surface p-6 space-y-4"
         >
           <AnimatePresence mode="wait">
@@ -347,9 +354,13 @@ export default function ChatPage() {
 
         {/* Input Area */}
         <motion.form
-          initial={{ opacity: 0, y: 20 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
+          transition={
+            prefersReducedMotion
+              ? { duration: 0 }
+              : { duration: 0.4, delay: 0.2 }
+          }
           onSubmit={handleSubmit}
           className="mt-4"
         >
@@ -362,9 +373,10 @@ export default function ChatPage() {
               id="chat-input"
               type="text"
               name="message"
+              autoComplete="off"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message\u2026"
+              placeholder="Type your message…"
               disabled={!isConnected || isLoading || !!pendingQuestion}
               className="flex-1 bg-surface border border-border rounded-xl px-5 py-4 text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary focus-visible:border-red-primary disabled:opacity-50 transition-colors"
             />

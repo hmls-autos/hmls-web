@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { eachValueFrom } from "rxjs-for-await";
 import { eq } from "drizzle-orm";
-import { createHmlsAgent, type AgentConfig } from "../agent.ts";
+import { type AgentConfig, createHmlsAgent } from "../agent.ts";
 import { db, schema } from "../db/client.ts";
 import { Errors } from "@hmls/shared/errors";
 import {
@@ -11,6 +11,7 @@ import {
   parseRunAgentInput,
 } from "@zypher/agui";
 import type { UserContext } from "../types/user-context.ts";
+import { optionalAuth, type OptionalAuthEnv } from "../middleware/auth.ts";
 
 let _config: AgentConfig;
 
@@ -20,31 +21,23 @@ export function initChat(config: AgentConfig) {
 
 /** Look up customer by email, or create one if not found. */
 async function resolveCustomer(
-  header: string,
+  userInfo: { email: string; name?: string; phone?: string },
 ): Promise<UserContext | undefined> {
-  let parsed: { email?: string; name?: string; phone?: string };
-  try {
-    parsed = JSON.parse(header);
-  } catch {
-    console.warn("[agent] Invalid X-User-Context header");
-    return undefined;
-  }
-
-  if (!parsed.email) return undefined;
+  if (!userInfo.email) return undefined;
 
   // Try to find existing customer by email
   const [existing] = await db
     .select()
     .from(schema.customers)
-    .where(eq(schema.customers.email, parsed.email))
+    .where(eq(schema.customers.email, userInfo.email))
     .limit(1);
 
   if (existing) {
     return {
       id: existing.id,
-      name: existing.name ?? parsed.name ?? "",
-      email: existing.email ?? parsed.email,
-      phone: existing.phone ?? parsed.phone ?? "",
+      name: existing.name ?? userInfo.name ?? "",
+      email: existing.email ?? userInfo.email,
+      phone: existing.phone ?? userInfo.phone ?? "",
     };
   }
 
@@ -52,25 +45,33 @@ async function resolveCustomer(
   const [created] = await db
     .insert(schema.customers)
     .values({
-      name: parsed.name || null,
-      email: parsed.email,
-      phone: parsed.phone || null,
+      name: userInfo.name || null,
+      email: userInfo.email,
+      phone: userInfo.phone || null,
     })
     .returning();
 
   return {
     id: created.id,
     name: created.name ?? "",
-    email: created.email ?? parsed.email,
+    email: created.email ?? userInfo.email,
     phone: created.phone ?? "",
   };
 }
 
-const chat = new Hono();
+const chat = new Hono<OptionalAuthEnv>();
 
 // AG-UI chat endpoint
-chat.post("/", async (c) => {
-  const body = await c.req.json();
+chat.post("/", optionalAuth, async (c) => {
+  let body;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid JSON body" } },
+      400,
+    );
+  }
 
   let input;
   try {
@@ -79,11 +80,11 @@ chat.post("/", async (c) => {
     throw Errors.validation("Invalid AG-UI input", String(parseError));
   }
 
-  // Resolve authenticated user → customer record
+  // Resolve authenticated user -> customer record via JWT
   let userContext: UserContext | undefined;
-  const userContextHeader = c.req.header("X-User-Context");
-  if (userContextHeader) {
-    userContext = await resolveCustomer(userContextHeader);
+  const authUser = c.get("authUser");
+  if (authUser) {
+    userContext = await resolveCustomer({ email: authUser.email });
   }
 
   const { threadId, runId, messages } = input;

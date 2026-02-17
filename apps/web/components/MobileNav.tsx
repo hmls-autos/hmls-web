@@ -24,7 +24,7 @@ export default function MobileNav() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 text-text"
+        className="p-2 text-text focus-visible:ring-2 focus-visible:ring-red-primary rounded-lg"
         aria-label="Toggle menu"
         aria-expanded={isOpen}
         aria-haspopup="true"

@@ -32,10 +32,15 @@ export async function getServiceById(
   };
 }
 
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 let cachedConfig: PricingConfig | null = null;
+let cachedAt = 0;
 
 export async function getPricingConfig(): Promise<PricingConfig> {
-  if (cachedConfig) return cachedConfig;
+  if (cachedConfig && Date.now() - cachedAt < CACHE_TTL_MS) {
+    return cachedConfig;
+  }
 
   const rows = await db.select().from(schema.pricingConfig);
   const configMap = new Map(rows.map((r) => [r.key, r.value]));
@@ -49,12 +54,14 @@ export async function getPricingConfig(): Promise<PricingConfig> {
     partsMarkupTier2: configMap.get("parts_markup_tier2_pct") ?? 30,
     partsMarkupTier3: configMap.get("parts_markup_tier3_pct") ?? 20,
   };
+  cachedAt = Date.now();
 
   return cachedConfig;
 }
 
 export function clearConfigCache(): void {
   cachedConfig = null;
+  cachedAt = 0;
 }
 
 export async function getVehicleMultiplier(

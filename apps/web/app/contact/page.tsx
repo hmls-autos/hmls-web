@@ -2,7 +2,7 @@ import { Mail, MapPin, Phone } from "lucide-react";
 import type { Metadata } from "next";
 import FooterNew from "@/components/FooterNew";
 import { FadeIn } from "@/components/ui/Animations";
-import RealMap from "@/components/ui/RealMap";
+import LazyMap from "@/components/ui/LazyMap";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -73,7 +73,7 @@ export default function Contact() {
             </div>
 
             <div className="w-full h-80 rounded-2xl overflow-hidden border border-border relative group">
-              <RealMap className="w-full h-full" />
+              <LazyMap className="w-full h-full" />
             </div>
           </FadeIn>
         </div>

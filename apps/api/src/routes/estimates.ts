@@ -5,12 +5,21 @@ import * as schema from "../db/schema.ts";
 import { and, eq } from "drizzle-orm";
 import { EstimatePdf } from "../pdf/EstimatePdf.tsx";
 import { Errors } from "@hmls/shared/errors";
+import { type AuthEnv, requireAuth } from "../middleware/auth.ts";
 
-const estimates = new Hono();
+const estimates = new Hono<AuthEnv>();
 
-// GET estimate by ID
-estimates.get("/:id", async (c) => {
+// GET estimate by ID (authenticated, owner-only)
+estimates.get("/:id", requireAuth, async (c) => {
   const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid estimate ID" } },
+      400,
+    );
+  }
+
+  const customerId = c.get("customerId");
   const [estimate] = await db
     .select()
     .from(schema.estimates)
@@ -18,14 +27,31 @@ estimates.get("/:id", async (c) => {
     .limit(1);
 
   if (!estimate) throw Errors.notFound("Estimate", id);
+
+  if (estimate.customerId !== customerId) {
+    return c.json(
+      { error: { code: "FORBIDDEN", message: "Not authorized to view this estimate" } },
+      403,
+    );
+  }
+
   return c.json(estimate);
 });
 
-// GET estimate PDF
+// GET estimate PDF (share-token for public access, or authenticated owner)
 estimates.get("/:id/pdf", async (c) => {
   const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid estimate ID" } },
+      400,
+    );
+  }
+
   const token = c.req.query("token");
 
+  // If share token provided, use it for access
+  // Otherwise this endpoint is open (PDFs are shared via token links)
   const [estimate] = await db
     .select()
     .from(schema.estimates)

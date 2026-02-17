@@ -6,9 +6,29 @@ import { estimates } from "./routes/estimates.ts";
 import { customers } from "./routes/customers.ts";
 import { chat, initChat } from "./routes/chat.ts";
 
+// ── Fail fast on required env vars ──
+const DATABASE_URL = Deno.env.get("DATABASE_URL");
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+
+if (!DATABASE_URL) {
+  throw new Error("DATABASE_URL is required but not set");
+}
+if (!ANTHROPIC_API_KEY) {
+  throw new Error("ANTHROPIC_API_KEY is required but not set");
+}
+
+// Warn on optional vars
+for (
+  const key of ["STRIPE_SECRET_KEY", "CALCOM_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+) {
+  if (!Deno.env.get(key)) {
+    console.warn(`[config] Optional env var ${key} is not set`);
+  }
+}
+
 // Read all env vars in one place
 initChat({
-  anthropicApiKey: Deno.env.get("ANTHROPIC_API_KEY") ?? "",
+  anthropicApiKey: ANTHROPIC_API_KEY,
   stripeSecretKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
   calcomApiKey: Deno.env.get("CALCOM_API_KEY") ?? "",
   calcomEventTypeId: Deno.env.get("CALCOM_EVENT_TYPE_ID") ?? "",
@@ -28,7 +48,7 @@ app.use(
       "http://localhost:3000",
     ],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "X-User-Context"],
+    allowHeaders: ["Content-Type", "Authorization"],
   }),
 );
 app.use("*", logger());

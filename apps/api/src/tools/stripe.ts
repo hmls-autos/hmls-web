@@ -112,13 +112,13 @@ export function createStripeTools(secretKey: string) {
         quantity: 1,
       }));
 
-      // @ts-ignore - Stripe API types have changed, this works at runtime
-      const quote = await stripe.quotes.create({
-        customer: stripeCustomerId,
-        line_items: lineItems,
-        expires_at: Math.floor(Date.now() / 1000) +
-          (params.expiresInDays || 7) * 24 * 60 * 60,
-      });
+      const quote =
+        await (stripe.quotes.create as (params: Record<string, unknown>) => Promise<Stripe.Quote>)({
+          customer: stripeCustomerId,
+          line_items: lineItems,
+          expires_at: Math.floor(Date.now() / 1000) +
+            (params.expiresInDays || 7) * 24 * 60 * 60,
+        });
 
       const finalizedQuote = await stripe.quotes.finalizeQuote(quote.id);
 
@@ -150,7 +150,8 @@ export function createStripeTools(secretKey: string) {
         quoteId: dbQuote.id,
         stripeQuoteId: finalizedQuote.id,
         totalAmount: centsToDollars(totalAmount),
-        hostedUrl: (finalizedQuote as unknown as Record<string, unknown>).hosted_quote_url as string,
+        hostedUrl: (finalizedQuote as unknown as Record<string, unknown>)
+          .hosted_quote_url as string,
         message: `Quote created for $${
           centsToDollars(totalAmount).toFixed(2)
         }. Customer can view and accept at: ${

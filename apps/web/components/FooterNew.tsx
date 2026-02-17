@@ -15,31 +15,31 @@ export default function FooterNew() {
           <div className="flex flex-wrap gap-6 text-sm text-footer-muted">
             <Link
               href="#services"
-              className="hover:text-red-primary transition-colors"
+              className="hover:text-red-primary transition-colors focus-visible:ring-2 focus-visible:ring-red-primary rounded"
             >
               Services
             </Link>
             <Link
               href="#about"
-              className="hover:text-red-primary transition-colors"
+              className="hover:text-red-primary transition-colors focus-visible:ring-2 focus-visible:ring-red-primary rounded"
             >
               About
             </Link>
             <Link
               href="/contact"
-              className="hover:text-red-primary transition-colors"
+              className="hover:text-red-primary transition-colors focus-visible:ring-2 focus-visible:ring-red-primary rounded"
             >
               Contact
             </Link>
             <Link
               href="/terms"
-              className="hover:text-red-primary transition-colors"
+              className="hover:text-red-primary transition-colors focus-visible:ring-2 focus-visible:ring-red-primary rounded"
             >
               Terms
             </Link>
             <Link
               href="/privacy"
-              className="hover:text-red-primary transition-colors"
+              className="hover:text-red-primary transition-colors focus-visible:ring-2 focus-visible:ring-red-primary rounded"
             >
               Privacy
             </Link>
