@@ -132,14 +132,16 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-full flex-col bg-background text-text">
+      <div className="shrink-0 flex justify-center py-6">
+        <Link
+          href="/"
+          className="text-xl font-display font-bold tracking-tight text-text"
+        >
+          HMLS<span className="text-red-primary">.</span>
+        </Link>
+      </div>
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-sm">
-          <Link
-            href="/"
-            className="block text-center text-xl font-display font-bold tracking-tight text-text mb-10"
-          >
-            HMLS<span className="text-red-primary">.</span>
-          </Link>
           <AnimatePresence mode="wait">
             <motion.div key={`${step}-${mode}`} {...fadeSlide}>
               <div className="text-center mb-8">
