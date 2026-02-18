@@ -1,12 +1,16 @@
-import { type AuthUser, verifyToken } from "../lib/supabase.ts";
+import { verifyToken } from "../lib/supabase.ts";
 import { db } from "../db/client.ts";
-import { customers } from "../db/schema.ts";
+import { customers, userProfiles } from "../db/schema.ts";
 import { eq } from "drizzle-orm";
 
 export interface AuthContext {
-  user: AuthUser;
-  customerId: number;
-  stripeCustomerId: string;
+  userId: string; // Supabase auth.users.id
+  email: string;
+  tier: "free" | "plus";
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  // Legacy support for existing HMLS customers
+  customerId?: number;
 }
 
 export async function authenticateRequest(
@@ -25,42 +29,61 @@ export async function authenticateRequest(
   }
 
   const token = authHeader.slice(7);
-  const user = await verifyToken(token);
+  const authUser = await verifyToken(token);
 
-  if (!user) {
+  if (!authUser) {
     return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // Look up customer by email to get customerId and stripeCustomerId
+  // Try user_profiles first (SaaS users)
+  const [profile] = await db
+    .select()
+    .from(userProfiles)
+    .where(eq(userProfiles.id, authUser.id))
+    .limit(1);
+
+  if (profile) {
+    return {
+      userId: profile.id,
+      email: authUser.email,
+      tier: profile.tier,
+      stripeCustomerId: profile.stripeCustomerId,
+      stripeSubscriptionId: profile.stripeSubscriptionId,
+    };
+  }
+
+  // Fallback: legacy HMLS customer lookup
   const [customer] = await db
     .select()
     .from(customers)
-    .where(eq(customers.email, user.email))
+    .where(eq(customers.email, authUser.email))
     .limit(1);
 
-  if (!customer) {
-    return new Response(JSON.stringify({ error: "Customer not found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+  if (customer) {
+    return {
+      userId: authUser.id,
+      email: authUser.email,
+      tier: "plus" as const, // legacy customers get full access
+      stripeCustomerId: customer.stripeCustomerId ?? null,
+      stripeSubscriptionId: null,
+      customerId: customer.id,
+    };
   }
 
-  if (!customer.stripeCustomerId) {
-    return new Response(
-      JSON.stringify({ error: "Customer has no billing account" }),
-      {
-        status: 402,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-  }
+  // Auto-create user_profiles for new SaaS users
+  const [newProfile] = await db
+    .insert(userProfiles)
+    .values({ id: authUser.id })
+    .returning();
 
   return {
-    user,
-    customerId: customer.id,
-    stripeCustomerId: customer.stripeCustomerId,
+    userId: newProfile.id,
+    email: authUser.email,
+    tier: "free",
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
   };
 }

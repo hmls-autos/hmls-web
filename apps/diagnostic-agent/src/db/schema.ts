@@ -7,6 +7,7 @@ import {
   serial,
   text,
   timestamp,
+  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -18,6 +19,44 @@ export const customers = pgTable("customers", {
   phone: varchar("phone", { length: 20 }),
   stripeCustomerId: varchar("stripe_customer_id", { length: 100 }),
 });
+
+// User tier enum
+export const userTierEnum = pgEnum("user_tier", ["free", "plus"]);
+
+// User profiles (extends Supabase auth.users)
+export const userProfiles = pgTable(
+  "user_profiles",
+  {
+    id: uuid("id").primaryKey(), // matches auth.users.id
+    stripeCustomerId: text("stripe_customer_id"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    tier: userTierEnum("tier").default("free").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("idx_user_profiles_stripe").on(table.stripeCustomerId)],
+);
+
+// Vehicles
+export const vehicles = pgTable(
+  "vehicles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => userProfiles.id),
+    year: integer("year"),
+    make: text("make").notNull(),
+    model: text("model").notNull(),
+    vin: text("vin"),
+    nickname: text("nickname"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("idx_vehicles_user").on(table.userId)],
+);
 
 // Enums
 export const sessionStatusEnum = pgEnum("diagnostic_session_status", [
@@ -53,8 +92,9 @@ export const diagnosticSessions = pgTable(
   {
     id: serial("id").primaryKey(),
     customerId: integer("customer_id")
-      .notNull()
       .references(() => customers.id),
+    userId: uuid("user_id").references(() => userProfiles.id),
+    vehicleId: uuid("vehicle_id").references(() => vehicles.id),
     status: sessionStatusEnum("status").notNull().default("pending"),
     creditsCharged: integer("credits_charged").notNull().default(0),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -101,6 +141,10 @@ export const obdCodes = pgTable(
 );
 
 // Types
+export type UserProfile = typeof userProfiles.$inferSelect;
+export type NewUserProfile = typeof userProfiles.$inferInsert;
+export type Vehicle = typeof vehicles.$inferSelect;
+export type NewVehicle = typeof vehicles.$inferInsert;
 export type DiagnosticSession = typeof diagnosticSessions.$inferSelect;
 export type NewDiagnosticSession = typeof diagnosticSessions.$inferInsert;
 export type DiagnosticMedia = typeof diagnosticMedia.$inferSelect;

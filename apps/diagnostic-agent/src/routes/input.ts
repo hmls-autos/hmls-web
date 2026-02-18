@@ -1,11 +1,16 @@
 import { Hono } from "hono";
 import { eachValueFrom } from "rxjs-for-await";
 import { db } from "../db/client.ts";
-import { diagnosticMedia, diagnosticSessions, obdCodes } from "../db/schema.ts";
+import {
+  diagnosticMedia,
+  diagnosticSessions,
+  obdCodes,
+} from "../db/schema.ts";
 import { eq } from "drizzle-orm";
 import { uploadMedia } from "../lib/r2.ts";
 import type { InputType } from "../lib/stripe.ts";
 import { processCredits } from "../middleware/credits.ts";
+import { checkFreeTierLimit } from "../middleware/tier.ts";
 import { getAgent } from "../lib/agent-cache.ts";
 import { createAguiEventStream } from "@zypher/agui";
 import type { AuthContext } from "../middleware/auth.ts";
@@ -25,7 +30,10 @@ input.post("/:id/input", async (c) => {
     .where(eq(diagnosticSessions.id, sessionId))
     .limit(1);
 
-  if (!session || session.customerId !== auth.customerId) {
+  if (
+    !session ||
+    (session.userId !== auth.userId && session.customerId !== auth.customerId)
+  ) {
     return c.json({ error: "Session not found" }, 404);
   }
 
@@ -38,22 +46,32 @@ input.post("/:id/input", async (c) => {
     return c.json({ error: "Invalid input type" }, 400);
   }
 
-  // Check and deduct credits
-  const creditResult = await processCredits(
-    auth.stripeCustomerId,
-    type as InputType,
-    sessionId,
-    durationSeconds,
-  );
-  if (creditResult instanceof Response) {
-    return creditResult;
+  // Check free tier limits for SaaS users (non-legacy)
+  if (!auth.customerId) {
+    const tierBlock = await checkFreeTierLimit(auth, type);
+    if (tierBlock) return tierBlock;
   }
 
-  // Update session credits
+  // Check and deduct credits (only for legacy customers with Stripe)
+  let creditCharged = 0;
+  if (auth.stripeCustomerId && auth.customerId) {
+    const creditResult = await processCredits(
+      auth.stripeCustomerId,
+      type as InputType,
+      sessionId,
+      durationSeconds,
+    );
+    if (creditResult instanceof Response) {
+      return creditResult;
+    }
+    creditCharged = creditResult.charged;
+  }
+
+  // Update session
   await db
     .update(diagnosticSessions)
     .set({
-      creditsCharged: session.creditsCharged + creditResult.charged,
+      creditsCharged: session.creditsCharged + creditCharged,
       status: "processing",
     })
     .where(eq(diagnosticSessions.id, sessionId));
@@ -71,7 +89,10 @@ input.post("/:id/input", async (c) => {
     });
     agentInput = `OBD-II Code: ${content}`;
   } else if (type === "photo" || type === "audio" || type === "video") {
-    const binaryData = Uint8Array.from(atob(content), (ch) => ch.charCodeAt(0));
+    const binaryData = Uint8Array.from(
+      atob(content),
+      (ch) => ch.charCodeAt(0),
+    );
     const uploadResult = await uploadMedia(
       binaryData,
       filename,
@@ -83,7 +104,7 @@ input.post("/:id/input", async (c) => {
       sessionId,
       type: type === "photo" ? "photo" : type === "audio" ? "audio" : "video",
       r2Key: uploadResult.key,
-      creditCost: creditResult.charged,
+      creditCost: creditCharged,
       metadata: { filename, contentType, durationSeconds },
     });
 
@@ -114,8 +135,8 @@ input.post("/:id/input", async (c) => {
 
   return c.json({
     response: responseText,
-    creditsCharged: creditResult.charged,
-    sessionCreditsTotal: session.creditsCharged + creditResult.charged,
+    creditsCharged: creditCharged,
+    sessionCreditsTotal: session.creditsCharged + creditCharged,
   });
 });
 

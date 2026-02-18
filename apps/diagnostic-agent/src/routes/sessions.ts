@@ -1,7 +1,11 @@
 import { Hono } from "hono";
 import { db } from "../db/client.ts";
-import { diagnosticMedia, diagnosticSessions, obdCodes } from "../db/schema.ts";
-import { desc, eq } from "drizzle-orm";
+import {
+  diagnosticMedia,
+  diagnosticSessions,
+  obdCodes,
+} from "../db/schema.ts";
+import { desc, eq, or } from "drizzle-orm";
 import type { AuthContext } from "../middleware/auth.ts";
 
 type Variables = { auth: AuthContext };
@@ -14,7 +18,10 @@ sessions.post("/", async (c) => {
 
   const [session] = await db
     .insert(diagnosticSessions)
-    .values({ customerId: auth.customerId })
+    .values({
+      userId: auth.userId,
+      customerId: auth.customerId ?? null,
+    })
     .returning();
 
   return c.json({
@@ -28,10 +35,16 @@ sessions.post("/", async (c) => {
 sessions.get("/", async (c) => {
   const auth = c.get("auth");
 
+  // Match by userId (SaaS) or customerId (legacy)
+  const conditions = [eq(diagnosticSessions.userId, auth.userId)];
+  if (auth.customerId) {
+    conditions.push(eq(diagnosticSessions.customerId, auth.customerId));
+  }
+
   const sessions_ = await db
     .select()
     .from(diagnosticSessions)
-    .where(eq(diagnosticSessions.customerId, auth.customerId))
+    .where(or(...conditions))
     .orderBy(desc(diagnosticSessions.createdAt));
 
   return c.json({ sessions: sessions_ });
@@ -48,7 +61,11 @@ sessions.get("/:id", async (c) => {
     .where(eq(diagnosticSessions.id, sessionId))
     .limit(1);
 
-  if (!session || session.customerId !== auth.customerId) {
+  if (
+    !session ||
+    (session.userId !== auth.userId &&
+      session.customerId !== auth.customerId)
+  ) {
     return c.json({ error: "Session not found" }, 404);
   }
 

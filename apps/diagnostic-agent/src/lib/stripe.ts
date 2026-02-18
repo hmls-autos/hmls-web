@@ -77,3 +77,103 @@ export function calculateAudioCredits(durationSeconds: number): number {
 export function calculateVideoCredits(durationSeconds: number): number {
   return Math.ceil(durationSeconds / 30) * CREDIT_COSTS.video;
 }
+
+// --- Subscription helpers ---
+
+export async function getStripeCustomerIdForUser(
+  userId: string,
+): Promise<string | null> {
+  const { db } = await import("../db/client.ts");
+  const { userProfiles } = await import("../db/schema.ts");
+  const { eq } = await import("drizzle-orm");
+
+  const [profile] = await db
+    .select({ stripeCustomerId: userProfiles.stripeCustomerId })
+    .from(userProfiles)
+    .where(eq(userProfiles.id, userId))
+    .limit(1);
+
+  return profile?.stripeCustomerId ?? null;
+}
+
+export async function createCheckoutSession(
+  userId: string,
+  email: string,
+  successUrl: string,
+  cancelUrl: string,
+): Promise<string> {
+  const { db } = await import("../db/client.ts");
+  const { userProfiles } = await import("../db/schema.ts");
+  const { eq } = await import("drizzle-orm");
+
+  let stripeCustomerId = await getStripeCustomerIdForUser(userId);
+  if (!stripeCustomerId) {
+    const customer = await stripe.customers.create({
+      email,
+      metadata: { userId },
+    });
+    stripeCustomerId = customer.id;
+    await db
+      .update(userProfiles)
+      .set({ stripeCustomerId: customer.id })
+      .where(eq(userProfiles.id, userId));
+  }
+
+  const priceId = Deno.env.get("STRIPE_PLUS_PRICE_ID");
+  if (!priceId) {
+    throw new Error("STRIPE_PLUS_PRICE_ID is required");
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    customer: stripeCustomerId,
+    mode: "subscription",
+    line_items: [{ price: priceId, quantity: 1 }],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+  });
+
+  return session.url!;
+}
+
+export async function handleSubscriptionWebhook(
+  event: Stripe.Event,
+): Promise<void> {
+  const { db } = await import("../db/client.ts");
+  const { userProfiles } = await import("../db/schema.ts");
+  const { eq } = await import("drizzle-orm");
+
+  switch (event.type) {
+    case "customer.subscription.created":
+    case "customer.subscription.updated": {
+      const sub = event.data.object as Stripe.Subscription;
+      const active = sub.status === "active" || sub.status === "trialing";
+      await db
+        .update(userProfiles)
+        .set({
+          stripeSubscriptionId: sub.id,
+          tier: active ? "plus" : "free",
+        })
+        .where(eq(userProfiles.stripeCustomerId, sub.customer as string));
+      break;
+    }
+    case "customer.subscription.deleted": {
+      const sub = event.data.object as Stripe.Subscription;
+      await db
+        .update(userProfiles)
+        .set({ stripeSubscriptionId: null, tier: "free" })
+        .where(eq(userProfiles.stripeCustomerId, sub.customer as string));
+      break;
+    }
+  }
+}
+
+export async function createPortalSession(
+  stripeCustomerId: string,
+  returnUrl: string,
+): Promise<string> {
+  const session = await stripe.billingPortal.sessions.create({
+    customer: stripeCustomerId,
+    return_url: returnUrl,
+  });
+  return session.url;
+}

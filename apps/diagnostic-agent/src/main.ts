@@ -4,6 +4,9 @@ import { type AuthContext, authenticateRequest } from "./middleware/auth.ts";
 import { sessions } from "./routes/sessions.ts";
 import { input } from "./routes/input.ts";
 import { chat } from "./routes/chat.ts";
+import { billing, webhookHandler } from "./routes/billing.ts";
+import { reports } from "./routes/reports.ts";
+import { vehicleRoutes } from "./routes/vehicles.ts";
 
 const PORT = parseInt(Deno.env.get("PORT") || "8001");
 const DEV_MODE = Deno.env.get("DEV_MODE") === "true";
@@ -33,6 +36,43 @@ app.use("/diagnostics/*", async (c, next) => {
   await next();
 });
 
+// Auth middleware for billing routes (except webhook)
+app.use("/billing/checkout", async (c, next) => {
+  const authResult = await authenticateRequest(c.req.raw);
+  if (authResult instanceof Response) {
+    return authResult;
+  }
+  c.set("auth", authResult);
+  await next();
+});
+
+app.use("/billing/portal", async (c, next) => {
+  const authResult = await authenticateRequest(c.req.raw);
+  if (authResult instanceof Response) {
+    return authResult;
+  }
+  c.set("auth", authResult);
+  await next();
+});
+
+// Auth middleware for vehicles
+app.use("/vehicles", async (c, next) => {
+  const authResult = await authenticateRequest(c.req.raw);
+  if (authResult instanceof Response) {
+    return authResult;
+  }
+  c.set("auth", authResult);
+  await next();
+});
+app.use("/vehicles/*", async (c, next) => {
+  const authResult = await authenticateRequest(c.req.raw);
+  if (authResult instanceof Response) {
+    return authResult;
+  }
+  c.set("auth", authResult);
+  await next();
+});
+
 app.use("/task", async (c, next) => {
   // Skip auth in dev mode for testing
   if (DEV_MODE) {
@@ -51,7 +91,11 @@ app.use("/task", async (c, next) => {
 // Mount routes
 app.route("/diagnostics", sessions);
 app.route("/diagnostics", input);
+app.route("/diagnostics", reports);
 app.route("/task", chat);
+app.route("/vehicles", vehicleRoutes);
+app.route("/billing", billing);
+app.route("/billing/webhook", webhookHandler);
 
 // Start server
 const isDenoDeploy = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
