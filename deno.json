@@ -34,6 +34,6 @@
   },
   "deploy": {
     "org": "spinsirr",
-    "app": "hmls-api"
+    "app": "hmls-diagnostic-agent"
   }
 }

@@ -38,7 +38,7 @@ input.post("/:id/input", async (c) => {
   }
 
   const body = await c.req.json();
-  const { type, content, filename, contentType, durationSeconds } = body;
+  const { type, content, filename, contentType, durationSeconds, spectrogramBase64 } = body;
 
   // Validate input type
   const validTypes = ["text", "obd", "photo", "audio", "video"];
@@ -100,6 +100,22 @@ input.post("/:id/input", async (c) => {
       String(sessionId),
     );
 
+    // Upload spectrogram PNG alongside audio if provided
+    let spectrogramUrl: string | undefined;
+    if (type === "audio" && spectrogramBase64) {
+      const spectrogramData = Uint8Array.from(
+        atob(spectrogramBase64),
+        (ch) => ch.charCodeAt(0),
+      );
+      const spectrogramUpload = await uploadMedia(
+        spectrogramData,
+        `spectrogram-${filename}.png`,
+        "image/png",
+        String(sessionId),
+      );
+      spectrogramUrl = spectrogramUpload.url;
+    }
+
     await db.insert(diagnosticMedia).values({
       sessionId,
       type: type === "photo" ? "photo" : type === "audio" ? "audio" : "video",
@@ -108,7 +124,13 @@ input.post("/:id/input", async (c) => {
       metadata: { filename, contentType, durationSeconds },
     });
 
-    agentInput = `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
+    if (type === "audio" && spectrogramBase64) {
+      // For audio: trigger spectrogram-based noise analysis
+      agentInput = `[AUDIO uploaded: ${filename}, duration: ${durationSeconds ?? "unknown"}s] A spectrogram has been generated from this vehicle sound recording. Use the analyzeAudioNoise tool with the following spectrogram data to diagnose the sound. Spectrogram base64: ${spectrogramBase64}`;
+    } else {
+      agentInput = `[${type.toUpperCase()} uploaded: ${filename}] URL: ${uploadResult.url}`;
+    }
+    void spectrogramUrl;
   } else {
     agentInput = content;
   }

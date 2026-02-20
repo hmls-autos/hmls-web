@@ -9,22 +9,21 @@ const envSchema = z.object({
 
   // AI
   ANTHROPIC_API_KEY: z.string(),
-  OPENAI_API_KEY: z.string(),
 
   // Auth
   SUPABASE_URL: z.string(),
   SUPABASE_ANON_KEY: z.string(),
   SUPABASE_JWT_SECRET: z.string(),
 
-  // Storage
-  R2_ACCOUNT_ID: z.string(),
-  R2_ACCESS_KEY_ID: z.string(),
-  R2_SECRET_ACCESS_KEY: z.string(),
+  // Storage (optional for local dev)
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET_NAME: z.string().default("diagnostic-media"),
 
-  // Billing
-  STRIPE_SECRET_KEY: z.string(),
-  STRIPE_WEBHOOK_SECRET: z.string(),
+  // Billing (optional for local dev)
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 });
 
 export const env = envSchema.parse(Deno.env.toObject());

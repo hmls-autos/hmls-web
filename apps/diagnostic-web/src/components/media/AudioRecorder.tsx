@@ -44,7 +44,7 @@ function Waveform({ data }: { data: Uint8Array | null }) {
 }
 
 export function AudioRecorder({ onSend, onClose }: AudioRecorderProps) {
-  const { isRecording, duration, analyserData, startRecording, stopRecording } =
+  const { isRecording, isProcessing, duration, analyserData, startRecording, stopRecording } =
     useAudioRecorder();
   const [recording, setRecording] = useState<AudioRecording | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -99,9 +99,22 @@ export function AudioRecorder({ onSend, onClose }: AudioRecorderProps) {
       {/* Waveform */}
       {isRecording && <Waveform data={analyserData} />}
 
-      {/* Preview audio */}
+      {/* Processing spinner */}
+      {isProcessing && (
+        <div className="flex flex-col items-center gap-2 mb-4">
+          <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-sm text-text-secondary">Analyzing sound...</p>
+        </div>
+      )}
+
+      {/* Preview audio + spectrogram */}
       {recording && (
-        <div className="flex justify-center mb-4">
+        <div className="flex flex-col items-center gap-3 mb-4">
+          <img
+            src={`data:image/png;base64,${recording.spectrogramBase64}`}
+            alt="Sound spectrogram"
+            className="w-full max-w-sm rounded-lg border border-border"
+          />
           {/* biome-ignore lint/a11y/useMediaCaption: user-recorded audio preview, no captions needed */}
           <audio
             controls

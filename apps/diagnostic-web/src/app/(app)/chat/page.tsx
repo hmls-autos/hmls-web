@@ -3,6 +3,8 @@
 import { Car, FileDown } from "lucide-react";
 import { redirect } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
+
+const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8001";
 import { useAuth } from "@/components/AuthProvider";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { MessageBubble } from "@/components/chat/MessageBubble";
@@ -33,6 +35,7 @@ export default function ChatPage() {
   const { session, isLoading: authLoading } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sessionIdRef = useRef<number | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [showObdInput, setShowObdInput] = useState(false);
@@ -65,6 +68,80 @@ export default function ChatPage() {
     [session?.access_token],
   );
 
+  const handleAudioSend = useCallback(
+    async (recording: AudioRecording) => {
+      if (!session?.access_token) return;
+
+      // Create a session if we don't have one
+      if (!sessionIdRef.current) {
+        const res = await fetch(`${AGENT_URL}/diagnostics`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (!res.ok) {
+          sendMessage("[Audio recording failed to upload]");
+          return;
+        }
+        const data = await res.json();
+        sessionIdRef.current = data.sessionId;
+      }
+
+      // POST audio + spectrogram to the input endpoint
+      const res = await fetch(
+        `${AGENT_URL}/diagnostics/${sessionIdRef.current}/input`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "audio",
+            content: recording.base64,
+            spectrogramBase64: recording.spectrogramBase64,
+            filename: `recording-${Date.now()}.webm`,
+            contentType: "audio/webm",
+            durationSeconds: recording.durationSeconds,
+          }),
+        },
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        sendMessage(
+          `[Audio recording: ${recording.durationSeconds}s] Analyze this engine/vehicle sound.`,
+        );
+        if (data.response) {
+          // The backend already ran analysis — show the response in chat
+          void data.response;
+        }
+      } else {
+        sendMessage("[Audio upload failed — please try again]");
+      }
+    },
+    [session?.access_token, sendMessage],
+  );
+
+  const handlePhotoCapture = useCallback(
+    (dataUrl: string) => {
+      const base64 = dataUrl.split(",")[1];
+      sendMessage(`[Photo attached] Analyze this image for vehicle diagnostics.`);
+      // TODO: POST to /diagnostics/:id/input with type=photo and base64 content
+      void base64;
+    },
+    [sendMessage],
+  );
+
+  const handleObdSubmit = useCallback(
+    (codes: string[]) => {
+      sendMessage(`OBD-II Codes: ${codes.join(", ")}`);
+    },
+    [sendMessage],
+  );
+
   // Check for upgrade-related errors from the agent
   const isUpgradeError =
     error &&
@@ -86,25 +163,6 @@ export default function ChatPage() {
   if (!session) {
     redirect("/login");
   }
-
-  const handlePhotoCapture = (dataUrl: string) => {
-    const base64 = dataUrl.split(",")[1];
-    sendMessage(`[Photo attached] Analyze this image for vehicle diagnostics.`);
-    // TODO: POST to /diagnostics/:id/input with type=photo and base64 content
-    void base64;
-  };
-
-  const handleAudioSend = (recording: AudioRecording) => {
-    sendMessage(
-      `[Audio recording: ${recording.durationSeconds}s] Analyze this engine/vehicle sound.`,
-    );
-    // TODO: POST to /diagnostics/:id/input with type=audio and base64 content
-    void recording.base64;
-  };
-
-  const handleObdSubmit = (codes: string[]) => {
-    sendMessage(`OBD-II Codes: ${codes.join(", ")}`);
-  };
 
   return (
     <div className="flex flex-col h-dvh">

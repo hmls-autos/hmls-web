@@ -1,7 +1,7 @@
 import { anthropic, createZypherAgent, type Message as ZypherMessage } from "@corespeed/zypher";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { analyzeImageTool } from "./tools/analyzeImage.ts";
-import { transcribeAudioTool } from "./tools/transcribeAudio.ts";
+import { analyzeAudioNoiseTool } from "./tools/analyzeAudioNoise.ts";
 import { extractVideoFramesTool } from "./tools/extractVideoFrames.ts";
 import { lookupObdCodeTool } from "./tools/lookupObdCode.ts";
 import { getMediaTool, saveMediaTool } from "./tools/storage.ts";
@@ -10,7 +10,7 @@ const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
 const allTools = [
   analyzeImageTool,
-  transcribeAudioTool,
+  analyzeAudioNoiseTool,
   extractVideoFramesTool,
   lookupObdCodeTool,
   saveMediaTool,

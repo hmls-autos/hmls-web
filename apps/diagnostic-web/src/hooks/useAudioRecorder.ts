@@ -1,15 +1,19 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { generateSpectrogram } from "@/lib/spectrogram";
 
 export interface AudioRecording {
   blob: Blob;
   base64: string;
   durationSeconds: number;
+  spectrogramBase64: string;
+  spectrogramBlob: Blob;
 }
 
 export function useAudioRecorder() {
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [duration, setDuration] = useState(0);
   const [analyserData, setAnalyserData] = useState<Uint8Array | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -68,7 +72,7 @@ export function useAudioRecorder() {
   }, [updateAnalyser]);
 
   const stopRecording = useCallback((): Promise<AudioRecording> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const recorder = mediaRecorderRef.current;
       if (!recorder) throw new Error("No active recording");
 
@@ -78,13 +82,25 @@ export function useAudioRecorder() {
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         const reader = new FileReader();
-        reader.onloadend = () => {
+        reader.onloadend = async () => {
           const base64 = (reader.result as string).split(",")[1];
-          resolve({
-            blob,
-            base64,
-            durationSeconds: duration,
-          });
+
+          // Generate spectrogram from audio
+          setIsProcessing(true);
+          try {
+            const spectrogram = await generateSpectrogram(blob);
+            resolve({
+              blob,
+              base64,
+              durationSeconds: duration,
+              spectrogramBase64: spectrogram.base64,
+              spectrogramBlob: spectrogram.blob,
+            });
+          } catch (err) {
+            reject(err);
+          } finally {
+            setIsProcessing(false);
+          }
         };
         reader.readAsDataURL(blob);
 
@@ -119,6 +135,7 @@ export function useAudioRecorder() {
 
   return {
     isRecording,
+    isProcessing,
     duration,
     analyserData,
     startRecording,
