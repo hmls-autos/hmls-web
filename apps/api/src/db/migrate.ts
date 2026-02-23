@@ -154,6 +154,59 @@ const migrationStep2 = `
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 `;
 
+const migrationStep3 = `
+-- Mechanic profiles
+CREATE TABLE IF NOT EXISTS providers (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255),
+  phone VARCHAR(20),
+  specialties JSONB,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  service_radius_miles INTEGER DEFAULT 30,
+  home_base_lat NUMERIC(10, 7),
+  home_base_lng NUMERIC(10, 7),
+  timezone VARCHAR(50) NOT NULL DEFAULT 'America/Los_Angeles',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Recurring weekly schedule per mechanic
+CREATE TABLE IF NOT EXISTS provider_availability (
+  id SERIAL PRIMARY KEY,
+  provider_id INTEGER NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+  day_of_week SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  CHECK (start_time < end_time OR end_time = TIME '00:00:00'),
+  UNIQUE (provider_id, day_of_week, start_time)
+);
+
+-- Date-specific overrides (vacations, holidays, special hours)
+CREATE TABLE IF NOT EXISTS provider_schedule_overrides (
+  id SERIAL PRIMARY KEY,
+  provider_id INTEGER NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+  override_date DATE NOT NULL,
+  is_available BOOLEAN NOT NULL DEFAULT false,
+  start_time TIME,
+  end_time TIME,
+  reason TEXT,
+  UNIQUE (provider_id, override_date)
+);
+
+-- Which services each provider can perform
+CREATE TABLE IF NOT EXISTS provider_services (
+  provider_id INTEGER NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+  service_id INTEGER NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+  PRIMARY KEY (provider_id, service_id)
+);
+
+-- RLS: block direct PostgREST access (all access through API)
+ALTER TABLE providers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE provider_availability ENABLE ROW LEVEL SECURITY;
+ALTER TABLE provider_schedule_overrides ENABLE ROW LEVEL SECURITY;
+ALTER TABLE provider_services ENABLE ROW LEVEL SECURITY;
+`;
+
 async function migrate() {
   console.log("Running migrations...\n");
 
@@ -163,6 +216,9 @@ async function migrate() {
 
     console.log("Step 2: Extensions...");
     await sql.unsafe(migrationStep2);
+
+    console.log("Step 3: Provider tables...");
+    await sql.unsafe(migrationStep3);
 
     console.log("Migrations completed successfully!");
   } catch (error) {
