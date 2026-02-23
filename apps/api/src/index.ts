@@ -19,7 +19,7 @@ if (!ANTHROPIC_API_KEY) {
 
 // Warn on optional vars
 for (
-  const key of ["STRIPE_SECRET_KEY", "CALCOM_API_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+  const key of ["STRIPE_SECRET_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
 ) {
   if (!Deno.env.get(key)) {
     console.warn(`[config] Optional env var ${key} is not set`);
@@ -30,8 +30,6 @@ for (
 initChat({
   anthropicApiKey: ANTHROPIC_API_KEY,
   stripeSecretKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
-  calcomApiKey: Deno.env.get("CALCOM_API_KEY") ?? "",
-  calcomEventTypeId: Deno.env.get("CALCOM_EVENT_TYPE_ID") ?? "",
   agentModel: Deno.env.get("AGENT_MODEL"),
 });
 

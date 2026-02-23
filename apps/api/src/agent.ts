@@ -6,8 +6,8 @@ import {
   type ZypherContext,
 } from "@corespeed/zypher";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
-import { createCalcomTools } from "./tools/calcom.ts";
 import { serviceTools } from "./tools/customer.ts";
+import { schedulingTools } from "./tools/scheduling.ts";
 import { createStripeTools } from "./tools/stripe.ts";
 import { estimateTools } from "./skills/estimate/tools.ts";
 import { askUserQuestionTools } from "./tools/ask-user-question.ts";
@@ -20,8 +20,6 @@ const isDenoDeploy = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
 export interface AgentConfig {
   anthropicApiKey: string;
   stripeSecretKey: string;
-  calcomApiKey: string;
-  calcomEventTypeId: string;
   agentModel?: string;
 }
 
@@ -46,7 +44,7 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
     ...serviceTools,
     ...estimateTools,
     ...(config.stripeSecretKey ? createStripeTools(config.stripeSecretKey) : []),
-    ...(config.calcomApiKey ? createCalcomTools(config.calcomApiKey, config.calcomEventTypeId) : []),
+    ...schedulingTools,
   ];
 
   if (isDenoDeploy) {
