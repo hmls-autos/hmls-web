@@ -141,3 +141,39 @@ Optional in web (`.env.local`):
 ```
 NEXT_PUBLIC_AGENT_URL=http://localhost:8080  # defaults to localhost:8080
 ```
+
+## Deployment & Domains
+
+### Production URLs
+
+| App | Domain | Hosting |
+|-----|--------|---------|
+| Web (HMLS) | `https://hmls.autos` | Deno Deploy |
+| API Agent | — | Deno Deploy |
+| Diagnostic Web | `https://diag.hmls.autos` | Vercel (`prj_EzagTZlxfjG6U6h3Cbdt8uWjPwdO`, scope: `spinsirrs-projects`) |
+| Diagnostic Agent | `https://api.diag.hmls.autos` | Deno Deploy |
+
+### Cloudflare DNS (zone: `hmls.autos`)
+
+| Type | Name | Target | Proxy |
+|------|------|--------|-------|
+| CNAME | `diag` | `cname.vercel-dns.com` | DNS only (gray cloud) |
+| CNAME | `api.diag` | `<deno-deploy-project>.deno.dev` | DNS only (gray cloud) |
+
+### Supabase Auth (project: `ddkapmjkubklyzuciscd`)
+
+**URL Configuration** (Dashboard > Authentication > URL Configuration):
+- **Site URL**: `https://hmls.autos`
+- **Redirect URLs**:
+  - `https://hmls.autos`
+  - `http://localhost:3000`
+  - `https://diag.hmls.autos/**`
+  - `http://localhost:3001/**` (diagnostic local dev)
+
+### Vercel Environment Variables (diagnostic-web)
+
+```bash
+vercel env add NEXT_PUBLIC_SUPABASE_URL --scope spinsirrs-projects
+vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY --scope spinsirrs-projects
+vercel env add NEXT_PUBLIC_AGENT_URL --scope spinsirrs-projects  # https://api.diag.hmls.autos
+```
