@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { BookingWidget } from "@/components/BookingWidget";
 
 export default function HeroNew() {
   return (
@@ -20,20 +20,7 @@ export default function HeroNew() {
             rooms. Just convenience.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/chat"
-              className="px-8 py-4 bg-red-primary text-white rounded-lg text-base font-medium hover:bg-red-dark transition-colors"
-            >
-              Get a Free Quote
-            </Link>
-            <Link
-              href="/contact"
-              className="px-8 py-4 border border-text text-text rounded-lg text-base font-medium hover:bg-text hover:text-background transition-colors"
-            >
-              Book a Service
-            </Link>
-          </div>
+          <BookingWidget />
         </div>
 
         {/* Hero Image */}
