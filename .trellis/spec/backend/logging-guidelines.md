@@ -1,51 +1,64 @@
 # Logging Guidelines
 
-> How logging is done in this project.
+> Structured logging, log levels, what to log.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's logging conventions here.
-
-Questions to answer:
-- What logging library do you use?
-- What are the log levels and when to use each?
-- What should be logged?
-- What should NOT be logged (PII, secrets)?
--->
-
-(To be filled by the team)
+No structured logging library is used. The codebase uses `console.log`, `console.error`, and `console.warn` with a **bracketed-prefix convention**. The API app uses Hono's built-in `logger()` middleware for HTTP request logging.
 
 ---
 
-## Log Levels
+## Prefix Format
 
-<!-- When to use each level: debug, info, warn, error -->
+```
+[component] message
+```
 
-(To be filled by the team)
-
----
-
-## Structured Logging
-
-<!-- Log format, required fields -->
-
-(To be filled by the team)
+Where `component` identifies the subsystem.
 
 ---
 
-## What to Log
+## Log Categories
 
-<!-- Important events to log -->
-
-(To be filled by the team)
+| Prefix | Level | Usage | Example |
+|--------|-------|-------|---------|
+| `[server]` | `console.log` | Server lifecycle | `[server] HMLS Agent running on Deno Deploy` |
+| `[agent]` | `console.log` | Agent operations | `[agent] threadId=abc, messages=5, user=123` |
+| `[stripe]` | `console.log` | Stripe API calls | `[stripe] Using cached customer: cus_123` |
+| `[calcom]` | `console.log` | Cal.com API calls | `[calcom] GET /bookings` |
+| `[billing]` | `console.error` | Billing errors | `[billing] Checkout error: ...` |
+| `[config]` | `console.warn` | Missing optional env vars | `[config] Optional env var X is not set` |
+| `[error]` | `console.error` | Global error handler | `[error] NOT_FOUND: Estimate 123 not found` |
 
 ---
 
-## What NOT to Log
+## HTTP Request Logging
 
-<!-- Sensitive data, PII, secrets -->
+The API app uses Hono's built-in logger middleware:
 
-(To be filled by the team)
+```typescript
+// apps/api/src/index.ts
+import { logger } from "hono/logger";
+app.use("*", logger());
+```
+
+All new Hono apps should include this middleware.
+
+---
+
+## Conventions
+
+1. **Always use a bracketed prefix** to identify the subsystem
+2. **Use `console.error` for errors**, `console.warn` for warnings, `console.log` for info
+3. **Include relevant context** in log messages (IDs, counts, status codes)
+4. **Log external API calls** with method and endpoint
+
+---
+
+## Forbidden Patterns
+
+- Do not use `console.log` for error conditions — use `console.error`
+- Do not omit the `[prefix]` bracket on log messages
+- Do not forget to add `logger()` middleware to new Hono apps
