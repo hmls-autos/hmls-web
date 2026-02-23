@@ -5,6 +5,7 @@ import { db, schema } from "./client.ts";
 import servicesRaw from "./seed-data/services.json" with { type: "json" };
 import pricingConfig from "./seed-data/pricing-config.json" with { type: "json" };
 import vehiclePricing from "./seed-data/vehicle-pricing.json" with { type: "json" };
+import providersData from "./seed-data/providers.json" with { type: "json" };
 
 // Convert duration string to labor hours
 function durationToLaborHours(duration: string): string {
@@ -55,8 +56,13 @@ async function batchInsert<T extends Record<string, unknown>>(
 async function seed() {
   console.log("Seeding database...\n");
 
-  // Clear existing data
+  // Clear existing data (FK-safe order: dependents first)
   console.log("Clearing existing data...");
+  await db.delete(schema.providerServices);
+  await db.delete(schema.providerAvailability);
+  await db.delete(schema.providerScheduleOverrides);
+  await db.delete(schema.bookings);
+  await db.delete(schema.providers);
   await db.delete(schema.vehiclePricing);
   await db.delete(schema.pricingConfig);
   await db.delete(schema.services);
@@ -73,17 +79,56 @@ async function seed() {
   console.log(`Inserting ${vehiclePricing.length} vehicle pricing entries...`);
   await batchInsert(schema.vehiclePricing, vehiclePricing, 50);
 
+  // Seed providers
+  console.log("Seeding providers...");
+  for (const p of providersData) {
+    const [provider] = await db.insert(schema.providers).values({
+      name: p.name,
+      email: p.email,
+      phone: p.phone,
+      specialties: p.specialties,
+      isActive: p.isActive,
+      serviceRadiusMiles: p.serviceRadiusMiles,
+      timezone: p.timezone,
+    }).returning();
+
+    // Seed schedule
+    for (const s of p.schedule) {
+      await db.insert(schema.providerAvailability).values({
+        providerId: provider.id,
+        dayOfWeek: s.dayOfWeek,
+        startTime: s.startTime,
+        endTime: s.endTime,
+      });
+    }
+
+    // Link all services if allServices is true
+    if (p.allServices) {
+      const allServices = await db.select({ id: schema.services.id }).from(schema.services);
+      for (const svc of allServices) {
+        await db.insert(schema.providerServices).values({
+          providerId: provider.id,
+          serviceId: svc.id,
+        });
+      }
+    }
+
+    console.log(`  Provider "${provider.name}" seeded with ${p.schedule.length} schedule slots`);
+  }
+
   console.log("\nSeed completed successfully!");
 
   // Summary
   const serviceCount = await db.select().from(schema.services);
   const configCount = await db.select().from(schema.pricingConfig);
   const vehicleCount = await db.select().from(schema.vehiclePricing);
+  const providerCount = await db.select().from(schema.providers);
 
   console.log(`\nSummary:`);
   console.log(`  - Services: ${serviceCount.length}`);
   console.log(`  - Pricing config: ${configCount.length}`);
   console.log(`  - Vehicle pricing: ${vehicleCount.length}`);
+  console.log(`  - Providers: ${providerCount.length}`);
 
   Deno.exit(0);
 }

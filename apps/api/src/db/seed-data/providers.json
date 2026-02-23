@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Spencer",
+    "email": "business@hmls.autos",
+    "phone": "+19492137073",
+    "specialties": ["brakes", "engine", "electrical", "suspension", "ac", "maintenance"],
+    "isActive": true,
+    "serviceRadiusMiles": 30,
+    "timezone": "America/Los_Angeles",
+    "schedule": [
+      { "dayOfWeek": 1, "startTime": "08:00", "endTime": "24:00" },
+      { "dayOfWeek": 2, "startTime": "08:00", "endTime": "24:00" },
+      { "dayOfWeek": 3, "startTime": "08:00", "endTime": "24:00" },
+      { "dayOfWeek": 4, "startTime": "08:00", "endTime": "24:00" },
+      { "dayOfWeek": 5, "startTime": "08:00", "endTime": "24:00" },
+      { "dayOfWeek": 6, "startTime": "09:00", "endTime": "14:00" }
+    ],
+    "allServices": true
+  }
+]
