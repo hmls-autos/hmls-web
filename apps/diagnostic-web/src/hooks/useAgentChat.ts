@@ -9,6 +9,7 @@ export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
+  imageUrl?: string;
 }
 
 interface UseAgentChatOptions {
@@ -47,11 +48,12 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   }, []);
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, options?: { imageUrl?: string }) => {
       const userMsg: Message = {
         id: crypto.randomUUID(),
         role: "user",
         content,
+        imageUrl: options?.imageUrl,
       };
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);

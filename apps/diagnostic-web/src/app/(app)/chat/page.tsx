@@ -3,8 +3,6 @@
 import { Car, FileDown } from "lucide-react";
 import { redirect } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
-
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8001";
 import { useAuth } from "@/components/AuthProvider";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { MessageBubble } from "@/components/chat/MessageBubble";
@@ -15,6 +13,8 @@ import { ObdInput } from "@/components/media/ObdInput";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useAgentChat } from "@/hooks/useAgentChat";
 import type { AudioRecording } from "@/hooks/useAudioRecorder";
+
+const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8001";
 
 function WelcomeScreen() {
   return (
@@ -126,13 +126,120 @@ export default function ChatPage() {
   );
 
   const handlePhotoCapture = useCallback(
-    (dataUrl: string) => {
+    async (dataUrl: string) => {
+      if (!session?.access_token) return;
+
       const base64 = dataUrl.split(",")[1];
-      sendMessage(`[Photo attached] Analyze this image for vehicle diagnostics.`);
-      // TODO: POST to /diagnostics/:id/input with type=photo and base64 content
-      void base64;
+
+      // Create a session if we don't have one
+      if (!sessionIdRef.current) {
+        const res = await fetch(`${AGENT_URL}/diagnostics`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        if (!res.ok) {
+          sendMessage("[Photo upload failed]");
+          return;
+        }
+        const data = await res.json();
+        sessionIdRef.current = data.sessionId;
+      }
+
+      // Upload to backend
+      const res = await fetch(
+        `${AGENT_URL}/diagnostics/${sessionIdRef.current}/input`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "photo",
+            content: base64,
+            filename: `photo-${Date.now()}.jpg`,
+            contentType: "image/jpeg",
+          }),
+        },
+      );
+
+      if (res.ok) {
+        sendMessage(
+          "[Photo attached] Analyze this image for vehicle diagnostics.",
+          { imageUrl: dataUrl },
+        );
+      } else {
+        sendMessage("[Photo upload failed — please try again]");
+      }
     },
-    [sendMessage],
+    [session?.access_token, sendMessage],
+  );
+
+  const handleFilePick = useCallback(
+    (file: File) => {
+      if (!session?.access_token) return;
+
+      // Reject files over 10MB
+      if (file.size > 10 * 1024 * 1024) {
+        sendMessage("[Photo too large — maximum 10MB]");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result as string;
+        const base64 = dataUrl.split(",")[1];
+
+        // Create session if needed
+        if (!sessionIdRef.current) {
+          const res = await fetch(`${AGENT_URL}/diagnostics`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+          });
+          if (!res.ok) {
+            sendMessage("[Photo upload failed]");
+            return;
+          }
+          const data = await res.json();
+          sessionIdRef.current = data.sessionId;
+        }
+
+        // Upload
+        const res = await fetch(
+          `${AGENT_URL}/diagnostics/${sessionIdRef.current}/input`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              type: "photo",
+              content: base64,
+              filename: file.name,
+              contentType: file.type || "image/jpeg",
+            }),
+          },
+        );
+
+        if (res.ok) {
+          sendMessage(
+            "[Photo attached] Analyze this image for vehicle diagnostics.",
+            { imageUrl: dataUrl },
+          );
+        } else {
+          sendMessage("[Photo upload failed — please try again]");
+        }
+      };
+      reader.readAsDataURL(file);
+    },
+    [session?.access_token, sendMessage],
   );
 
   const handleObdSubmit = useCallback(
@@ -203,6 +310,7 @@ export default function ChatPage() {
         onCameraClick={() => setShowCamera(true)}
         onMicClick={() => setShowAudioRecorder(true)}
         onObdClick={() => setShowObdInput(true)}
+        onFilePick={handleFilePick}
       />
 
       {/* Camera overlay */}

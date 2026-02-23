@@ -1,7 +1,7 @@
 "use client";
 
-import { Camera, Cpu, Mic, Send } from "lucide-react";
-import { type RefObject, useState } from "react";
+import { Camera, Cpu, ImagePlus, Mic, Send } from "lucide-react";
+import { type RefObject, useRef, useState } from "react";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -9,6 +9,7 @@ interface ChatInputProps {
   onCameraClick?: () => void;
   onMicClick?: () => void;
   onObdClick?: () => void;
+  onFilePick?: (file: File) => void;
   inputRef?: RefObject<HTMLInputElement | null>;
 }
 
@@ -18,9 +19,11 @@ export function ChatInput({
   onCameraClick,
   onMicClick,
   onObdClick,
+  onFilePick,
   inputRef,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +45,25 @@ export function ChatInput({
           aria-label="Take photo"
         >
           <Camera className="w-5 h-5" />
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file && onFilePick) onFilePick(file);
+            e.target.value = "";
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="p-2.5 rounded-full bg-surface-alt text-text-secondary hover:text-text transition-colors"
+          aria-label="Upload photo"
+        >
+          <ImagePlus className="w-5 h-5" />
         </button>
         <button
           type="button"

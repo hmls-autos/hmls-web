@@ -15,6 +15,14 @@ export function MessageBubble({ message }: { message: Message }) {
             : "bg-surface-alt text-text rounded-bl-md"
         }`}
       >
+        {message.imageUrl && (
+          // biome-ignore lint/performance/noImgElement: data URL or external storage URL, not a static asset
+          <img
+            src={message.imageUrl}
+            alt="Uploaded"
+            className="rounded-lg max-w-full mb-2"
+          />
+        )}
         {isUser ? (
           <p>{message.content}</p>
         ) : (
