@@ -15,11 +15,8 @@ const envSchema = z.object({
   SUPABASE_ANON_KEY: z.string(),
   SUPABASE_JWT_SECRET: z.string(),
 
-  // Storage (optional for local dev)
-  R2_ACCOUNT_ID: z.string().optional(),
-  R2_ACCESS_KEY_ID: z.string().optional(),
-  R2_SECRET_ACCESS_KEY: z.string().optional(),
-  R2_BUCKET_NAME: z.string().default("diagnostic-media"),
+  // Storage (Supabase — service role for backend uploads)
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 
   // Billing (optional for local dev)
   STRIPE_SECRET_KEY: z.string().optional(),

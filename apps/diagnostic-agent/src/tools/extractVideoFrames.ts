@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { getMedia, uploadMedia } from "../lib/r2.ts";
+import { getMedia, uploadMedia } from "../lib/storage.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 
 const extractVideoFramesSchema = z.object({
-  r2Key: z.string().describe("R2 storage key for the video file"),
+  storageKey: z.string().describe("Storage key for the video file"),
   sessionId: z.string().describe("Session ID for storing extracted frames"),
   frameCount: z
     .number()
@@ -16,10 +16,9 @@ export const extractVideoFramesTool = {
   description: "Extract key frames from a video for visual analysis",
   schema: extractVideoFramesSchema,
   execute: async (params: z.infer<typeof extractVideoFramesSchema>) => {
-    const { r2Key, sessionId, frameCount } = params;
+    const { storageKey, sessionId, frameCount } = params;
 
-    // Fetch video from R2
-    const videoData = await getMedia(r2Key);
+    const videoData = await getMedia(storageKey);
 
     // Write to temp file for ffmpeg
     const tempInput = await Deno.makeTempFile({ suffix: ".mp4" });
@@ -46,7 +45,7 @@ export const extractVideoFramesTool = {
         throw new Error("ffmpeg failed to extract frames");
       }
 
-      // Upload extracted frames to R2
+      // Upload extracted frames
       const frameKeys: string[] = [];
       for (let i = 1; i <= frameCount; i++) {
         const framePath = `${tempOutput}/frame_${String(i).padStart(3, "0")}.jpg`;

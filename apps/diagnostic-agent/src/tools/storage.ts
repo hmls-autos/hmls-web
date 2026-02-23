@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getMedia, uploadMedia } from "../lib/r2.ts";
+import { getMedia, uploadMedia } from "../lib/storage.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 
 const saveMediaSchema = z.object({
@@ -10,7 +10,7 @@ const saveMediaSchema = z.object({
 });
 
 const getMediaSchema = z.object({
-  r2Key: z.string().describe("R2 storage key for the media"),
+  storageKey: z.string().describe("Storage key for the media file"),
 });
 
 export const saveMediaTool = {
@@ -32,7 +32,7 @@ export const saveMediaTool = {
 
     return toolResult({
       success: true,
-      r2Key: result.key,
+      storageKey: result.key,
       url: result.url,
     });
   },
@@ -43,9 +43,9 @@ export const getMediaTool = {
   description: "Retrieve media from cloud storage",
   schema: getMediaSchema,
   execute: async (params: z.infer<typeof getMediaSchema>) => {
-    const { r2Key } = params;
+    const { storageKey } = params;
 
-    const data = await getMedia(r2Key);
+    const data = await getMedia(storageKey);
 
     return toolResult({
       success: true,

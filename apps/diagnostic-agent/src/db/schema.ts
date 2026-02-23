@@ -113,7 +113,7 @@ export const diagnosticMedia = pgTable(
       .notNull()
       .references(() => diagnosticSessions.id),
     type: mediaTypeEnum("type").notNull(),
-    r2Key: text("r2_key").notNull(),
+    storageKey: text("r2_key").notNull(),
     creditCost: integer("credit_cost").notNull(),
     metadata: jsonb("metadata"),
     processingStatus: processingStatusEnum("processing_status")

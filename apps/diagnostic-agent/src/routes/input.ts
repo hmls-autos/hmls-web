@@ -7,7 +7,7 @@ import {
   obdCodes,
 } from "../db/schema.ts";
 import { eq } from "drizzle-orm";
-import { uploadMedia } from "../lib/r2.ts";
+import { uploadMedia } from "../lib/storage.ts";
 import type { InputType } from "../lib/stripe.ts";
 import { processCredits } from "../middleware/credits.ts";
 import { checkFreeTierLimit } from "../middleware/tier.ts";
@@ -119,7 +119,7 @@ input.post("/:id/input", async (c) => {
     await db.insert(diagnosticMedia).values({
       sessionId,
       type: type === "photo" ? "photo" : type === "audio" ? "audio" : "video",
-      r2Key: uploadResult.key,
+      storageKey: uploadResult.key,
       creditCost: creditCharged,
       metadata: { filename, contentType, durationSeconds },
     });
