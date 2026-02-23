@@ -150,11 +150,20 @@ CREATE TABLE IF NOT EXISTS invoices (
 );
 `;
 
+const migrationStep2 = `
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+`;
+
 async function migrate() {
   console.log("Running migrations...\n");
 
   try {
+    console.log("Step 1: Core tables...");
     await sql.unsafe(migrations);
+
+    console.log("Step 2: Extensions...");
+    await sql.unsafe(migrationStep2);
+
     console.log("Migrations completed successfully!");
   } catch (error) {
     console.error("Migration failed:", error);
