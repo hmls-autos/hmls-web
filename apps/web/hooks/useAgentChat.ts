@@ -2,7 +2,9 @@
 
 import { type Message as AgentMessage, HttpAgent } from "@ag-ui/client";
 import { type RefObject, useCallback, useRef, useState } from "react";
+import type { BookingConfirmationData } from "@/components/BookingConfirmation";
 import type { QuestionData } from "@/components/QuestionCard";
+import type { SlotPickerData } from "@/components/SlotPicker";
 
 const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
 
@@ -27,7 +29,13 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const [pendingQuestion, setPendingQuestion] = useState<QuestionData | null>(
     null,
   );
+  const [pendingSlotPicker, setPendingSlotPicker] =
+    useState<SlotPickerData | null>(null);
+  const [bookingConfirmations, setBookingConfirmations] = useState<
+    Array<{ id: string; data: BookingConfirmationData }>
+  >([]);
   const agentRef = useRef<HttpAgent | null>(null);
+  const toolCallNamesRef = useRef<Map<string, string>>(new Map());
   const tokenRef = useRef(accessToken);
   tokenRef.current = accessToken;
 
@@ -99,6 +107,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           },
           onToolCallStartEvent: ({ event }) => {
             setCurrentTool(event.toolCallName);
+            toolCallNamesRef.current.set(event.toolCallId, event.toolCallName);
             setTimeout(scrollToBottom, 0);
           },
           onToolCallEndEvent: ({ toolCallName, toolCallArgs }) => {
@@ -106,6 +115,32 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
               setPendingQuestion(toolCallArgs as QuestionData);
             }
             setCurrentTool(null);
+          },
+          onToolCallResultEvent: ({ event }) => {
+            const toolName = toolCallNamesRef.current.get(event.toolCallId);
+            if (!toolName || !event.content) return;
+
+            try {
+              const result = JSON.parse(event.content);
+              if (toolName === "get_availability") {
+                setPendingSlotPicker(result as SlotPickerData);
+              }
+              if (
+                toolName === "create_booking" &&
+                result.success !== undefined
+              ) {
+                setBookingConfirmations((prev) => [
+                  ...prev,
+                  {
+                    id: crypto.randomUUID(),
+                    data: result as BookingConfirmationData,
+                  },
+                ]);
+              }
+            } catch {
+              // ignore parse errors
+            }
+            setTimeout(scrollToBottom, 0);
           },
           onRunFinishedEvent: () => {
             setIsLoading(false);
@@ -141,9 +176,31 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     [sendMessage],
   );
 
+  const selectSlot = useCallback(
+    (providerId: number, time: string) => {
+      setPendingSlotPicker(null);
+      const timeLabel = new Date(time).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+      const dateLabel = new Date(time).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      });
+      sendMessage(
+        `I'd like the ${timeLabel} slot on ${dateLabel} with provider ${providerId}.`,
+      );
+    },
+    [sendMessage],
+  );
+
   const clearMessages = useCallback(() => {
     setMessages([]);
     setPendingQuestion(null);
+    setPendingSlotPicker(null);
+    setBookingConfirmations([]);
     agentRef.current = null;
   }, []);
 
@@ -157,8 +214,11 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     error,
     currentTool,
     pendingQuestion,
+    pendingSlotPicker,
+    bookingConfirmations,
     sendMessage,
     answerQuestion,
+    selectSlot,
     clearMessages,
     clearError,
   };

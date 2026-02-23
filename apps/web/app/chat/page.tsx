@@ -1,21 +1,25 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Loader2, LogIn, Send, Wrench } from "lucide-react";
-import Link from "next/link";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { Loader2, Send, Wrench } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { type FormEvent, Suspense, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { BookingConfirmation } from "@/components/BookingConfirmation";
 import { QuestionCard } from "@/components/QuestionCard";
+import { SlotPicker } from "@/components/SlotPicker";
 import { Markdown } from "@/components/ui/Markdown";
 import { useAgentChat } from "@/hooks/useAgentChat";
 import { toolDisplayNames } from "@/lib/agent-tools";
 
-export default function ChatPage() {
+function ChatPageInner() {
   const prefersReducedMotion = useReducedMotion();
-  const { user, session, isLoading: authLoading } = useAuth();
+  const { session, isLoading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasSentInitial = useRef(false);
 
   const {
     messages,
@@ -23,8 +27,11 @@ export default function ChatPage() {
     error,
     currentTool,
     pendingQuestion,
+    pendingSlotPicker,
+    bookingConfirmations,
     sendMessage,
     answerQuestion,
+    selectSlot,
     clearMessages,
     clearError,
   } = useAgentChat({ accessToken: session?.access_token });
@@ -46,6 +53,36 @@ export default function ChatPage() {
     }
   }, []);
 
+  // Auto-send initial message from query params (hero widget)
+  useEffect(() => {
+    if (hasSentInitial.current || messages.length > 0) return;
+    const service = searchParams.get("service");
+    const date = searchParams.get("date");
+    const location = searchParams.get("location");
+
+    if (service || date || location) {
+      hasSentInitial.current = true;
+      const parts: string[] = [];
+      if (service)
+        parts.push(
+          `I need ${/^[aeiou]/i.test(service) ? "an" : "a"} ${service}`,
+        );
+      if (date) {
+        const formatted = new Date(`${date}T00:00:00`).toLocaleDateString(
+          "en-US",
+          {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          },
+        );
+        parts.push(`on ${formatted}`);
+      }
+      if (location) parts.push(`near ${location}`);
+      sendMessage(`${parts.join(" ")}.`);
+    }
+  }, [searchParams, messages.length, sendMessage]);
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -59,48 +96,6 @@ export default function ChatPage() {
       <main className="flex flex-col h-[calc(100dvh-4rem)] bg-background text-text">
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <div className="text-red-primary animate-pulse">Loading...</div>
-        </div>
-      </main>
-    );
-  }
-
-  // Show login prompt if not authenticated
-  if (!user) {
-    return (
-      <main className="flex flex-col h-[calc(100dvh-4rem)] bg-background text-text">
-        <div className="flex-1 flex flex-col items-center justify-center px-4">
-          <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center max-w-md"
-          >
-            <motion.div
-              initial={prefersReducedMotion ? false : { scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={
-                prefersReducedMotion
-                  ? { duration: 0 }
-                  : { delay: 0.2, type: "spring", stiffness: 200 }
-              }
-              className="w-20 h-20 rounded-full bg-red-light flex items-center justify-center mx-auto mb-6"
-            >
-              <Wrench className="w-10 h-10 text-red-primary" />
-            </motion.div>
-            <h1 className="text-2xl font-display font-bold mb-3">
-              Sign in to Chat
-            </h1>
-            <p className="text-text-secondary mb-8">
-              Log in to access our AI assistant for scheduling, quotes, and
-              service questions.
-            </p>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-red-primary text-white font-medium hover:bg-red-dark transition-colors"
-            >
-              <LogIn className="w-5 h-5" aria-hidden="true" />
-              Sign In
-            </Link>
-          </motion.div>
         </div>
       </main>
     );
@@ -284,6 +279,24 @@ export default function ChatPage() {
             )}
           </AnimatePresence>
 
+          {/* Slot picker */}
+          <AnimatePresence>
+            {pendingSlotPicker && (
+              <SlotPicker
+                data={pendingSlotPicker}
+                onSelect={selectSlot}
+                disabled={isLoading}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Booking confirmations */}
+          <AnimatePresence>
+            {bookingConfirmations.map((bc) => (
+              <BookingConfirmation key={bc.id} data={bc.data} />
+            ))}
+          </AnimatePresence>
+
           {/* Tool indicator */}
           <AnimatePresence>
             {currentTool && currentTool !== "ask_user_question" && (
@@ -376,7 +389,7 @@ export default function ChatPage() {
               autoComplete="off"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message…"
+              placeholder="Type your message..."
               disabled={!isConnected || isLoading || !!pendingQuestion}
               className="flex-1 bg-surface border border-border rounded-xl px-5 py-4 text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary focus-visible:border-red-primary disabled:opacity-50 transition-colors"
             />
@@ -396,5 +409,21 @@ export default function ChatPage() {
         </motion.form>
       </div>
     </main>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex flex-col h-[calc(100dvh-4rem)] bg-background text-text">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-red-primary animate-pulse">Loading...</div>
+          </div>
+        </main>
+      }
+    >
+      <ChatPageInner />
+    </Suspense>
   );
 }
