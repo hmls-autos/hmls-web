@@ -207,6 +207,157 @@ ALTER TABLE provider_schedule_overrides ENABLE ROW LEVEL SECURITY;
 ALTER TABLE provider_services ENABLE ROW LEVEL SECURITY;
 `;
 
+const migrationStep4 = `
+-- Add new columns to existing bookings table
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'provider_id'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN provider_id INTEGER REFERENCES providers(id);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'service_items'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN service_items JSONB NOT NULL DEFAULT '[]'::jsonb;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'symptom_description'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN symptom_description TEXT;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'vehicle_year'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN vehicle_year INTEGER;
+    ALTER TABLE bookings ADD COLUMN vehicle_make VARCHAR(50);
+    ALTER TABLE bookings ADD COLUMN vehicle_model VARCHAR(50);
+    ALTER TABLE bookings ADD COLUMN vehicle_mileage INTEGER;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'estimate_id'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN estimate_id INTEGER REFERENCES estimates(id);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'appointment_end'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN appointment_end TIMESTAMPTZ;
+    ALTER TABLE bookings ADD COLUMN duration_minutes INTEGER NOT NULL DEFAULT 60;
+    ALTER TABLE bookings ADD COLUMN buffer_before_minutes INTEGER NOT NULL DEFAULT 30;
+    ALTER TABLE bookings ADD COLUMN buffer_after_minutes INTEGER NOT NULL DEFAULT 15;
+    ALTER TABLE bookings ADD COLUMN blocked_range TSTZRANGE;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'location_lat'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN location_lat NUMERIC(10, 7);
+    ALTER TABLE bookings ADD COLUMN location_lng NUMERIC(10, 7);
+    ALTER TABLE bookings ADD COLUMN access_instructions TEXT;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'customer_name'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN customer_name VARCHAR(255);
+    ALTER TABLE bookings ADD COLUMN customer_email VARCHAR(255);
+    ALTER TABLE bookings ADD COLUMN customer_phone VARCHAR(20);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'photo_urls'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN photo_urls JSONB;
+    ALTER TABLE bookings ADD COLUMN customer_notes TEXT;
+    ALTER TABLE bookings ADD COLUMN internal_notes TEXT;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'preferred_mechanic_id'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN preferred_mechanic_id INTEGER REFERENCES providers(id);
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bookings' AND column_name = 'updated_at'
+  ) THEN
+    ALTER TABLE bookings ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+  END IF;
+END $$;
+
+-- Trigger: auto-compute blocked_range from scheduled_at + duration + buffers
+-- NOTE: scheduled_at is the appointment start time (existing column name preserved)
+CREATE OR REPLACE FUNCTION compute_blocked_range()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.scheduled_at IS NOT NULL AND NEW.duration_minutes IS NOT NULL THEN
+    NEW.appointment_end := NEW.scheduled_at + make_interval(mins => NEW.duration_minutes);
+    NEW.blocked_range := tstzrange(
+      NEW.scheduled_at - make_interval(mins => NEW.buffer_before_minutes),
+      NEW.appointment_end + make_interval(mins => NEW.buffer_after_minutes),
+      '[)'
+    );
+  END IF;
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_compute_blocked_range ON bookings;
+CREATE TRIGGER trg_compute_blocked_range
+  BEFORE INSERT OR UPDATE ON bookings
+  FOR EACH ROW EXECUTE FUNCTION compute_blocked_range();
+
+-- RLS on bookings (block direct PostgREST access)
+ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+`;
+
+const migrationStep5 = `
+-- Exclusion constraint: no overlapping bookings per provider
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'bookings_no_overlap'
+  ) THEN
+    ALTER TABLE bookings
+      ADD CONSTRAINT bookings_no_overlap
+      EXCLUDE USING gist (
+        provider_id WITH =,
+        blocked_range WITH &&
+      ) WHERE (
+        status NOT IN ('cancelled', 'no_show')
+        AND provider_id IS NOT NULL
+        AND blocked_range IS NOT NULL
+      );
+  END IF;
+END $$;
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_bookings_provider_time
+  ON bookings USING gist (provider_id, blocked_range)
+  WHERE status NOT IN ('cancelled', 'no_show') AND provider_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_bookings_customer
+  ON bookings (customer_id, scheduled_at DESC);
+`;
+
 async function migrate() {
   console.log("Running migrations...\n");
 
@@ -219,6 +370,12 @@ async function migrate() {
 
     console.log("Step 3: Provider tables...");
     await sql.unsafe(migrationStep3);
+
+    console.log("Step 4: Enhanced bookings...");
+    await sql.unsafe(migrationStep4);
+
+    console.log("Step 5: Exclusion constraint + indexes...");
+    await sql.unsafe(migrationStep5);
 
     console.log("Migrations completed successfully!");
   } catch (error) {
