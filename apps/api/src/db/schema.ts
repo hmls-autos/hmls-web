@@ -1,15 +1,24 @@
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import {
   boolean,
+  customType,
   integer,
   jsonb,
   numeric,
   pgTable,
+  primaryKey,
   serial,
   text,
   timestamp,
   unique,
   varchar,
 } from "drizzle-orm/pg-core";
+
+const tstzrange = customType<{ data: string; driverParam: string }>({
+  dataType() {
+    return "tstzrange";
+  },
+});
 
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
@@ -34,6 +43,50 @@ export const customers = pgTable("customers", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const providers = pgTable("providers", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 20 }),
+  specialties: jsonb("specialties"),
+  isActive: boolean("is_active").notNull().default(true),
+  serviceRadiusMiles: integer("service_radius_miles").default(30),
+  homeBaseLat: numeric("home_base_lat", { precision: 10, scale: 7 }),
+  homeBaseLng: numeric("home_base_lng", { precision: 10, scale: 7 }),
+  timezone: varchar("timezone", { length: 50 }).notNull().default("America/Los_Angeles"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const providerAvailability = pgTable("provider_availability", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").references(() => providers.id, { onDelete: "cascade" })
+    .notNull(),
+  dayOfWeek: integer("day_of_week").notNull(),
+  // Stored as TIME in DB; varchar here because Drizzle returns TIME as string
+  startTime: varchar("start_time", { length: 8 }).notNull(),
+  endTime: varchar("end_time", { length: 8 }).notNull(),
+});
+
+export const providerScheduleOverrides = pgTable("provider_schedule_overrides", {
+  id: serial("id").primaryKey(),
+  providerId: integer("provider_id").references(() => providers.id, { onDelete: "cascade" })
+    .notNull(),
+  overrideDate: varchar("override_date", { length: 10 }).notNull(),
+  isAvailable: boolean("is_available").notNull().default(false),
+  startTime: varchar("start_time", { length: 8 }),
+  endTime: varchar("end_time", { length: 8 }),
+  reason: text("reason"),
+});
+
+export const providerServices = pgTable("provider_services", {
+  providerId: integer("provider_id").references(() => providers.id, { onDelete: "cascade" })
+    .notNull(),
+  serviceId: integer("service_id").references(() => services.id, { onDelete: "cascade" })
+    .notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.providerId, table.serviceId] }),
+}));
+
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").references(() => customers.id),
@@ -52,22 +105,10 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const bookings = pgTable("bookings", {
-  id: serial("id").primaryKey(),
-  customerId: integer("customer_id").references(() => customers.id),
-  serviceType: varchar("service_type", { length: 100 }).notNull(),
-  scheduledAt: timestamp("scheduled_at").notNull(),
-  location: text("location"),
-  status: varchar("status", { length: 50 }).notNull().default("pending"),
-  notes: text("notes"),
-  calcomBookingId: varchar("calcom_booking_id", { length: 100 }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
 export const quotes = pgTable("quotes", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").references(() => customers.id),
-  bookingId: integer("booking_id").references(() => bookings.id),
+  bookingId: integer("booking_id").references((): AnyPgColumn => bookings.id),
   stripeQuoteId: varchar("stripe_quote_id", { length: 100 }),
   stripeInvoiceId: varchar("stripe_invoice_id", { length: 100 }), // linked invoice after quote accepted
   items: jsonb("items").notNull(), // [{ service, description, amount }]
@@ -107,6 +148,43 @@ export const estimates = pgTable("estimates", {
   expiresAt: timestamp("expires_at").notNull(),
   convertedToQuoteId: integer("converted_to_quote_id").references(() => quotes.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// NOTE: `scheduledAt` maps to `scheduled_at` — this IS the appointment start time.
+// Column was not renamed to preserve backwards compatibility with existing data.
+export const bookings = pgTable("bookings", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").references(() => customers.id),
+  providerId: integer("provider_id").references(() => providers.id),
+  serviceType: varchar("service_type", { length: 100 }).notNull(),
+  serviceItems: jsonb("service_items").notNull().default([]),
+  symptomDescription: text("symptom_description"),
+  vehicleYear: integer("vehicle_year"),
+  vehicleMake: varchar("vehicle_make", { length: 50 }),
+  vehicleModel: varchar("vehicle_model", { length: 50 }),
+  vehicleMileage: integer("vehicle_mileage"),
+  estimateId: integer("estimate_id").references(() => estimates.id),
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
+  appointmentEnd: timestamp("appointment_end", { withTimezone: true }),
+  durationMinutes: integer("duration_minutes").notNull().default(60),
+  bufferBeforeMinutes: integer("buffer_before_minutes").notNull().default(30),
+  bufferAfterMinutes: integer("buffer_after_minutes").notNull().default(15),
+  blockedRange: tstzrange("blocked_range"),
+  location: text("location"),
+  locationLat: numeric("location_lat", { precision: 10, scale: 7 }),
+  locationLng: numeric("location_lng", { precision: 10, scale: 7 }),
+  accessInstructions: text("access_instructions"),
+  customerName: varchar("customer_name", { length: 255 }),
+  customerEmail: varchar("customer_email", { length: 255 }),
+  customerPhone: varchar("customer_phone", { length: 20 }),
+  photoUrls: jsonb("photo_urls"),
+  customerNotes: text("customer_notes"),
+  internalNotes: text("internal_notes"),
+  preferredMechanicId: integer("preferred_mechanic_id").references(() => providers.id),
+  status: varchar("status", { length: 50 }).notNull().default("requested"),
+  calcomBookingId: varchar("calcom_booking_id", { length: 100 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const invoices = pgTable("invoices", {
