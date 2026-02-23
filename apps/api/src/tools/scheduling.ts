@@ -413,4 +413,174 @@ const getAvailabilityTool = {
   },
 };
 
-export const schedulingTools = [getAvailabilityTool];
+const createBookingTool = {
+  name: "create_booking",
+  description:
+    "Create a work order / appointment booking. Collects vehicle info, service details, " +
+    "location, and contact info. Status starts as 'requested' — the mechanic confirms it.",
+  schema: z.object({
+    // Vehicle
+    vehicleYear: z.number().describe("Vehicle year, e.g. 2020"),
+    vehicleMake: z.string().describe("Vehicle make, e.g. 'Toyota'"),
+    vehicleModel: z.string().describe("Vehicle model, e.g. 'Camry'"),
+    vehicleMileage: z.number().optional().describe("Current mileage"),
+    // Service
+    serviceType: z.string().describe("Service type, e.g. 'Oil Change'"),
+    serviceItems: z.array(z.object({
+      name: z.string().describe("Line item name, e.g. 'Front brake pads + rotors'"),
+      partsNeeded: z.boolean().describe("Whether parts need to be sourced"),
+      partsNote: z.string().optional().describe("Parts preference, e.g. 'OEM preferred'"),
+    })).describe("Specific service line items"),
+    symptomDescription: z.string().optional().describe("Customer's symptom description"),
+    // Estimate reference
+    estimateId: z.number().optional().describe("ID of a previously generated estimate"),
+    // Scheduling
+    providerId: z.number().describe("Provider ID from get_availability results"),
+    appointmentStart: z.string().describe("Appointment start time in ISO 8601 format"),
+    durationMinutes: z.number().describe("Service duration in minutes"),
+    // Location
+    address: z.string().describe("Service location address"),
+    locationLat: z.number().optional().describe("Location latitude"),
+    locationLng: z.number().optional().describe("Location longitude"),
+    accessInstructions: z.string().optional().describe("Gate codes, parking instructions, etc."),
+    // Customer (for guests)
+    customerId: z.number().optional().describe(
+      "INTERNAL: customer ID from auth context. Do not ask the customer for this.",
+    ),
+    customerName: z.string().optional().describe("Guest customer name"),
+    customerEmail: z.string().optional().describe("Guest customer email"),
+    customerPhone: z.string().optional().describe("Guest customer phone"),
+    // Media
+    photoUrls: z.array(z.string()).optional().describe("URLs of photos/videos of the issue"),
+    // Notes
+    customerNotes: z.string().optional().describe("Customer's additional notes"),
+    internalNotes: z.string().optional().describe(
+      "Agent's internal assessment (not shown to customer)",
+    ),
+  }),
+  execute: async (
+    params: {
+      vehicleYear: number;
+      vehicleMake: string;
+      vehicleModel: string;
+      vehicleMileage?: number;
+      serviceType: string;
+      serviceItems: Array<{ name: string; partsNeeded: boolean; partsNote?: string }>;
+      symptomDescription?: string;
+      estimateId?: number;
+      providerId: number;
+      appointmentStart: string;
+      durationMinutes: number;
+      address: string;
+      locationLat?: number;
+      locationLng?: number;
+      accessInstructions?: string;
+      customerId?: number;
+      customerName?: string;
+      customerEmail?: string;
+      customerPhone?: string;
+      photoUrls?: string[];
+      customerNotes?: string;
+      internalNotes?: string;
+    },
+    _ctx: unknown,
+  ) => {
+    // Resolve customer: authenticated or guest upsert
+    let resolvedCustomerId = params.customerId ?? null;
+    if (!resolvedCustomerId && params.customerEmail) {
+      const [existing] = await db
+        .select()
+        .from(schema.customers)
+        .where(eq(schema.customers.email, params.customerEmail))
+        .limit(1);
+      if (existing) {
+        resolvedCustomerId = existing.id;
+      } else {
+        const [created] = await db
+          .insert(schema.customers)
+          .values({
+            name: params.customerName || null,
+            email: params.customerEmail,
+            phone: params.customerPhone || null,
+          })
+          .returning();
+        resolvedCustomerId = created.id;
+      }
+    }
+
+    try {
+      const [booking] = await db
+        .insert(schema.bookings)
+        .values({
+          customerId: resolvedCustomerId,
+          providerId: params.providerId,
+          serviceType: params.serviceType,
+          serviceItems: params.serviceItems,
+          symptomDescription: params.symptomDescription ?? null,
+          vehicleYear: params.vehicleYear,
+          vehicleMake: params.vehicleMake,
+          vehicleModel: params.vehicleModel,
+          vehicleMileage: params.vehicleMileage ?? null,
+          estimateId: params.estimateId ?? null,
+          scheduledAt: new Date(params.appointmentStart),
+          durationMinutes: params.durationMinutes,
+          location: params.address,
+          locationLat: params.locationLat?.toString() ?? null,
+          locationLng: params.locationLng?.toString() ?? null,
+          accessInstructions: params.accessInstructions ?? null,
+          customerName: params.customerName ?? null,
+          customerEmail: params.customerEmail ?? null,
+          customerPhone: params.customerPhone ?? null,
+          photoUrls: params.photoUrls ?? null,
+          customerNotes: params.customerNotes ?? null,
+          internalNotes: params.internalNotes ?? null,
+          status: "requested",
+        })
+        .returning();
+
+      // Look up provider name for the response
+      const [provider] = await db
+        .select({ name: schema.providers.name })
+        .from(schema.providers)
+        .where(eq(schema.providers.id, params.providerId))
+        .limit(1);
+
+      console.log(
+        `[scheduling] Booking created: #${booking.id} for provider ${params.providerId}`,
+      );
+
+      return toolResult({
+        success: true,
+        bookingId: booking.id,
+        status: "requested",
+        providerName: provider?.name ?? "Your mechanic",
+        appointmentStart: booking.scheduledAt?.toISOString(),
+        appointmentEnd: booking.appointmentEnd?.toISOString(),
+        vehicle: `${params.vehicleYear} ${params.vehicleMake} ${params.vehicleModel}`,
+        serviceType: params.serviceType,
+        location: params.address,
+        message: `Booking requested! ${
+          provider?.name ?? "Your mechanic"
+        } will confirm your appointment shortly.`,
+      });
+    } catch (error: unknown) {
+      // Handle exclusion constraint violation (overlap)
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        (error as { code: string }).code === "23P01"
+      ) {
+        console.log(`[scheduling] Overlap detected for provider ${params.providerId}`);
+        return toolResult({
+          success: false,
+          error: "time_conflict",
+          message:
+            "That time slot was just taken. Please check availability again for updated slots.",
+        });
+      }
+      throw error;
+    }
+  },
+};
+
+export const schedulingTools = [getAvailabilityTool, createBookingTool];
