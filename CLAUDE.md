@@ -20,6 +20,10 @@ deno task lint                   # Deno lint (excludes web)
 deno task fmt:check              # Deno format check (excludes web)
 
 # Database (Supabase PostgreSQL — no local DB needed)
+deno task --cwd apps/api db:push      # Push schema changes to DB (dev)
+deno task --cwd apps/api db:generate  # Generate migration files
+deno task --cwd apps/api db:migrate   # Apply migrations (production)
+deno task --cwd apps/api db:studio    # Drizzle Studio GUI
 deno task --cwd apps/api db:seed      # Seed data
 ```
 
@@ -41,7 +45,7 @@ shared deps go there, app-specific deps in each app's `deno.json`.
 ```
 apps/
 ├── web/                # Next.js 16 frontend (React 19, Tailwind CSS 4) → Deno Deploy
-├── api/                # Deno AI agent (Zypher framework, Claude Sonnet 4, AG-UI protocol) → Deno Deploy
+├── api/                # Deno AI agent (Zypher framework, Gemini 2.5 Flash, AG-UI protocol) → Deno Deploy
 └── diagnostic-agent/   # Deno diagnostic agent → Deno Deploy
 packages/
 └── shared/             # @hmls/shared — shared utilities (errors, toolResult, db client)
@@ -84,12 +88,13 @@ packages/
 
 **Database Schema** (`apps/api/src/db/schema.ts`): Drizzle ORM
 
-- customers, conversations, messages, bookings, services, quotes, estimates
+- customers, conversations, messages, bookings, quotes, estimates
 - `pricingConfig` / `vehiclePricing` tables for dynamic pricing
+- `olpVehicles` / `olpLaborTimes` tables for OLP labor data
 
 **Seed Data** (`apps/api/src/db/seed-data/`): JSON files imported by `seed.ts`
 
-- `services.json`, `pricing-config.json`, `vehicle-pricing.json`
+- `pricing-config.json`, `vehicle-pricing.json`, `providers.json`
 
 **PDF Generation** (`apps/api/src/pdf/`): React-PDF templates served by API routes
 
@@ -130,16 +135,25 @@ Required in `.env`:
 
 ```
 DATABASE_URL=postgres://postgres.[ref]:[password]@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
-ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=...              # Google AI Studio key for Gemini 2.5 Flash
 STRIPE_SECRET_KEY=sk_test_...
-CALCOM_API_KEY=cal_live_...
-CALCOM_EVENT_TYPE_ID=123456
 ```
 
 Optional in web (`.env.local`):
 
 ```
 NEXT_PUBLIC_AGENT_URL=http://localhost:8080  # defaults to localhost:8080
+```
+
+## Deno Deploy CLI
+
+Use `deno deploy` (NOT `deployctl` — deprecated):
+
+```bash
+# Environment variables
+deno deploy env list --app hmls-api --org spinsirr
+deno deploy env add <KEY> <VALUE> --app hmls-api --org spinsirr --secret
+deno deploy env delete <KEY> --app hmls-api --org spinsirr
 ```
 
 ## Deployment & Domains
