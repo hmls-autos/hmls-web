@@ -197,3 +197,35 @@ export const invoices = pgTable("invoices", {
   status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, sent, paid
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// --- OLP (Open Labor Project) reference data ---
+
+export const olpVehicles = pgTable("olp_vehicles", {
+  id: serial("id").primaryKey(),
+  make: varchar("make", { length: 100 }).notNull(),
+  makeSlug: varchar("make_slug", { length: 100 }).notNull(),
+  model: varchar("model", { length: 100 }).notNull(),
+  modelSlug: varchar("model_slug", { length: 100 }).notNull(),
+  yearRange: varchar("year_range", { length: 20 }).notNull(),
+  yearStart: integer("year_start").notNull(),
+  yearEnd: integer("year_end").notNull(),
+  engine: varchar("engine", { length: 50 }).notNull(),
+  engineSlug: varchar("engine_slug", { length: 50 }).notNull(),
+  fuelType: varchar("fuel_type", { length: 20 }),
+  timingType: varchar("timing_type", { length: 20 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => ({
+  uniqueVehicle: unique().on(table.makeSlug, table.modelSlug, table.yearRange, table.engineSlug),
+}));
+
+export const olpLaborTimes = pgTable("olp_labor_times", {
+  id: serial("id").primaryKey(),
+  vehicleId: integer("vehicle_id").references(() => olpVehicles.id, { onDelete: "cascade" })
+    .notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  slug: varchar("slug", { length: 200 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  laborHours: numeric("labor_hours", { precision: 5, scale: 2 }).notNull(),
+}, (table) => ({
+  uniqueJob: unique().on(table.vehicleId, table.slug),
+}));

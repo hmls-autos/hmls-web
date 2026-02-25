@@ -93,7 +93,7 @@ function ChatPageInner() {
   // Show loading state
   if (authLoading) {
     return (
-      <main className="flex flex-col h-[calc(100dvh-4rem)] bg-background text-text">
+      <main className="flex flex-col flex-1 bg-background text-text">
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <div className="text-red-primary animate-pulse">Loading...</div>
         </div>
@@ -102,7 +102,7 @@ function ChatPageInner() {
   }
 
   return (
-    <main className="flex flex-col h-[calc(100dvh-4rem)] bg-background text-text">
+    <main className="flex flex-col flex-1 bg-background text-text">
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full pt-8 pb-4 px-4">
         {/* Header */}
         <motion.div
@@ -416,7 +416,7 @@ export default function ChatPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex flex-col h-[calc(100dvh-4rem)] bg-background text-text">
+        <main className="flex flex-col flex-1 bg-background text-text">
           <div className="flex-1 flex items-center justify-center">
             <div className="text-red-primary animate-pulse">Loading...</div>
           </div>

@@ -45,11 +45,14 @@ export function BookingWidget() {
       className="flex flex-col sm:flex-row gap-3 w-full max-w-2xl mx-auto bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/20"
     >
       <select
+        name="service"
+        aria-label="Service type"
         value={service}
         onChange={(e) => setService(e.target.value)}
-        className="flex-1 rounded-xl bg-white px-4 py-3 text-sm text-zinc-900 border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary appearance-none cursor-pointer"
+        style={{ colorScheme: "light" }}
+        className="flex-1 rounded-xl bg-white px-4 py-3 text-sm text-zinc-900 border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-primary appearance-none cursor-pointer"
       >
-        <option value="">Select service...</option>
+        <option value="">Select service\u2026</option>
         {services.map((s) => (
           <option key={s.value} value={s.value}>
             {s.label}
@@ -59,20 +62,26 @@ export function BookingWidget() {
 
       <input
         type="date"
+        name="date"
+        aria-label="Preferred date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
         min={today}
         max={maxDate}
-        className="flex-1 rounded-xl bg-white px-4 py-3 text-sm text-zinc-900 border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary"
-        placeholder="Pick a date"
+        style={{ colorScheme: "light" }}
+        className="flex-1 rounded-xl bg-white px-4 py-3 text-sm text-zinc-900 border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-primary"
       />
 
       <input
         type="text"
+        name="location"
+        aria-label="Service location"
+        autoComplete="street-address"
         value={location}
         onChange={(e) => setLocation(e.target.value)}
-        placeholder="ZIP or address"
-        className="flex-1 rounded-xl bg-white px-4 py-3 text-sm text-zinc-900 border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary"
+        placeholder="ZIP or address\u2026"
+        style={{ colorScheme: "light" }}
+        className="flex-1 rounded-xl bg-white px-4 py-3 text-sm text-zinc-900 border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-primary"
       />
 
       <motion.button

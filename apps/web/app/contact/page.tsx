@@ -1,6 +1,6 @@
 import { Mail, MapPin, Phone } from "lucide-react";
 import type { Metadata } from "next";
-import FooterNew from "@/components/FooterNew";
+import Footer from "@/components/Footer";
 import { FadeIn } from "@/components/ui/Animations";
 import LazyMap from "@/components/ui/LazyMap";
 
@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 export default function Contact() {
   return (
-    <main className="flex flex-col items-center bg-background text-text overflow-x-hidden">
-      <section className="w-full max-w-3xl px-6 pt-16 pb-20 flex-grow">
+    <main className="flex-1 flex flex-col items-center bg-background text-text">
+      <section className="w-full max-w-3xl px-6 pt-12 pb-12 flex-1">
         <div className="flex flex-col items-center text-center">
           <FadeIn direction="up">
             <div className="inline-block mb-4 px-4 py-1.5 rounded-full border border-red-primary/30 bg-red-light text-red-primary text-xs tracking-widest uppercase font-display font-semibold">
@@ -79,7 +79,7 @@ export default function Contact() {
         </div>
       </section>
 
-      <FooterNew />
+      <Footer />
     </main>
   );
 }

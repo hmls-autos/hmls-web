@@ -3,6 +3,7 @@
 import { LogIn, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import MobileNav from "./MobileNav";
 import ThemeToggle from "./ThemeToggle";
@@ -17,13 +18,33 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user, supabase, isLoading } = useAuth();
   const isUserLoggedIn = !!user;
+  const isHome = pathname === "/";
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!isHome) return;
+    const onScroll = () => setScrolled(window.scrollY > 50);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isHome]);
+
+  const isTransparent = isHome && !scrolled;
 
   return (
-    <header className="sticky top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-border">
+    <header
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        isTransparent
+          ? "bg-transparent border-b border-transparent"
+          : "bg-background/90 backdrop-blur-md border-b border-border"
+      }`}
+    >
       <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link
           href="/"
-          className="text-xl font-display font-bold tracking-tight text-text"
+          className={`text-xl font-display font-bold tracking-tight transition-colors ${
+            isTransparent ? "text-white" : "text-text"
+          }`}
         >
           HMLS<span className="text-red-primary">.</span>
         </Link>
@@ -36,8 +57,10 @@ export default function Navbar() {
               href={href}
               className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
                 pathname === href
-                  ? "text-red-primary"
-                  : "text-text-secondary hover:text-text"
+                  ? "text-red-400"
+                  : isTransparent
+                    ? "text-white/70 hover:text-white"
+                    : "text-text-secondary hover:text-text"
               }`}
             >
               {label}
@@ -49,7 +72,11 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => supabase.auth.signOut()}
-                className="flex items-center gap-2 text-sm text-text-secondary hover:text-text transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary"
+                className={`flex items-center gap-2 text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
+                  isTransparent
+                    ? "text-white/70 hover:text-white"
+                    : "text-text-secondary hover:text-text"
+                }`}
               >
                 <LogOut className="w-4 h-4" />
                 Sign Out
@@ -57,7 +84,11 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-border text-text hover:border-red-primary hover:text-red-primary transition-colors"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  isTransparent
+                    ? "border-white/30 text-white hover:border-white/60"
+                    : "border-border text-text hover:border-red-500/50 hover:text-red-400"
+                }`}
               >
                 <LogIn className="w-4 h-4" />
                 Sign In
@@ -65,14 +96,14 @@ export default function Navbar() {
             ))}
           <Link
             href="/chat"
-            className="px-5 py-2 bg-red-primary text-white text-sm font-medium rounded-lg hover:bg-red-dark transition-colors"
+            className="px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
           >
             Get a Quote
           </Link>
         </div>
 
         {/* Mobile nav */}
-        <MobileNav />
+        <MobileNav isTransparent={isTransparent} />
       </nav>
     </header>
   );

@@ -1,11 +1,11 @@
-import FooterNew from "@/components/FooterNew";
+import Footer from "@/components/Footer";
 import { JsonLd } from "@/components/JsonLd";
-import AboutNew from "@/components/sections/AboutNew";
-import CTANew from "@/components/sections/CTANew";
-import HeroNew from "@/components/sections/HeroNew";
+import About from "@/components/sections/About";
+import CTA from "@/components/sections/CTA";
+import Hero from "@/components/sections/Hero";
 import HowItWorks from "@/components/sections/HowItWorks";
-import ServiceAreaNew from "@/components/sections/ServiceAreaNew";
-import ServicesNew from "@/components/sections/ServicesNew";
+import ServiceArea from "@/components/sections/ServiceArea";
+import Services from "@/components/sections/Services";
 import TrustBar from "@/components/sections/TrustBar";
 
 export default function Home() {
@@ -37,14 +37,14 @@ export default function Home() {
             "Expert mobile mechanic service in Orange County. We come to you.",
         }}
       />
-      <HeroNew />
+      <Hero />
       <TrustBar />
       <HowItWorks />
-      <ServicesNew />
-      <AboutNew />
-      <ServiceAreaNew />
-      <CTANew />
-      <FooterNew />
+      <Services />
+      <About />
+      <ServiceArea />
+      <CTA />
+      <Footer />
     </main>
   );
 }
