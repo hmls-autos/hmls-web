@@ -80,20 +80,17 @@ export async function getVehicleMultiplier(
 
 export async function calculatePrice(
   service: ServiceInput,
-  vehicleMultiplier: number,
 ): Promise<LineItem> {
   const config = await getPricingConfig();
 
   let laborCost = 0;
   let partsCost = 0;
 
-  // Labor calculation: hourlyRate × laborHours × vehicleMultiplier
+  // Labor calculation: hourlyRate × laborHours (OLP hours are already vehicle-specific)
   const laborHours = service.laborHours;
 
   if (laborHours) {
-    laborCost = Math.round(
-      config.hourlyRate * laborHours * vehicleMultiplier,
-    );
+    laborCost = Math.round(config.hourlyRate * laborHours);
   }
 
   // Parts markup (tiered on OEM cost)

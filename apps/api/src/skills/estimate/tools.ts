@@ -4,15 +4,24 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db, schema } from "../../db/client.ts";
 import { eq } from "drizzle-orm";
-import { calculatePrice, getPricingConfig, getVehicleMultiplier } from "./pricing.ts";
+import { calculatePrice, getPricingConfig } from "./pricing.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 
 export const createEstimateTool = {
   name: "create_estimate",
   description:
-    "Generate a downloadable PDF estimate for a customer. Requires existing customer with vehicle info. Returns download and shareable URLs.",
+    "Generate a price estimate for services. Provide vehicle info directly (year/make/model). " +
+    "If the user is a known customer, also pass customerId to save the estimate to their account.",
   schema: z.object({
-    customerId: z.number().describe("Customer ID from database"),
+    customerId: z
+      .number()
+      .optional()
+      .describe("Customer ID from database (if known). Omit for anonymous users."),
+    vehicle: z.object({
+      year: z.number().describe("Vehicle year, e.g. 2015"),
+      make: z.string().describe("Vehicle make, e.g. 'Honda'"),
+      model: z.string().describe("Vehicle model, e.g. 'Civic'"),
+    }).describe("Vehicle the estimate is for"),
     services: z
       .array(
         z.object({
@@ -37,7 +46,8 @@ export const createEstimateTool = {
       .describe("After 8PM appointment requested"),
   }),
   execute: async (params: {
-    customerId: number;
+    customerId?: number;
+    vehicle: { year: number; make: string; model: string };
     services: {
       name: string;
       description: string;
@@ -49,39 +59,20 @@ export const createEstimateTool = {
     isRush?: boolean;
     isAfterHours?: boolean;
   }, _ctx: unknown) => {
-    // 1. Get customer with vehicle info
-    const [customer] = await db
-      .select()
-      .from(schema.customers)
-      .where(eq(schema.customers.id, params.customerId))
-      .limit(1);
-
-    if (!customer) {
-      return toolResult({ success: false, error: "Customer not found" });
+    // 1. Resolve customer if provided
+    let customer;
+    if (params.customerId) {
+      const [found] = await db
+        .select()
+        .from(schema.customers)
+        .where(eq(schema.customers.id, params.customerId))
+        .limit(1);
+      customer = found;
     }
 
-    const vehicleInfo = customer.vehicleInfo as {
-      make?: string;
-      model?: string;
-      year?: string;
-    } | null;
-
-    if (!vehicleInfo?.make) {
-      return toolResult({
-        success: false,
-        error: "Vehicle info required. Please add vehicle make/model first.",
-      });
-    }
-
-    // 2. Get vehicle multiplier
-    const multiplier = await getVehicleMultiplier(
-      vehicleInfo.make,
-      vehicleInfo.model,
-    );
-
-    // 3. Calculate pricing for each service
+    // 2. Calculate pricing for each service (labor hours from OLP are already vehicle-specific)
     const items = await Promise.all(
-      params.services.map((s) => calculatePrice(s, multiplier)),
+      params.services.map((s) => calculatePrice(s)),
     );
 
     // 4. Add fees
@@ -118,33 +109,45 @@ export const createEstimateTool = {
       Date.now() + validDays * 24 * 60 * 60 * 1000,
     );
 
-    // 7. Create estimate record
-    const [estimate] = await db
-      .insert(schema.estimates)
-      .values({
-        customerId: params.customerId,
-        items: items,
-        subtotal,
-        priceRangeLow: rangeLow,
-        priceRangeHigh: rangeHigh,
-        notes: params.notes,
-        shareToken,
-        validDays,
+    // 7. Save to DB if we have a customer, otherwise return pricing only
+    if (customer) {
+      const [estimate] = await db
+        .insert(schema.estimates)
+        .values({
+          customerId: customer.id,
+          items: items,
+          subtotal,
+          priceRangeLow: rangeLow,
+          priceRangeHigh: rangeHigh,
+          notes: params.notes,
+          shareToken,
+          validDays,
+          expiresAt,
+        })
+        .returning();
+
+      const baseUrl = "/api/estimates";
+
+      return toolResult({
+        success: true,
+        estimateId: estimate.id,
+        vehicle: `${params.vehicle.year} ${params.vehicle.make} ${params.vehicle.model}`,
+        downloadUrl: `${baseUrl}/${estimate.id}/pdf`,
+        shareUrl: `${baseUrl}/${estimate.id}/pdf?token=${shareToken}`,
+        subtotal: subtotal / 100,
+        priceRange: `$${(rangeLow / 100).toFixed(2)} - $${(rangeHigh / 100).toFixed(2)}`,
         expiresAt,
-      })
-      .returning();
+      });
+    }
 
-    // 8. Return result with download links
-    const baseUrl = "/api/estimates";
-
+    // Anonymous user — return pricing without saving
     return toolResult({
       success: true,
-      estimateId: estimate.id,
-      downloadUrl: `${baseUrl}/${estimate.id}/pdf`,
-      shareUrl: `${baseUrl}/${estimate.id}/pdf?token=${shareToken}`,
+      vehicle: `${params.vehicle.year} ${params.vehicle.make} ${params.vehicle.model}`,
+      items: items.map((i) => ({ name: i.name, price: i.price / 100 })),
       subtotal: subtotal / 100,
       priceRange: `$${(rangeLow / 100).toFixed(2)} - $${(rangeHigh / 100).toFixed(2)}`,
-      expiresAt,
+      note: "Estimate not saved — customer not signed in.",
     });
   },
 };
