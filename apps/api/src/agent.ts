@@ -1,10 +1,10 @@
 import {
   createZypherAgent,
   type Message as ZypherMessage,
-  OpenAIModelProvider,
   ZypherAgent,
   type ZypherContext,
 } from "@corespeed/zypher";
+import { GeminiOpenAIProvider } from "./llm/gemini-openai-provider.ts";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { schedulingTools } from "./tools/scheduling.ts";
 import { createStripeTools } from "./tools/stripe.ts";
@@ -36,7 +36,7 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
   const modelId = config.agentModel || DEFAULT_MODEL;
   console.log(`[agent] Creating HMLS agent with model: ${modelId}`);
 
-  const modelProvider = new OpenAIModelProvider({
+  const modelProvider = new GeminiOpenAIProvider({
     model: modelId,
     apiKey: config.googleApiKey,
     baseUrl: GEMINI_BASE_URL,

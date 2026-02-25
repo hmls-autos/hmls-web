@@ -13,13 +13,13 @@
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/toml@^1.0.3": "1.0.11",
     "jsr:@std/yaml@^1.0.5": "1.0.11",
+    "jsr:@zypher/agent@*": "0.9.5",
     "jsr:@zypher/agent@0.9": "0.9.5",
     "jsr:@zypher/agent@0.9.5": "0.9.5",
     "jsr:@zypher/agui@0.3.0": "0.3.0",
     "jsr:@zypher/skills@1": "1.0.0",
     "jsr:@zypher/utils@0.1": "0.1.0",
     "npm:@ag-ui/core@^0.0.42": "0.0.42",
-    "npm:@anthropic-ai/sdk@0.74.0": "0.74.0_zod@4.3.6",
     "npm:@anthropic-ai/sdk@~0.71.2": "0.71.2_zod@4.3.6",
     "npm:@aws-sdk/client-s3@^3.974.0": "3.995.0",
     "npm:@aws-sdk/s3-request-presigner@^3.974.0": "3.990.0",
@@ -31,6 +31,7 @@
     "npm:hono@^4.11.9": "4.11.9",
     "npm:nanoid@^5.1.5": "5.1.6",
     "npm:openai@6.9.1": "6.9.1_zod@4.3.6",
+    "npm:openai@^6.9.1": "6.9.1_zod@4.3.6",
     "npm:postgres@*": "3.4.8",
     "npm:postgres@^3.4.8": "3.4.8",
     "npm:react@^19.2.3": "19.2.3",
@@ -100,11 +101,11 @@
         "jsr:@std/path",
         "jsr:@zypher/skills",
         "jsr:@zypher/utils",
-        "npm:@anthropic-ai/sdk@~0.71.2",
+        "npm:@anthropic-ai/sdk",
         "npm:@aws-sdk/client-s3",
         "npm:@aws-sdk/s3-request-presigner",
         "npm:@modelcontextprotocol/sdk",
-        "npm:openai",
+        "npm:openai@6.9.1",
         "npm:rxjs",
         "npm:rxjs-for-await@1",
         "npm:xstate",
@@ -142,17 +143,6 @@
     },
     "@anthropic-ai/sdk@0.71.2_zod@4.3.6": {
       "integrity": "sha512-TGNDEUuEstk/DKu0/TflXAEt+p+p/WhTlFzEnoosvbaDU2LTjm42igSdlL0VijrKpWejtOKxX0b8A7uc+XiSAQ==",
-      "dependencies": [
-        "json-schema-to-ts",
-        "zod@4.3.6"
-      ],
-      "optionalPeers": [
-        "zod@4.3.6"
-      ],
-      "bin": true
-    },
-    "@anthropic-ai/sdk@0.74.0_zod@4.3.6": {
-      "integrity": "sha512-srbJV7JKsc5cQ6eVuFzjZO7UR3xEPJqPamHFIe29bs38Ij2IripoAhC0S5NslNbaFUYqBKypmmpzMTpqfHEUDw==",
       "dependencies": [
         "json-schema-to-ts",
         "zod@4.3.6"
@@ -2571,10 +2561,10 @@
     "members": {
       "apps/api": {
         "dependencies": [
-          "npm:@anthropic-ai/sdk@0.74.0",
           "npm:@react-pdf/renderer@^4.3.2",
           "npm:@supabase/supabase-js@^2.95.0",
           "npm:nanoid@^5.1.5",
+          "npm:openai@^6.9.1",
           "npm:react@^19.2.3"
         ]
       },
