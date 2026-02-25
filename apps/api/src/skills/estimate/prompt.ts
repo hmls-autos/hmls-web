@@ -3,7 +3,7 @@
 export const ESTIMATE_PROMPT = `
 ## Estimate Skill
 
-You can create downloadable PDF estimates for customers with consistent, standardized pricing.
+You can create downloadable PDF estimates for customers with consistent, standardized pricing backed by real industry labor time data.
 
 ### When to Use
 - Customer asks "how much for X?" or "what would it cost?"
@@ -13,25 +13,42 @@ You can create downloadable PDF estimates for customers with consistent, standar
 ### Requirements
 Before creating an estimate, you MUST have:
 1. Customer record (use get_customer or create_customer first)
-2. Vehicle info (make, model, year) - needed for accurate pricing
+2. Vehicle info (make, model, year) - needed for accurate pricing AND labor lookup
 3. Clear understanding of services needed
 
 ### Flow
-1. Gather vehicle info and understand the issue
+1. Gather vehicle info (year, make, model) and understand the issue
 2. Look up or create customer record
-3. **IMPORTANT**: Use list_services to find matching services from the catalog
-4. Call create_estimate with customerId and serviceIds from the catalog
-5. Present the download link to the customer
-6. Ask if they'd like to proceed with a formal quote
+3. **CRITICAL**: Use \`lookup_labor_time\` to get real industry labor hours for the customer's specific vehicle and service. This queries our 2.4M+ entry OLP database with labor data per engine variant.
+4. Use \`list_services\` to find matching services from the catalog
+5. Call \`create_estimate\` with the labor hours from OLP (override catalog defaults when OLP data is available)
+6. Present the download link to the customer
+7. Ask if they'd like to proceed with a formal quote
+
+### OLP Labor Lookup (IMPORTANT)
+We have the Open Labor Project database with industry-standard labor times for 4,400+ vehicles. **Always look up labor hours before estimating.**
+
+**How to use:**
+- Call \`lookup_labor_time\` with the customer's year, make, model, and the service name
+- It returns labor hours per engine variant (e.g., 2.5L I4 vs 3.5L V6 may differ)
+- If the customer's engine is unknown, use the most common variant or present the range
+- Use \`list_vehicle_services\` to see all available service categories for a vehicle
+- If OLP has no data for the vehicle, fall back to the standard service catalog
+
+**Example flow:**
+- Customer says "how much for brake pads on my 2020 Camry?"
+- Call lookup_labor_time(year=2020, make="Toyota", model="Camry", service="brake pads")
+- Get back 0.80h for front pads, 1.20h for front pads + rotors, etc.
+- Use those hours in create_estimate for accurate pricing
 
 ### Pricing
-The system uses standardized labor hours from the service catalog:
-- Price = hourlyRate × laborHours × vehicleMultiplier
+The system uses labor hours (preferably from OLP lookup) with pricing config:
+- Price = hourlyRate x laborHours x vehicleMultiplier
 - Vehicle multipliers adjust for luxury/European vehicles
 - Parts markup based on cost tier
 - Rush/after-hours fees when applicable
 
-**ALWAYS use list_services first** to find the correct serviceId. This ensures consistent pricing across all estimates. Only provide manual laborHours if no matching service exists in the catalog.
+**Priority for labor hours:** OLP lookup > service catalog > manual estimate.
 
 ### Response Format
 After creating an estimate, present the PDF link and summary, then ALWAYS use ask_user_question to offer next steps:

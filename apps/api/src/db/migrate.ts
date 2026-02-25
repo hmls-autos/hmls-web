@@ -358,6 +358,44 @@ CREATE INDEX IF NOT EXISTS idx_bookings_customer
   ON bookings (customer_id, scheduled_at DESC);
 `;
 
+const migrationStep6 = `
+-- OLP (Open Labor Project) reference data
+CREATE TABLE IF NOT EXISTS olp_vehicles (
+  id SERIAL PRIMARY KEY,
+  make VARCHAR(100) NOT NULL,
+  make_slug VARCHAR(100) NOT NULL,
+  model VARCHAR(100) NOT NULL,
+  model_slug VARCHAR(100) NOT NULL,
+  year_range VARCHAR(20) NOT NULL,
+  year_start INTEGER NOT NULL,
+  year_end INTEGER NOT NULL,
+  engine VARCHAR(50) NOT NULL,
+  engine_slug VARCHAR(50) NOT NULL,
+  fuel_type VARCHAR(20),
+  timing_type VARCHAR(20),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(make_slug, model_slug, year_range, engine_slug)
+);
+
+CREATE TABLE IF NOT EXISTS olp_labor_times (
+  id SERIAL PRIMARY KEY,
+  vehicle_id INTEGER NOT NULL REFERENCES olp_vehicles(id) ON DELETE CASCADE,
+  name VARCHAR(200) NOT NULL,
+  slug VARCHAR(200) NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  labor_hours NUMERIC(5, 2) NOT NULL,
+  UNIQUE(vehicle_id, slug)
+);
+
+CREATE INDEX IF NOT EXISTS idx_olp_vehicles_lookup
+  ON olp_vehicles(make_slug, model_slug, year_start, year_end);
+CREATE INDEX IF NOT EXISTS idx_olp_labor_times_vehicle
+  ON olp_labor_times(vehicle_id, category);
+
+ALTER TABLE olp_vehicles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE olp_labor_times ENABLE ROW LEVEL SECURITY;
+`;
+
 async function migrate() {
   console.log("Running migrations...\n");
 
@@ -376,6 +414,9 @@ async function migrate() {
 
     console.log("Step 5: Exclusion constraint + indexes...");
     await sql.unsafe(migrationStep5);
+
+    console.log("Step 6: OLP reference tables...");
+    await sql.unsafe(migrationStep6);
 
     console.log("Migrations completed successfully!");
   } catch (error) {

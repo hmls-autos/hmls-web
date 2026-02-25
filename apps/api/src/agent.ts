@@ -11,6 +11,7 @@ import { schedulingTools } from "./tools/scheduling.ts";
 import { createStripeTools } from "./tools/stripe.ts";
 import { estimateTools } from "./skills/estimate/tools.ts";
 import { askUserQuestionTools } from "./tools/ask-user-question.ts";
+import { laborLookupTools } from "./tools/labor-lookup.ts";
 import { formatUserContext, type UserContext } from "./types/user-context.ts";
 
 const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
@@ -45,6 +46,7 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
     ...estimateTools,
     ...(config.stripeSecretKey ? createStripeTools(config.stripeSecretKey) : []),
     ...schedulingTools,
+    ...laborLookupTools,
   ];
 
   if (isDenoDeploy) {

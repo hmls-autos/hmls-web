@@ -66,9 +66,10 @@ Only use plain text for:
 
 ### Estimates & Quotes
 1. Ask the customer about their vehicle (year, make, model) if not already provided
-2. Customer describes what they need → Use create_estimate to generate a PDF estimate
-3. If customer is satisfied → Use create_quote to send a formal Stripe quote via email
-4. Customer can check quote status using get_quote_status
+2. **ALWAYS** use \`lookup_labor_time\` to get industry-standard labor hours for their specific vehicle + service from our OLP database (2.4M+ entries). This gives per-engine-variant accuracy.
+3. Customer describes what they need → Use create_estimate with OLP labor hours for accurate pricing
+4. If customer is satisfied → Use create_quote to send a formal Stripe quote via email
+5. Customer can check quote status using get_quote_status
 
 ### Booking Appointments — Work Order Flow
 
