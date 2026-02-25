@@ -3,70 +3,9 @@
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db, schema } from "../../db/client.ts";
-import { eq, ilike, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { calculatePrice, getPricingConfig, getVehicleMultiplier } from "./pricing.ts";
 import { toolResult } from "@hmls/shared/tool-result";
-
-export const listServicesTool = {
-  name: "list_services",
-  description:
-    "Search the service catalog for available services with standardized labor hours. Use this to find serviceIds for consistent estimates.",
-  schema: z.object({
-    search: z
-      .string()
-      .optional()
-      .describe("Optional search term to filter services by name or category"),
-    category: z
-      .string()
-      .optional()
-      .describe(
-        "Filter by category (e.g., 'maintenance', 'repair', 'diagnostic')",
-      ),
-  }),
-  execute: async (
-    params: { search?: string; category?: string },
-    _ctx: unknown,
-  ) => {
-    let query = db
-      .select({
-        id: schema.services.id,
-        name: schema.services.name,
-        description: schema.services.description,
-        laborHours: schema.services.laborHours,
-        category: schema.services.category,
-      })
-      .from(schema.services)
-      .where(eq(schema.services.isActive, true))
-      .$dynamic();
-
-    if (params.category) {
-      query = query.where(eq(schema.services.category, params.category));
-    }
-
-    if (params.search) {
-      query = query.where(
-        or(
-          ilike(schema.services.name, `%${params.search}%`),
-          ilike(schema.services.description, `%${params.search}%`),
-        ),
-      );
-    }
-
-    const services = await query.limit(20);
-
-    return toolResult({
-      services: services.map((s) => ({
-        id: s.id,
-        name: s.name,
-        description: s.description,
-        laborHours: Number(s.laborHours),
-        category: s.category,
-      })),
-      count: services.length,
-      note: "Use serviceId when creating estimates for consistent pricing based on labor hours",
-    });
-  },
-};
 
 export const createEstimateTool = {
   name: "create_estimate",
@@ -77,13 +16,11 @@ export const createEstimateTool = {
     services: z
       .array(
         z.object({
-          serviceId: z.number().optional().describe("Service ID from catalog"),
           name: z.string().describe("Service name"),
           description: z.string().describe("Brief description"),
           laborHours: z
             .number()
-            .optional()
-            .describe("Labor hours (for hourly services)"),
+            .describe("Labor hours from OLP lookup"),
           partsCost: z
             .number()
             .optional()
@@ -102,10 +39,9 @@ export const createEstimateTool = {
   execute: async (params: {
     customerId: number;
     services: {
-      serviceId?: number;
       name: string;
       description: string;
-      laborHours?: number;
+      laborHours: number;
       partsCost?: number;
     }[];
     notes?: string;
@@ -253,7 +189,6 @@ export const getEstimateTool = {
 };
 
 export const estimateTools = [
-  listServicesTool,
   createEstimateTool,
   getEstimateTool,
 ];

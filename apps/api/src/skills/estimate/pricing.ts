@@ -4,34 +4,6 @@ import { db, schema } from "../../db/client.ts";
 import { and, eq, isNull } from "drizzle-orm";
 import type { LineItem, PricingConfig, ServiceInput } from "./types.ts";
 
-interface ServiceCatalogEntry {
-  id: number;
-  name: string;
-  description: string;
-  laborHours: number;
-}
-
-export async function getServiceById(
-  serviceId: number,
-): Promise<ServiceCatalogEntry | null> {
-  const [service] = await db
-    .select()
-    .from(schema.services)
-    .where(eq(schema.services.id, serviceId))
-    .limit(1);
-
-  if (!service || !service.isActive) {
-    return null;
-  }
-
-  return {
-    id: service.id,
-    name: service.name,
-    description: service.description,
-    laborHours: Number(service.laborHours),
-  };
-}
-
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 let cachedConfig: PricingConfig | null = null;
@@ -116,15 +88,7 @@ export async function calculatePrice(
   let partsCost = 0;
 
   // Labor calculation: hourlyRate × laborHours × vehicleMultiplier
-  let laborHours = service.laborHours;
-
-  // If serviceId provided, use standardized labor hours from catalog
-  if (service.serviceId) {
-    const catalogService = await getServiceById(service.serviceId);
-    if (catalogService) {
-      laborHours = catalogService.laborHours;
-    }
-  }
+  const laborHours = service.laborHours;
 
   if (laborHours) {
     laborCost = Math.round(

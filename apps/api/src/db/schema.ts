@@ -20,16 +20,6 @@ const tstzrange = customType<{ data: string; driverParam: string }>({
   },
 });
 
-export const services = pgTable("services", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 100 }).notNull(),
-  description: text("description").notNull(),
-  laborHours: numeric("labor_hours", { precision: 4, scale: 2 }).notNull(), // e.g., 0.5, 1.0, 2.5
-  category: varchar("category", { length: 50 }), // e.g., "maintenance", "repair", "diagnostic"
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
 
 export const customers = pgTable("customers", {
   id: serial("id").primaryKey(),
@@ -78,14 +68,6 @@ export const providerScheduleOverrides = pgTable("provider_schedule_overrides", 
   reason: text("reason"),
 });
 
-export const providerServices = pgTable("provider_services", {
-  providerId: integer("provider_id").references(() => providers.id, { onDelete: "cascade" })
-    .notNull(),
-  serviceId: integer("service_id").references(() => services.id, { onDelete: "cascade" })
-    .notNull(),
-}, (table) => ({
-  pk: primaryKey({ columns: [table.providerId, table.serviceId] }),
-}));
 
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),

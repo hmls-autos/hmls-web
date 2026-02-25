@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, eq, ilike, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "../db/client.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 
@@ -154,10 +154,13 @@ function dateRange(start: string, end: string): string[] {
 const getAvailabilityTool = {
   name: "get_availability",
   description:
-    "Check available appointment time slots for a given service across active mechanics. " +
-    "Returns slots grouped by provider, with any preferred mechanic listed first.",
+    "Check available appointment time slots across active mechanics. " +
+    "Returns slots grouped by provider, with any preferred mechanic listed first. " +
+    "Use lookup_labor_time first to get the labor hours, then convert to minutes for durationMinutes.",
   schema: z.object({
-    serviceType: z.string().describe("Service type to look up duration, e.g. 'Oil Change'"),
+    durationMinutes: z.number().describe(
+      "Estimated service duration in minutes. Get labor hours from lookup_labor_time, then multiply by 60.",
+    ),
     date: z.string().describe("Start date in YYYY-MM-DD format"),
     endDate: z
       .string()
@@ -170,38 +173,16 @@ const getAvailabilityTool = {
   }),
   execute: async (
     params: {
-      serviceType: string;
+      durationMinutes: number;
       date: string;
       endDate?: string;
       preferredMechanicId?: number;
     },
     _ctx: unknown,
   ) => {
-    // 1. Look up service by name (case-insensitive)
-    const [service] = await db
-      .select()
-      .from(schema.services)
-      .where(
-        and(
-          ilike(schema.services.name, params.serviceType),
-          eq(schema.services.isActive, true),
-        ),
-      )
-      .limit(1);
+    const serviceDurationMinutes = Math.max(30, Math.ceil(params.durationMinutes));
 
-    if (!service) {
-      return toolResult({
-        slots: [],
-        serviceDurationMinutes: 0,
-        dateRange: { start: params.date, end: params.endDate ?? params.date },
-        message:
-          `Service "${params.serviceType}" not found. Please check the service name and try again.`,
-      });
-    }
-
-    const serviceDurationMinutes = Math.ceil(Number(service.laborHours) * 60);
-
-    // 2. Compute date range
+    // 1. Compute date range
     const startDate = params.date;
     const endDate = params.endDate ?? (() => {
       const d = new Date(startDate + "T00:00:00Z");
@@ -209,7 +190,7 @@ const getAvailabilityTool = {
       return d.toISOString().split("T")[0];
     })();
 
-    // 3. Find active providers who can perform this service
+    // 2. Find all active providers
     const providers = await db
       .select({
         id: schema.providers.id,
@@ -217,16 +198,7 @@ const getAvailabilityTool = {
         timezone: schema.providers.timezone,
       })
       .from(schema.providers)
-      .innerJoin(
-        schema.providerServices,
-        eq(schema.providers.id, schema.providerServices.providerId),
-      )
-      .where(
-        and(
-          eq(schema.providers.isActive, true),
-          eq(schema.providerServices.serviceId, service.id),
-        ),
-      );
+      .where(eq(schema.providers.isActive, true));
 
     if (providers.length === 0) {
       return toolResult({

@@ -20,10 +20,9 @@ Before creating an estimate, you MUST have:
 1. Gather vehicle info (year, make, model) and understand the issue
 2. Look up or create customer record
 3. **CRITICAL**: Use \`lookup_labor_time\` to get real industry labor hours for the customer's specific vehicle and service. This queries our 2.4M+ entry OLP database with labor data per engine variant.
-4. Use \`list_services\` to find matching services from the catalog
-5. Call \`create_estimate\` with the labor hours from OLP (override catalog defaults when OLP data is available)
-6. Present the download link to the customer
-7. Ask if they'd like to proceed with a formal quote
+4. Call \`create_estimate\` with the labor hours from OLP
+5. Present the download link to the customer
+6. Ask if they'd like to proceed with a formal quote
 
 ### OLP Labor Lookup (IMPORTANT)
 We have the Open Labor Project database with industry-standard labor times for 4,400+ vehicles. **Always look up labor hours before estimating.**
@@ -33,7 +32,7 @@ We have the Open Labor Project database with industry-standard labor times for 4
 - It returns labor hours per engine variant (e.g., 2.5L I4 vs 3.5L V6 may differ)
 - If the customer's engine is unknown, use the most common variant or present the range
 - Use \`list_vehicle_services\` to see all available service categories for a vehicle
-- If OLP has no data for the vehicle, fall back to the standard service catalog
+- If OLP has no data for the specific service, estimate labor hours based on industry knowledge
 
 **Example flow:**
 - Customer says "how much for brake pads on my 2020 Camry?"
@@ -42,13 +41,11 @@ We have the Open Labor Project database with industry-standard labor times for 4
 - Use those hours in create_estimate for accurate pricing
 
 ### Pricing
-The system uses labor hours (preferably from OLP lookup) with pricing config:
+The system uses labor hours (from OLP lookup) with pricing config:
 - Price = hourlyRate x laborHours x vehicleMultiplier
 - Vehicle multipliers adjust for luxury/European vehicles
 - Parts markup based on cost tier
 - Rush/after-hours fees when applicable
-
-**Priority for labor hours:** OLP lookup > service catalog > manual estimate.
 
 ### Response Format
 After creating an estimate, present the PDF link and summary, then ALWAYS use ask_user_question to offer next steps:

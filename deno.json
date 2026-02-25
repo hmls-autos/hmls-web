@@ -10,6 +10,8 @@
     "rxjs-for-await": "npm:rxjs-for-await@1.0.0",
     "drizzle-orm": "npm:drizzle-orm@^0.45.1",
     "drizzle-orm/postgres-js": "npm:drizzle-orm@^0.45.1/postgres-js",
+    "drizzle-orm/pg-core": "npm:drizzle-orm@^0.45.1/pg-core",
+    "drizzle-kit": "npm:drizzle-kit@^0.31.4",
     "postgres": "npm:postgres@^3.4.8"
   },
   "fmt": {

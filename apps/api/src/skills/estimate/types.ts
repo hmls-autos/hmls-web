@@ -1,7 +1,6 @@
 // apps/agent/src/skills/estimate/types.ts
 
 export interface ServiceInput {
-  serviceId?: number;
   name: string;
   description: string;
   laborHours?: number;

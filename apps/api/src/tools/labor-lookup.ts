@@ -88,7 +88,7 @@ export const lookupLaborTimeTool = {
           vehicle: `${params.year} ${params.make} ${params.model}`,
           service: params.service,
           message:
-            "Vehicle not found in OLP database. Use standard catalog labor hours instead.",
+            "Vehicle not found in OLP database. Estimate labor hours based on industry knowledge.",
         });
       }
 
@@ -128,7 +128,7 @@ export const lookupLaborTimeTool = {
         engines: vehicles.map((v) => v.engine),
         message:
           `No labor times found for "${params.service}" on this vehicle. ` +
-          "Try a broader search term or use standard catalog labor hours.",
+          "Try a broader search term or estimate labor hours based on industry knowledge.",
       });
     }
 

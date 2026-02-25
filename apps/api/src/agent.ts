@@ -6,7 +6,6 @@ import {
   type ZypherContext,
 } from "@corespeed/zypher";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
-import { serviceTools } from "./tools/customer.ts";
 import { schedulingTools } from "./tools/scheduling.ts";
 import { createStripeTools } from "./tools/stripe.ts";
 import { estimateTools } from "./skills/estimate/tools.ts";
@@ -42,7 +41,6 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
 
   const allTools = [
     ...askUserQuestionTools,
-    ...serviceTools,
     ...estimateTools,
     ...(config.stripeSecretKey ? createStripeTools(config.stripeSecretKey) : []),
     ...schedulingTools,
