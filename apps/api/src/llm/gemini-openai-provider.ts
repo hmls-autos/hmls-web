@@ -1,10 +1,12 @@
 /**
  * Gemini-compatible OpenAI model provider.
  *
- * Patches Zypher's OpenAIModelProvider to handle Gemini's streaming format
- * where tool call `index` fields may be missing from delta events.
+ * Patches Zypher's OpenAIModelProvider to handle two Gemini-specific issues:
+ * 1. Missing `index` field in streaming tool call delta events
+ * 2. Empty `tool_calls` in finalChatCompletion (SDK doesn't accumulate them for Gemini)
  *
- * @see https://github.com/spinsirr/zypher-agent/commit/9204733
+ * We manually accumulate tool calls from streaming chunks and inject them
+ * into the FinalMessage so the Zypher agent loop can execute them.
  */
 import { Observable } from "rxjs";
 import type {
@@ -25,6 +27,13 @@ export interface GeminiOpenAIProviderOptions {
   apiKey: string;
   baseUrl: string;
   openaiClientOptions?: ClientOptions;
+}
+
+/** Accumulated tool call from streaming chunks */
+interface AccumulatedToolCall {
+  id: string;
+  name: string;
+  arguments: string;
 }
 
 export class GeminiOpenAIProvider implements ModelProvider {
@@ -139,14 +148,19 @@ export class GeminiOpenAIProvider implements ModelProvider {
       { signal: params.signal },
     );
 
+    // Accumulate tool calls from streaming chunks since Gemini's
+    // finalChatCompletion returns empty tool_calls
+    const accumulatedToolCalls = new Map<number, AccumulatedToolCall>();
+    let accumulatedText = "";
+
     const observable = new Observable<ModelEvent>((subscriber) => {
       const emittedToolCalls = new Set<string>();
       const toolCallIds = new Map<number, string>();
-      // Track tool call ids by name for Gemini (which may omit index)
       const toolCallIdsByName = new Map<string, string>();
       let nextAutoIndex = 0;
 
       stream.on("content.delta", (event) => {
+        accumulatedText += event.delta;
         subscriber.next({ type: "text", content: event.delta });
       });
 
@@ -155,12 +169,21 @@ export class GeminiOpenAIProvider implements ModelProvider {
         if (toolCalls) {
           for (let i = 0; i < toolCalls.length; i++) {
             const tc = toolCalls[i];
-            // Fall back to array position when index is missing (Gemini)
             const index = tc.index ?? i;
             if (tc.id) {
               toolCallIds.set(index, tc.id);
+              // Initialize accumulated tool call (arguments accumulated by delta handler)
+              if (!accumulatedToolCalls.has(index)) {
+                accumulatedToolCalls.set(index, {
+                  id: tc.id,
+                  name: tc.function?.name ?? "",
+                  arguments: "",
+                });
+              }
               if (tc.function?.name) {
                 toolCallIdsByName.set(tc.function.name, tc.id);
+                const acc = accumulatedToolCalls.get(index)!;
+                if (!acc.name) acc.name = tc.function.name;
               }
             }
           }
@@ -169,14 +192,23 @@ export class GeminiOpenAIProvider implements ModelProvider {
 
       stream.on("tool_calls.function.arguments.delta", (event) => {
         const toolName = event.name;
-        // Fall back to auto-index when index is missing (Gemini)
         const toolIndex = event.index ?? nextAutoIndex;
         const toolKey = `${toolIndex}`;
 
-        // Try index map, then name map, then fallback
         const toolUseId = toolCallIds.get(toolIndex) ??
           toolCallIdsByName.get(toolName) ??
           `fallback_${toolIndex}`;
+
+        // Accumulate the full arguments string
+        if (!accumulatedToolCalls.has(toolIndex)) {
+          accumulatedToolCalls.set(toolIndex, {
+            id: toolUseId,
+            name: toolName,
+            arguments: "",
+          });
+        }
+        accumulatedToolCalls.get(toolIndex)!.arguments +=
+          event.arguments_delta;
 
         if (!emittedToolCalls.has(toolKey)) {
           emittedToolCalls.add(toolKey);
@@ -202,10 +234,17 @@ export class GeminiOpenAIProvider implements ModelProvider {
 
       stream.on("finalChatCompletion", (completion) => {
         const message = completion.choices[0].message;
-        subscriber.next({
-          type: "message",
-          message: mapToFinalMessage(message, completion.usage),
-        });
+        // Use SDK's tool_calls if available, otherwise use our accumulated ones
+        const hasToolCalls = message.tool_calls && message.tool_calls.length > 0;
+        const finalMsg = hasToolCalls
+          ? mapToFinalMessage(message, completion.usage)
+          : buildFinalMessage(
+            accumulatedText,
+            accumulatedToolCalls,
+            message.role,
+            completion.usage,
+          );
+        subscriber.next({ type: "message", message: finalMsg });
       });
 
       stream.on("end", () => {
@@ -217,13 +256,45 @@ export class GeminiOpenAIProvider implements ModelProvider {
       events: observable,
       finalMessage: async (): Promise<FinalMessage> => {
         const completion = await stream.finalChatCompletion();
-        return mapToFinalMessage(
-          completion.choices[0].message,
-          completion.usage,
-        );
+        const message = completion.choices[0].message;
+        const hasToolCalls = message.tool_calls && message.tool_calls.length > 0;
+        return hasToolCalls
+          ? mapToFinalMessage(message, completion.usage)
+          : buildFinalMessage(
+            accumulatedText,
+            accumulatedToolCalls,
+            message.role,
+            completion.usage,
+          );
       },
     };
   }
+}
+
+/** Build FinalMessage from our manually accumulated streaming data */
+function buildFinalMessage(
+  text: string,
+  toolCalls: Map<number, AccumulatedToolCall>,
+  role: string,
+  usage?: OpenAI.Completions.CompletionUsage,
+): FinalMessage {
+  const toolUseBlocks = Array.from(toolCalls.values()).map((tc) => ({
+    type: "tool_use" as const,
+    toolUseId: tc.id,
+    name: tc.name,
+    input: JSON.parse(tc.arguments || "{}"),
+  }));
+
+  return {
+    role: role as "assistant",
+    content: [
+      { type: "text", text },
+      ...toolUseBlocks,
+    ],
+    stop_reason: toolUseBlocks.length > 0 ? "tool_use" : "end_turn",
+    timestamp: new Date(),
+    usage: usage ? mapUsage(usage) : undefined,
+  };
 }
 
 function mapToFinalMessage(

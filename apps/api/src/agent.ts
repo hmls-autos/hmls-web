@@ -1,10 +1,12 @@
 import {
-  createZypherAgent,
+  LoopInterceptorManager,
+  McpServerManager,
   type Message as ZypherMessage,
   ZypherAgent,
   type ZypherContext,
 } from "@corespeed/zypher";
 import { GeminiOpenAIProvider } from "./llm/gemini-openai-provider.ts";
+import { CompleterToolInterceptor } from "./llm/completer-interceptor.ts";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { schedulingTools } from "./tools/scheduling.ts";
 import { createStripeTools } from "./tools/stripe.ts";
@@ -12,6 +14,9 @@ import { estimateTools } from "./skills/estimate/tools.ts";
 import { askUserQuestionTools } from "./tools/ask-user-question.ts";
 import { laborLookupTools } from "./tools/labor-lookup.ts";
 import { formatUserContext, type UserContext } from "./types/user-context.ts";
+
+/** Tools that should stop the agent loop after execution (wait for user input) */
+const COMPLETER_TOOLS = ["ask_user_question"];
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/";
@@ -54,48 +59,50 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
     ...laborLookupTools,
   ];
 
-  if (isDenoDeploy) {
-    const mockContext: ZypherContext = {
+  const context: ZypherContext = isDenoDeploy
+    ? {
       workingDirectory: "/src",
       zypherDir: "/tmp/.zypher",
       workspaceDataDir: "/tmp/.zypher/data",
       fileAttachmentCacheDir: "/tmp/.zypher/cache",
       skillsDir: "/tmp/.zypher/skills",
+    }
+    : {
+      workingDirectory: Deno.cwd(),
+      zypherDir: `${Deno.cwd()}/.zypher`,
+      workspaceDataDir: `${Deno.cwd()}/.zypher/data`,
+      fileAttachmentCacheDir: `${Deno.cwd()}/.zypher/cache`,
+      skillsDir: `${Deno.cwd()}/.zypher/skills`,
     };
 
-    const agent = new ZypherAgent(
-      mockContext,
-      modelProvider,
-      {
-        tools: allTools,
-        initialMessages: options.initialMessages,
-        overrides: {
-          // deno-lint-ignore require-await
-          systemPromptLoader: async () => systemPrompt,
-        },
+  const mcpManager = new McpServerManager(context);
+  const loopManager = new LoopInterceptorManager([
+    new CompleterToolInterceptor(mcpManager, COMPLETER_TOOLS),
+  ]);
+
+  const agent = new ZypherAgent(
+    context,
+    modelProvider,
+    {
+      tools: allTools,
+      initialMessages: options.initialMessages,
+      overrides: {
+        mcpServerManager: mcpManager,
+        loopInterceptorManager: loopManager,
+        // deno-lint-ignore require-await
+        systemPromptLoader: async () => systemPrompt,
       },
-    );
-
-    console.log(`[agent] Running on Deno Deploy (no filesystem)`);
-    return agent;
-  }
-
-  const agent = await createZypherAgent({
-    model: modelProvider,
-    tools: allTools,
-    initialMessages: options.initialMessages,
-    overrides: {
-      // deno-lint-ignore require-await
-      systemPromptLoader: async () => systemPrompt,
     },
-  });
-
-  await agent.skills.discover();
-  const skillNames = Array.from(agent.skills.skills.values()).map(
-    (s) => s.metadata.name,
   );
-  if (skillNames.length > 0) {
-    console.log(`[agent] Skills loaded: ${skillNames.join(", ")}`);
+
+  if (!isDenoDeploy) {
+    await agent.skills.discover();
+    const skillNames = Array.from(agent.skills.skills.values()).map(
+      (s) => s.metadata.name,
+    );
+    if (skillNames.length > 0) {
+      console.log(`[agent] Skills loaded: ${skillNames.join(", ")}`);
+    }
   }
 
   return agent;
