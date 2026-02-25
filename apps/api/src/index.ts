@@ -8,13 +8,13 @@ import { chat, initChat } from "./routes/chat.ts";
 
 // ── Fail fast on required env vars ──
 const DATABASE_URL = Deno.env.get("DATABASE_URL");
-const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
 
 if (!DATABASE_URL) {
   throw new Error("DATABASE_URL is required but not set");
 }
-if (!ANTHROPIC_API_KEY) {
-  throw new Error("ANTHROPIC_API_KEY is required but not set");
+if (!GOOGLE_API_KEY) {
+  throw new Error("GOOGLE_API_KEY is required but not set");
 }
 
 // Warn on optional vars
@@ -28,7 +28,7 @@ for (
 
 // Read all env vars in one place
 initChat({
-  anthropicApiKey: ANTHROPIC_API_KEY,
+  googleApiKey: GOOGLE_API_KEY,
   stripeSecretKey: Deno.env.get("STRIPE_SECRET_KEY") ?? "",
   agentModel: Deno.env.get("AGENT_MODEL"),
 });

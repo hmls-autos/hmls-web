@@ -1,7 +1,7 @@
 import {
-  anthropic,
   createZypherAgent,
   type Message as ZypherMessage,
+  OpenAIModelProvider,
   ZypherAgent,
   type ZypherContext,
 } from "@corespeed/zypher";
@@ -13,12 +13,13 @@ import { askUserQuestionTools } from "./tools/ask-user-question.ts";
 import { laborLookupTools } from "./tools/labor-lookup.ts";
 import { formatUserContext, type UserContext } from "./types/user-context.ts";
 
-const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
+const DEFAULT_MODEL = "gemini-2.5-flash";
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/";
 
 const isDenoDeploy = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
 
 export interface AgentConfig {
-  anthropicApiKey: string;
+  googleApiKey: string;
   stripeSecretKey: string;
   agentModel?: string;
 }
@@ -34,6 +35,12 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
   const { config } = options;
   const modelId = config.agentModel || DEFAULT_MODEL;
   console.log(`[agent] Creating HMLS agent with model: ${modelId}`);
+
+  const modelProvider = new OpenAIModelProvider({
+    model: modelId,
+    apiKey: config.googleApiKey,
+    baseUrl: GEMINI_BASE_URL,
+  });
 
   const systemPrompt = options.userContext
     ? `${SYSTEM_PROMPT}\n\n${formatUserContext(options.userContext)}`
@@ -58,7 +65,7 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
 
     const agent = new ZypherAgent(
       mockContext,
-      anthropic(modelId, { apiKey: config.anthropicApiKey }),
+      modelProvider,
       {
         tools: allTools,
         initialMessages: options.initialMessages,
@@ -74,7 +81,7 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
   }
 
   const agent = await createZypherAgent({
-    model: anthropic(modelId, { apiKey: config.anthropicApiKey }),
+    model: modelProvider,
     tools: allTools,
     initialMessages: options.initialMessages,
     overrides: {
