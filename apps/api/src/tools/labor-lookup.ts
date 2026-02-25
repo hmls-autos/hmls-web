@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, eq, gte, ilike, lte, sql } from "drizzle-orm";
+import { and, eq, gte, ilike, inArray, lte, sql } from "drizzle-orm";
 import { db, schema } from "../db/client.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 
@@ -99,7 +99,7 @@ export const lookupLaborTimeTool = {
 
     // 2. Search labor times for matching service
     const conditions = [
-      sql`${schema.olpLaborTimes.vehicleId} = ANY(ARRAY[${sql.join(vehicleIds.map((id) => sql`${id}`), sql`, `)}])`,
+      inArray(schema.olpLaborTimes.vehicleId, vehicleIds),
       ilike(schema.olpLaborTimes.name, `%${params.service}%`),
     ];
 
@@ -219,9 +219,7 @@ export const listOlpCategoriesTool = {
         count: sql<number>`count(*)::int`,
       })
       .from(schema.olpLaborTimes)
-      .where(
-        sql`${schema.olpLaborTimes.vehicleId} = ANY(ARRAY[${sql.join(vehicleIds.map((id) => sql`${id}`), sql`, `)}])`,
-      )
+      .where(inArray(schema.olpLaborTimes.vehicleId, vehicleIds))
       .groupBy(schema.olpLaborTimes.category)
       .orderBy(schema.olpLaborTimes.category);
 
