@@ -4,61 +4,139 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db, schema } from "../../db/client.ts";
 import { eq } from "drizzle-orm";
-import { calculatePrice, getPricingConfig } from "./pricing.ts";
+import {
+  buildFeeItems,
+  calculateDiscount,
+  calculatePrice,
+  getPricingConfig,
+} from "./pricing.ts";
 import { toolResult } from "@hmls/shared/tool-result";
+import type { DiscountType, ServiceInput } from "./types.ts";
+
+const discountEnum = z.enum([
+  "returning_customer",
+  "referral",
+  "fleet",
+  "senior",
+  "military",
+  "first_responder",
+]);
 
 export const createEstimateTool = {
   name: "create_estimate",
   description:
     "Generate a price estimate for services. Provide vehicle info directly (year/make/model). " +
-    "If the user is a known customer, also pass customerId to save the estimate to their account.",
+    "If the user is a known customer, also pass customerId to save the estimate to their account. " +
+    "The system automatically applies shop supplies, disposal fees, time surcharges, travel fees, and discounts.",
   schema: z.object({
     customerId: z
       .number()
       .optional()
-      .describe("Customer ID from database (if known). Omit for anonymous users."),
-    vehicle: z.object({
-      year: z.number().describe("Vehicle year, e.g. 2015"),
-      make: z.string().describe("Vehicle make, e.g. 'Honda'"),
-      model: z.string().describe("Vehicle model, e.g. 'Civic'"),
-    }).describe("Vehicle the estimate is for"),
+      .describe(
+        "Customer ID from database (if known). Omit for anonymous users.",
+      ),
+    vehicle: z
+      .object({
+        year: z.number().describe("Vehicle year, e.g. 2015"),
+        make: z.string().describe("Vehicle make, e.g. 'Honda'"),
+        model: z.string().describe("Vehicle model, e.g. 'Civic'"),
+      })
+      .describe("Vehicle the estimate is for"),
     services: z
       .array(
         z.object({
           name: z.string().describe("Service name"),
           description: z.string().describe("Brief description"),
-          laborHours: z
-            .number()
-            .describe("Labor hours from OLP lookup"),
+          laborHours: z.number().describe("Labor hours from OLP lookup"),
           partsCost: z
             .number()
             .optional()
             .describe("Estimated parts cost in dollars"),
+          involvesHazmat: z
+            .boolean()
+            .default(false)
+            .describe(
+              "True if service involves hazardous fluids (oil change, coolant flush, brake fluid, etc.)",
+            ),
+          tireCount: z
+            .number()
+            .optional()
+            .describe("Number of tires being disposed (tire services only)"),
+          involvesBattery: z
+            .boolean()
+            .default(false)
+            .describe("True if service involves battery replacement"),
         }),
       )
       .describe("List of services to include in estimate"),
-    notes: z.string().optional().describe("Additional notes for the estimate"),
-    validDays: z.number().default(14).describe("Days until estimate expires"),
-    isRush: z.boolean().default(false).describe("Same-day service requested"),
+    notes: z
+      .string()
+      .optional()
+      .describe("Additional notes for the estimate"),
+    validDays: z
+      .number()
+      .default(14)
+      .describe("Days until estimate expires"),
+
+    // Scheduling
+    isRush: z
+      .boolean()
+      .default(false)
+      .describe("Same-day service requested"),
     isAfterHours: z
       .boolean()
       .default(false)
-      .describe("After 8PM appointment requested"),
+      .describe("After 6pm appointment"),
+    isEarlyMorning: z
+      .boolean()
+      .default(false)
+      .describe("Before 8am appointment"),
+    isWeekend: z
+      .boolean()
+      .default(false)
+      .describe("Saturday appointment"),
+    isSunday: z
+      .boolean()
+      .default(false)
+      .describe("Sunday appointment"),
+    isHoliday: z
+      .boolean()
+      .default(false)
+      .describe("Holiday appointment"),
+
+    // Travel
+    travelMiles: z
+      .number()
+      .optional()
+      .describe(
+        "Distance to customer in miles. First 15 mi are free, then $1/mi.",
+      ),
+
+    // Discount
+    discountType: discountEnum
+      .optional()
+      .describe(
+        "Discount type to apply (returning_customer, referral, fleet, senior, military, first_responder)",
+      ),
   }),
-  execute: async (params: {
-    customerId?: number;
-    vehicle: { year: number; make: string; model: string };
-    services: {
-      name: string;
-      description: string;
-      laborHours: number;
-      partsCost?: number;
-    }[];
-    notes?: string;
-    validDays?: number;
-    isRush?: boolean;
-    isAfterHours?: boolean;
-  }, _ctx: unknown) => {
+  execute: async (
+    params: {
+      customerId?: number;
+      vehicle: { year: number; make: string; model: string };
+      services: ServiceInput[];
+      notes?: string;
+      validDays?: number;
+      isRush?: boolean;
+      isAfterHours?: boolean;
+      isEarlyMorning?: boolean;
+      isWeekend?: boolean;
+      isSunday?: boolean;
+      isHoliday?: boolean;
+      travelMiles?: number;
+      discountType?: DiscountType;
+    },
+    _ctx: unknown,
+  ) => {
     // 1. Resolve customer if provided
     let customer;
     if (params.customerId) {
@@ -70,52 +148,78 @@ export const createEstimateTool = {
       customer = found;
     }
 
-    // 2. Calculate pricing for each service (labor hours from OLP are already vehicle-specific)
-    const items = await Promise.all(
+    // 2. Calculate service line items (labor + parts)
+    const serviceItems = await Promise.all(
       params.services.map((s) => calculatePrice(s)),
     );
 
-    // 4. Add fees
     const config = await getPricingConfig();
-    let feesTotal = 0;
+    const laborCents = params.services.reduce(
+      (sum, s) => sum + Math.round((s.laborHours ?? 0) * config.hourlyRate),
+      0,
+    );
 
-    if (params.isRush) {
-      feesTotal += config.rushFee;
-      items.push({
-        name: "Same-Day Service",
-        description: "Rush scheduling fee",
-        price: config.rushFee,
+    // 3. Build fee line items
+    const feeItems = buildFeeItems(config, {
+      isRush: params.isRush,
+      isAfterHours: params.isAfterHours,
+      isWeekend: params.isWeekend,
+      isSunday: params.isSunday,
+      isHoliday: params.isHoliday,
+      isEarlyMorning: params.isEarlyMorning,
+      travelMiles: params.travelMiles,
+      totalLaborCents: laborCents,
+      services: params.services,
+    });
+
+    // 4. Combine all items
+    const allItems = [...serviceItems, ...feeItems];
+
+    // 5. Calculate subtotal before discount
+    const subtotalBeforeDiscount = allItems.reduce(
+      (sum, item) => sum + item.price,
+      0,
+    );
+
+    // 6. Apply discount
+    const discount = calculateDiscount(
+      config,
+      subtotalBeforeDiscount,
+      params.discountType,
+      params.services.length,
+    );
+
+    if (discount && discount.amount > 0) {
+      allItems.push({
+        name: "Discount",
+        description: discount.label,
+        price: -discount.amount,
       });
     }
 
-    if (params.isAfterHours) {
-      feesTotal += config.afterHoursFee;
-      items.push({
-        name: "After-Hours Service",
-        description: "Evening appointment fee",
-        price: config.afterHoursFee,
-      });
+    // 7. Final subtotal (enforce minimum service fee)
+    let subtotal = allItems.reduce((sum, item) => sum + item.price, 0);
+    if (subtotal < config.minimumServiceFee) {
+      subtotal = config.minimumServiceFee;
     }
 
-    // 5. Calculate totals
-    const subtotal = items.reduce((sum, item) => sum + item.price, 0);
     const rangeLow = Math.round(subtotal * 0.9);
     const rangeHigh = Math.round(subtotal * 1.1);
 
-    // 6. Generate share token
+    // 8. Generate share token
     const shareToken = nanoid(32);
     const validDays = params.validDays ?? 14;
     const expiresAt = new Date(
       Date.now() + validDays * 24 * 60 * 60 * 1000,
     );
 
-    // 7. Save to DB if we have a customer, otherwise return pricing only
+    // 9. Save to DB if we have a customer, otherwise return pricing only
     if (customer) {
       const [estimate] = await db
         .insert(schema.estimates)
         .values({
           customerId: customer.id,
-          items: items,
+          items: allItems,
           subtotal,
           priceRangeLow: rangeLow,
           priceRangeHigh: rangeHigh,
@@ -134,6 +238,11 @@ export const createEstimateTool = {
         vehicle: `${params.vehicle.year} ${params.vehicle.make} ${params.vehicle.model}`,
         downloadUrl: `${baseUrl}/${estimate.id}/pdf`,
         shareUrl: `${baseUrl}/${estimate.id}/pdf?token=${shareToken}`,
+        items: allItems.map((i) => ({
+          name: i.name,
+          description: i.description,
+          price: i.price / 100,
+        })),
         subtotal: subtotal / 100,
         priceRange: `$${(rangeLow / 100).toFixed(2)} - $${(rangeHigh / 100).toFixed(2)}`,
         expiresAt,
@@ -144,7 +253,11 @@ export const createEstimateTool = {
     return toolResult({
       success: true,
       vehicle: `${params.vehicle.year} ${params.vehicle.make} ${params.vehicle.model}`,
-      items: items.map((i) => ({ name: i.name, price: i.price / 100 })),
+      items: allItems.map((i) => ({
+        name: i.name,
+        description: i.description,
+        price: i.price / 100,
+      })),
       subtotal: subtotal / 100,
       priceRange: `$${(rangeLow / 100).toFixed(2)} - $${(rangeHigh / 100).toFixed(2)}`,
       note: "Estimate not saved — customer not signed in.",
@@ -154,7 +267,8 @@ export const createEstimateTool = {
 
 export const getEstimateTool = {
   name: "get_estimate",
-  description: "Retrieve an existing estimate by ID to check status or details",
+  description:
+    "Retrieve an existing estimate by ID to check status or details",
   schema: z.object({
     estimateId: z.number().describe("Estimate ID from database"),
   }),
@@ -177,9 +291,7 @@ export const getEstimateTool = {
         id: estimate.id,
         items: estimate.items,
         subtotal: estimate.subtotal / 100,
-        priceRange: `$${(estimate.priceRangeLow / 100).toFixed(2)} - $${
-          (estimate.priceRangeHigh / 100).toFixed(2)
-        }`,
+        priceRange: `$${(estimate.priceRangeLow / 100).toFixed(2)} - $${(estimate.priceRangeHigh / 100).toFixed(2)}`,
         notes: estimate.notes,
         expiresAt: estimate.expiresAt,
         isExpired,
@@ -191,7 +303,4 @@ export const getEstimateTool = {
   },
 };
 
-export const estimateTools = [
-  createEstimateTool,
-  getEstimateTool,
-];
+export const estimateTools = [createEstimateTool, getEstimateTool];

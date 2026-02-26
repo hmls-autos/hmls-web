@@ -5,6 +5,12 @@ export interface ServiceInput {
   description: string;
   laborHours?: number;
   partsCost?: number;
+  /** Service involves hazardous fluids (oil, coolant, brake fluid, etc.) */
+  involvesHazmat?: boolean;
+  /** Number of tires being disposed */
+  tireCount?: number;
+  /** Service involves battery replacement */
+  involvesBattery?: boolean;
 }
 
 export interface LineItem {
@@ -14,14 +20,57 @@ export interface LineItem {
 }
 
 export interface PricingConfig {
+  // Base rates
   hourlyRate: number;
   diagnosticFee: number;
+  minimumServiceFee: number;
+
+  // Time surcharges
   afterHoursFee: number;
   rushFee: number;
-  partsMarkupTier1: number;
-  partsMarkupTier2: number;
-  partsMarkupTier3: number;
+  weekendFee: number;
+  sundayFee: number;
+  holidayFee: number;
+  earlyMorningFee: number;
+
+  // Travel
+  baseTravelMiles: number;
+  perMileFee: number;
+
+  // Parts markup tiers (percentages)
+  partsMarkupTier1: number; // < $50
+  partsMarkupTier2: number; // $50-200
+  partsMarkupTier3: number; // $200-500
+  partsMarkupTier4: number; // > $500
+
+  // Disposal / environmental
+  shopSuppliesPct: number;
+  shopSuppliesMax: number;
+  hazmatDisposalFee: number;
+  tireDisposalFee: number; // per tire
+  batteryCoreCharge: number;
+
+  // Discounts (percentages)
+  multiServiceDiscountPct: number;
+  returningCustomerDiscountPct: number;
+  referralDiscountPct: number;
+  fleetDiscountPct: number;
+  seniorDiscountPct: number;
+  militaryDiscountPct: number;
+  firstResponderDiscountPct: number;
+
+  // Other
+  noShowFee: number;
 }
+
+export type DiscountType =
+  | "multi_service"
+  | "returning_customer"
+  | "referral"
+  | "fleet"
+  | "senior"
+  | "military"
+  | "first_responder";
 
 export interface EstimateResult {
   success: boolean;
