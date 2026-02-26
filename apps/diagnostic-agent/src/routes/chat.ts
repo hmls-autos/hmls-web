@@ -1,12 +1,46 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { eachValueFrom } from "rxjs-for-await";
+import { concatMap, from, pipe } from "rxjs";
 import { createDiagnosticAgent } from "../agent.ts";
 import {
   convertAguiMessagesToZypher,
   createAguiEventStream,
   parseRunAgentInput,
 } from "@zypher/agui";
+
+/**
+ * RxJS operator that ensures all TOOL_CALL_START events have matching
+ * TOOL_CALL_END events before RUN_FINISHED is emitted.
+ */
+function sanitizeToolCallEvents() {
+  const openToolCalls = new Set<string>();
+
+  // deno-lint-ignore no-explicit-any
+  return pipe(concatMap((event: any) => {
+    if (event.type === "TOOL_CALL_START") {
+      openToolCalls.add(event.toolCallId);
+    } else if (event.type === "TOOL_CALL_END") {
+      openToolCalls.delete(event.toolCallId);
+    }
+
+    if (event.type === "RUN_FINISHED" && openToolCalls.size > 0) {
+      // deno-lint-ignore no-explicit-any
+      const closingEvents: any[] = [];
+      for (const toolCallId of openToolCalls) {
+        closingEvents.push({
+          type: "TOOL_CALL_END",
+          toolCallId,
+          timestamp: Date.now(),
+        });
+      }
+      openToolCalls.clear();
+      return from([...closingEvents, event]);
+    }
+
+    return from([event]);
+  }));
+}
 
 const chat = new Hono();
 
@@ -42,7 +76,7 @@ chat.post("/", async (c) => {
     messages,
     threadId,
     runId,
-  });
+  }).pipe(sanitizeToolCallEvents());
 
   return streamSSE(c, async (stream) => {
     try {

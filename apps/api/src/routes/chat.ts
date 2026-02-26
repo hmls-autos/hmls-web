@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { eachValueFrom } from "rxjs-for-await";
+import { concatMap, from, type Observable, pipe } from "rxjs";
 import { eq } from "drizzle-orm";
 import { type AgentConfig, createHmlsAgent } from "../agent.ts";
 import { db, schema } from "../db/client.ts";
@@ -12,6 +13,46 @@ import {
 } from "@zypher/agui";
 import type { UserContext } from "../types/user-context.ts";
 import { optionalAuth, type OptionalAuthEnv } from "../middleware/auth.ts";
+
+/**
+ * RxJS operator that ensures all TOOL_CALL_START events have matching
+ * TOOL_CALL_END events before RUN_FINISHED is emitted.
+ *
+ * Works around a bug in @zypher/agui where the bridge's `complete` handler
+ * doesn't close open tool calls, causing the AG-UI client verifier to reject
+ * the RUN_FINISHED event.
+ */
+function sanitizeToolCallEvents() {
+  // Mutable state scoped to the pipe instance
+  const openToolCalls = new Set<string>();
+
+  // deno-lint-ignore no-explicit-any
+  return pipe(concatMap((event: any) => {
+    // Track open tool calls
+    if (event.type === "TOOL_CALL_START") {
+      openToolCalls.add(event.toolCallId);
+    } else if (event.type === "TOOL_CALL_END") {
+      openToolCalls.delete(event.toolCallId);
+    }
+
+    // Before RUN_FINISHED, inject TOOL_CALL_END for any unclosed tool calls
+    if (event.type === "RUN_FINISHED" && openToolCalls.size > 0) {
+      // deno-lint-ignore no-explicit-any
+      const closingEvents: any[] = [];
+      for (const toolCallId of openToolCalls) {
+        closingEvents.push({
+          type: "TOOL_CALL_END",
+          toolCallId,
+          timestamp: Date.now(),
+        });
+      }
+      openToolCalls.clear();
+      return from([...closingEvents, event]);
+    }
+
+    return from([event]);
+  }));
+}
 
 let _config: AgentConfig;
 
@@ -127,7 +168,7 @@ chat.post("/", optionalAuth, async (c) => {
     messages,
     threadId,
     runId,
-  });
+  }).pipe(sanitizeToolCallEvents());
 
   return streamSSE(c, async (stream) => {
     try {
