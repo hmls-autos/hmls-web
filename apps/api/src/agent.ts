@@ -13,6 +13,7 @@ import { createStripeTools } from "./tools/stripe.ts";
 import { estimateTools } from "./skills/estimate/tools.ts";
 import { askUserQuestionTools } from "./tools/ask-user-question.ts";
 import { laborLookupTools } from "./tools/labor-lookup.ts";
+import { partsLookupTools } from "./tools/parts-lookup.ts";
 import { formatUserContext, type UserContext } from "./types/user-context.ts";
 
 /** Tools that should stop the agent loop after execution (wait for user input) */
@@ -57,6 +58,7 @@ export async function createHmlsAgent(options: CreateAgentOptions) {
     ...(config.stripeSecretKey ? createStripeTools(config.stripeSecretKey) : []),
     ...schedulingTools,
     ...laborLookupTools,
+    ...partsLookupTools,
   ];
 
   const context: ZypherContext = isDenoDeploy
