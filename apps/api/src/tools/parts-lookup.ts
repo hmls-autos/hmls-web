@@ -44,15 +44,19 @@ async function ensureSession(): Promise<string> {
 
   const html = await res.text();
 
-  // Extract _nck token from homepage JS
-  const nckMatch = html.match(/window\._nck\s*=\s*"([^"]+)"/) ??
-    html.match(/parent\.window\._nck\s*=\s*"([^"]+)"/);
+  // Extract _nck token — it's in hidden form fields: <input type="hidden" name="_nck" value="...">
+  // Multiple forms may have it; grab the longest token (the full one, not the truncated currency form one)
+  const nckMatches = [...html.matchAll(/name="_nck"\s+value="([^"]+)"/g)];
 
-  if (!nckMatch) {
+  if (nckMatches.length === 0) {
     throw new Error("Failed to extract _nck token from RockAuto homepage");
   }
 
-  sessionToken = nckMatch[1];
+  // Use the longest token value (some forms have truncated versions)
+  sessionToken = nckMatches.reduce((longest, m) =>
+    m[1].length > longest.length ? m[1] : longest,
+    "",
+  );
   sessionTokenAt = Date.now();
 
   // Capture cookies from response
@@ -480,8 +484,9 @@ function parsePartsFromHtml(html: string): PartResult[] {
     return tier;
   }
 
-  // Find listing containers
-  const containerPattern = /id="listingcontainer\[(\d+)\]"/g;
+  // Find listing containers — supports both numeric IDs and __GIP__ placeholders
+  // Numeric: listingcontainer[8]  |  AJAX: listingcontainer[__GIP__8__]
+  const containerPattern = /id="listingcontainer\[([^\]]+)\]"/g;
   const containerIds: { id: string; pos: number }[] = [];
   while ((m = containerPattern.exec(html)) !== null) {
     containerIds.push({ id: m[1], pos: m.index });
@@ -489,7 +494,7 @@ function parsePartsFromHtml(html: string): PartResult[] {
 
   for (let i = 0; i < containerIds.length; i++) {
     const container = containerIds[i];
-    const n = container.id;
+    const n = container.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // Escape for regex
     const startPos = container.pos;
     const endPos = containerIds[i + 1]?.pos ?? startPos + 5000;
     const block = html.substring(startPos, endPos);
@@ -503,7 +508,7 @@ function parsePartsFromHtml(html: string): PartResult[] {
       block.match(new RegExp(`vew_partnumber\\[${n}\\][^>]*>([^<]+)<`));
     const partNumber = partNumMatch?.[1]?.trim() ?? "";
 
-    // Price — multiple patterns
+    // Price — multiple patterns (ID-specific first, then generic $ fallback)
     const priceMatch =
       block.match(new RegExp(`dprice\\[${n}\\]\\[v\\][^>]*>\\(?\\$?([\\d,.]+)`)) ??
       block.match(/\$(\d+[\d,.]*)/);
@@ -545,8 +550,9 @@ export const lookupPartsPrice = {
   name: "lookup_parts_price",
   description:
     "Look up real parts pricing from RockAuto's catalog for a specific vehicle. " +
-    "Returns retail prices across Economy, Daily Driver, and Premium tiers. " +
+    "Returns the recommended PREMIUM tier price to use in estimates. " +
     "Use this BEFORE creating estimates to get accurate parts costs instead of guessing. " +
+    "Always use the recommendedPrice field as partsCost in create_estimate. " +
     "Supports 50+ part types: oil filter, brake pads, rotors, alternator, spark plugs, " +
     "motor oil, AC compressor, power steering pump, gaskets, sensors, and more.",
   schema: z.object({
@@ -647,34 +653,31 @@ function formatResults(
     });
   }
 
-  const economy = results.filter((r) => r.tier === "Economy").sort((a, b) => a.price - b.price);
+  const premium = results.filter((r) => r.tier === "Premium").sort((a, b) => a.price - b.price);
   const daily = results
     .filter((r) => r.tier === "Daily Driver" || r.tier === "Standard")
     .sort((a, b) => a.price - b.price);
-  const premium = results.filter((r) => r.tier === "Premium").sort((a, b) => a.price - b.price);
+  const economy = results.filter((r) => r.tier === "Economy").sort((a, b) => a.price - b.price);
 
-  const allPrices = results.map((r) => r.price).sort((a, b) => a - b);
-  const lowestPrice = allPrices[0];
-  const highestPrice = allPrices[allPrices.length - 1];
-  const medianPrice = allPrices[Math.floor(allPrices.length / 2)];
+  // Always use premium tier for estimates. Fall back to daily driver, then economy.
+  const preferredTier = premium.length > 0 ? premium : daily.length > 0 ? daily : economy;
+  const recommendedPrice = preferredTier.length > 0
+    ? preferredTier[Math.floor(preferredTier.length / 2)].price
+    : results[Math.floor(results.length / 2)].price;
 
   return toolResult({
     found: true,
     vehicle,
     partName,
-    priceRange: {
-      low: lowestPrice,
-      median: medianPrice,
-      high: highestPrice,
-    },
-    economy: economy.slice(0, 3).map(formatPart),
-    dailyDriver: daily.slice(0, 3).map(formatPart),
+    recommendedPrice,
+    recommendedTier: premium.length > 0 ? "Premium" : daily.length > 0 ? "Daily Driver" : "Economy",
     premium: premium.slice(0, 3).map(formatPart),
+    dailyDriver: daily.slice(0, 3).map(formatPart),
+    economy: economy.slice(0, 3).map(formatPart),
     totalOptions: results.length,
     note:
-      "Prices are RockAuto retail. Use the median price as partsCost when creating estimates — " +
-      "the system applies our standard markup automatically. " +
-      "Use economy tier for budget estimates, premium for high-end.",
+      "ALWAYS use recommendedPrice as partsCost when creating estimates — " +
+      "we quote premium tier parts. The system applies our standard markup automatically.",
   });
 }
 
