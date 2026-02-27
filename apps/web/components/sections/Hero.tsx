@@ -5,6 +5,14 @@ import Link from "next/link";
 export default function Hero() {
   return (
     <section className="relative w-full min-h-[100dvh] -mt-16 flex items-center justify-center overflow-hidden">
+      {/* Hex bolts at four corners */}
+      <div
+        className="absolute inset-0 z-20 pointer-events-none hex-bolts"
+        aria-hidden="true"
+      >
+        <div className="absolute inset-0 hex-bolts-bottom" />
+      </div>
+
       {/* Background image */}
       <div className="absolute inset-0">
         <Image
@@ -23,9 +31,20 @@ export default function Hero() {
 
       {/* Content */}
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-        <p className="hero-animate hero-animate-1 text-sm md:text-base uppercase tracking-[0.35em] text-red-400 font-display font-semibold mb-8">
-          Mobile Mechanic &bull; Orange County, CA
-        </p>
+        {/* Tagline with machined groove lines */}
+        <div className="hero-animate hero-animate-1 flex items-center justify-center gap-4 mb-8">
+          <div
+            className="hidden md:block h-px w-16 machined-groove-horizontal"
+            aria-hidden="true"
+          />
+          <p className="text-sm md:text-base uppercase tracking-[0.35em] text-red-400 font-display font-semibold">
+            Mobile Mechanic &bull; Orange County, CA
+          </p>
+          <div
+            className="hidden md:block h-px w-16 machined-groove-horizontal"
+            aria-hidden="true"
+          />
+        </div>
 
         <h1 className="hero-animate hero-animate-2 text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-display font-extrabold text-white mb-8 tracking-tighter leading-[0.9]">
           We come
@@ -55,13 +74,14 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
+      {/* Hydraulic piston scroll indicator */}
       <div className="hero-animate hero-animate-4 absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/40">
         <span className="text-xs uppercase tracking-widest font-display">
           Scroll
         </span>
-        <div className="w-px h-10 relative overflow-hidden">
-          <div className="w-full h-full bg-gradient-to-b from-red-500 to-transparent animate-pulse" />
+        <div className="w-3 h-14 rounded-full border border-white/20 bg-white/5 relative overflow-hidden">
+          <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-red-600 via-red-500 to-transparent animate-pulse rounded-full" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-transparent rounded-full" />
         </div>
       </div>
     </section>

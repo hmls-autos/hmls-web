@@ -65,11 +65,20 @@ export default function Services() {
             const Icon = service.icon;
             return (
               <RevealOnScroll key={service.title} delay={Math.min(i + 1, 3)}>
-                <div className="group relative bg-surface border border-border rounded-2xl p-8 hover:border-red-500/30 transition-all duration-300 overflow-hidden card-hover">
+                <div className="group relative bg-surface border border-border rounded-2xl p-8 hover:border-red-500/30 transition-all duration-300 overflow-hidden card-hover weld-torch-trail">
+                  {/* Hex bolt */}
+                  <div
+                    className="absolute top-3 left-3 hex-bolt"
+                    aria-hidden="true"
+                  />
+
                   {/* Hover glow */}
                   <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                   <div className="relative">
+                    <span className="stamped-text text-[10px] uppercase tracking-[0.3em] font-mono mb-4 block">
+                      SVC-{String(i + 1).padStart(3, "0")}
+                    </span>
                     <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors duration-300">
                       <Icon
                         className="w-6 h-6 text-red-400"

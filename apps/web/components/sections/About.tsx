@@ -37,6 +37,11 @@ export default function About() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           {/* Image */}
           <div ref={imageRef} className="reveal-left relative">
+            {/* Tread-plate texture behind image */}
+            <div
+              className="absolute -inset-4 tread-plate rounded-3xl"
+              aria-hidden="true"
+            />
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
               <Image
                 src="/images/engine-bay.png"
@@ -47,9 +52,28 @@ export default function About() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
             </div>
-            {/* Red accent corner */}
-            <div className="absolute -top-3 -left-3 w-20 h-px bg-red-500" />
-            <div className="absolute -top-3 -left-3 w-px h-20 bg-red-500" />
+            {/* Steel frame */}
+            <div
+              className="absolute -inset-2 border-2 border-zinc-400/30 dark:border-zinc-600/30 rounded-2xl"
+              aria-hidden="true"
+            />
+            {/* Corner bolts */}
+            <div
+              className="absolute -top-1 -left-1 hex-bolt"
+              aria-hidden="true"
+            />
+            <div
+              className="absolute -top-1 -right-1 hex-bolt"
+              aria-hidden="true"
+            />
+            <div
+              className="absolute -bottom-1 -left-1 hex-bolt"
+              aria-hidden="true"
+            />
+            <div
+              className="absolute -bottom-1 -right-1 hex-bolt"
+              aria-hidden="true"
+            />
             {/* Experience badge */}
             <div className="absolute -bottom-4 -right-4 bg-red-600 rounded-xl px-6 py-4 shadow-2xl shadow-red-600/20">
               <span className="text-3xl font-display font-extrabold text-white">

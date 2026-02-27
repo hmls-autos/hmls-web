@@ -34,6 +34,16 @@ export default function HowItWorks() {
           </h2>
         </RevealOnScroll>
 
+        {/* Steel girder connection line - desktop only */}
+        <div
+          className="hidden md:block max-w-4xl mx-auto mb-12"
+          aria-hidden="true"
+        >
+          <div className="steel-girder">
+            <div className="steel-girder-base" />
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           {steps.map((step, i) => {
             const Icon = step.icon;
@@ -42,8 +52,10 @@ export default function HowItWorks() {
                 <div className="relative group text-center">
                   <div className="relative mx-auto w-20 h-20 rounded-full bg-surface border border-border flex items-center justify-center mb-8 group-hover:border-red-500/50 group-hover:shadow-lg group-hover:shadow-red-500/10 transition-all duration-300">
                     <Icon className="w-8 h-8 text-red-400" strokeWidth={1.5} />
-                    <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-600 flex items-center justify-center text-xs font-display font-bold text-white shadow-lg shadow-red-600/30">
-                      {step.number}
+                    <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-b from-zinc-300 to-zinc-500 dark:from-zinc-500 dark:to-zinc-700 flex items-center justify-center shadow-lg">
+                      <span className="stamped-text text-xs font-display font-bold !opacity-100">
+                        {step.number}
+                      </span>
                     </div>
                   </div>
 
@@ -53,6 +65,10 @@ export default function HowItWorks() {
                   <p className="text-text-secondary leading-relaxed max-w-xs mx-auto">
                     {step.description}
                   </p>
+                  <div
+                    className="machined-groove-horizontal h-px w-16 mx-auto mt-6"
+                    aria-hidden="true"
+                  />
                 </div>
               </RevealOnScroll>
             );
