@@ -4,7 +4,9 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-/* ─── GLSL Simplex 3D Noise ─── */
+/* ═══════════════════════════════════════════════════════════════
+   GLSL Simplex 3D Noise (Ashima Arts)
+   ═══════════════════════════════════════════════════════════════ */
 const NOISE_GLSL = /* glsl */ `
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -55,103 +57,121 @@ const NOISE_GLSL = /* glsl */ `
   }
 `;
 
-/* ─── Vertex Shader ─── */
-const vertexShader = /* glsl */ `
+/* ═══════════════════════════════════════════════════════════════
+   FLUID MESH — Molten metal surface
+   ═══════════════════════════════════════════════════════════════ */
+const fluidVertex = /* glsl */ `
   ${NOISE_GLSL}
 
   uniform float uTime;
   uniform vec2 uMouse;
-  uniform float uScrollY;
+  uniform float uScroll;
 
   varying vec2 vUv;
   varying float vElevation;
-  varying float vNoise;
-  varying vec3 vNormal;
+  varying vec3 vNormal2;
+  varying float vMouseProximity;
 
   void main() {
     vUv = uv;
-
     vec3 pos = position;
 
-    // Multi-octave noise for organic flow
-    float n1 = snoise(vec3(pos.x * 0.8, pos.y * 0.8, uTime * 0.15)) * 0.35;
-    float n2 = snoise(vec3(pos.x * 1.6, pos.y * 1.6, uTime * 0.25 + 100.0)) * 0.15;
-    float n3 = snoise(vec3(pos.x * 3.2, pos.y * 3.2, uTime * 0.35 + 200.0)) * 0.05;
+    // 4-octave noise — organic, dramatic displacement
+    float t = uTime * 0.1;
+    float n1 = snoise(vec3(pos.x * 0.5, pos.y * 0.5, t)) * 0.55;
+    float n2 = snoise(vec3(pos.x * 1.2, pos.y * 1.2, t * 1.8 + 50.0)) * 0.22;
+    float n3 = snoise(vec3(pos.x * 2.8, pos.y * 2.8, t * 2.5 + 120.0)) * 0.08;
+    float n4 = snoise(vec3(pos.x * 5.5, pos.y * 5.5, t * 3.5 + 250.0)) * 0.03;
+    float elevation = n1 + n2 + n3 + n4;
 
-    float elevation = n1 + n2 + n3;
+    // Mouse dome + ripple
+    vec2 mWorld = uMouse * 3.0;
+    float mDist = distance(pos.xy, mWorld);
+    float dome = smoothstep(2.5, 0.0, mDist) * 0.25;
+    float ripple = sin(mDist * 6.0 - uTime * 2.5) * smoothstep(3.0, 0.5, mDist) * 0.08;
+    elevation += dome + ripple;
+    vMouseProximity = smoothstep(2.5, 0.0, mDist);
 
-    // Mouse influence — subtle attraction
-    float mouseDist = distance(pos.xy, uMouse * 2.0);
-    float mouseInfluence = smoothstep(1.5, 0.0, mouseDist) * 0.15;
-    elevation += mouseInfluence;
-
-    // Scroll-linked wave offset
-    elevation += sin(pos.x * 2.0 + uScrollY * 0.002) * 0.03;
+    // Scroll-linked wave
+    float s = uScroll * 0.001;
+    elevation += sin(pos.x * 1.5 + s * 5.0) * 0.04;
+    elevation += cos(pos.y * 2.0 + s * 3.0) * 0.03;
 
     pos.z += elevation;
     vElevation = elevation;
-    vNoise = n1;
 
-    // Compute displaced normal for lighting
-    float eps = 0.01;
-    float nx = snoise(vec3((pos.x + eps) * 0.8, pos.y * 0.8, uTime * 0.15)) * 0.35
-             + snoise(vec3((pos.x + eps) * 1.6, pos.y * 1.6, uTime * 0.25 + 100.0)) * 0.15;
-    float ny = snoise(vec3(pos.x * 0.8, (pos.y + eps) * 0.8, uTime * 0.15)) * 0.35
-             + snoise(vec3(pos.x * 1.6, (pos.y + eps) * 1.6, uTime * 0.25 + 100.0)) * 0.15;
-    vec3 displacedNormal = normalize(vec3(-(nx - (n1 + n2)) / eps, -(ny - (n1 + n2)) / eps, 1.0));
-    vNormal = displacedNormal;
+    // Compute displaced normal
+    float e = 0.01;
+    float dx = (snoise(vec3((pos.x + e) * 0.5, pos.y * 0.5, t)) * 0.55
+              + snoise(vec3((pos.x + e) * 1.2, pos.y * 1.2, t * 1.8 + 50.0)) * 0.22)
+             - (n1 + n2);
+    float dy = (snoise(vec3(pos.x * 0.5, (pos.y + e) * 0.5, t)) * 0.55
+              + snoise(vec3(pos.x * 1.2, (pos.y + e) * 1.2, t * 1.8 + 50.0)) * 0.22)
+             - (n1 + n2);
+    vNormal2 = normalize(vec3(-dx / e, -dy / e, 1.0));
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   }
 `;
 
-/* ─── Fragment Shader ─── */
-const fragmentShader = /* glsl */ `
+const fluidFragment = /* glsl */ `
+  ${NOISE_GLSL}
+
   uniform float uTime;
-  uniform vec3 uColorBase;
-  uniform vec3 uColorAccent;
-  uniform vec3 uColorHighlight;
+  uniform vec3 uColorDeep;
+  uniform vec3 uColorMid;
+  uniform vec3 uColorHot;
+  uniform vec3 uColorPeak;
   uniform float uOpacity;
 
   varying vec2 vUv;
   varying float vElevation;
-  varying float vNoise;
-  varying vec3 vNormal;
+  varying vec3 vNormal2;
+  varying float vMouseProximity;
 
   void main() {
-    // Base metallic gradient — dark at edges, slightly lighter center
-    float centerGlow = 1.0 - length(vUv - 0.5) * 1.4;
-    centerGlow = clamp(centerGlow, 0.0, 1.0);
+    // Vignette
+    float cDist = length(vUv - 0.5);
+    float vignette = smoothstep(0.75, 0.15, cDist);
 
-    // Mix base color with accent based on elevation
-    vec3 color = mix(uColorBase, uColorAccent, smoothstep(-0.1, 0.3, vElevation));
+    // Temperature from elevation
+    float temp = smoothstep(-0.3, 0.6, vElevation);
 
-    // Add highlight on peaks
-    color = mix(color, uColorHighlight, smoothstep(0.25, 0.45, vElevation) * 0.6);
+    // 4-stop gradient: deep → mid → hot → peak (white-hot)
+    vec3 color = mix(uColorDeep, uColorMid, smoothstep(0.0, 0.35, temp));
+    color = mix(color, uColorHot, smoothstep(0.35, 0.65, temp));
+    color = mix(color, uColorPeak, smoothstep(0.75, 1.0, temp));
 
-    // Fake Fresnel / rim lighting
-    float fresnel = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0);
-    color += uColorAccent * fresnel * 0.3;
+    // Fresnel rim — strong glow at edges
+    float fresnel = pow(1.0 - abs(dot(vNormal2, vec3(0.0, 0.0, 1.0))), 3.5);
+    color += uColorHot * fresnel * 0.5;
 
-    // Metallic sheen — shifts with viewing angle
-    float sheen = pow(max(dot(vNormal, normalize(vec3(0.5, 0.5, 1.0))), 0.0), 16.0);
-    color += uColorHighlight * sheen * 0.2;
+    // Moving specular highlight — liquid metal reflection
+    vec3 lightA = normalize(vec3(sin(uTime * 0.25) * 0.6, cos(uTime * 0.18) * 0.4, 1.0));
+    vec3 lightB = normalize(vec3(cos(uTime * 0.15) * 0.5, sin(uTime * 0.22) * 0.3, 0.8));
+    float specA = pow(max(dot(vNormal2, lightA), 0.0), 48.0);
+    float specB = pow(max(dot(vNormal2, lightB), 0.0), 24.0);
+    color += uColorPeak * specA * 0.35;
+    color += uColorHot * specB * 0.2;
 
-    // Vignette fade at edges
-    float vignette = smoothstep(0.0, 0.5, centerGlow);
+    // Mouse spotlight
+    color += uColorHot * vMouseProximity * 0.35;
+    color += uColorPeak * vMouseProximity * vMouseProximity * 0.2;
 
-    // Final opacity — subtle presence
+    // Heat veins — slow-moving bright cracks
+    float veins = snoise(vec3(vUv.x * 8.0, vUv.y * 8.0, uTime * 0.15));
+    float veinMask = smoothstep(0.35, 0.65, veins) * smoothstep(0.65, 0.35, veins) * 4.0;
+    color += uColorHot * veinMask * 0.12;
+
     float alpha = vignette * uOpacity;
-
     gl_FragColor = vec4(color, alpha);
   }
 `;
 
-/* ─── Fluid Mesh Component ─── */
 function FluidMesh() {
   const meshRef = useRef<THREE.Mesh>(null);
   const mouseRef = useRef(new THREE.Vector2(0, 0));
-  const targetMouseRef = useRef(new THREE.Vector2(0, 0));
+  const targetMouse = useRef(new THREE.Vector2(0, 0));
   const scrollRef = useRef(0);
   const { size } = useThree();
 
@@ -159,19 +179,19 @@ function FluidMesh() {
     () => ({
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
-      uScrollY: { value: 0 },
-      uColorBase: { value: new THREE.Color("#0a0a0a") },
-      uColorAccent: { value: new THREE.Color("#3a0a0a") },
-      uColorHighlight: { value: new THREE.Color("#dc2626") },
-      uOpacity: { value: 0.45 },
+      uScroll: { value: 0 },
+      uColorDeep: { value: new THREE.Color("#050505") },
+      uColorMid: { value: new THREE.Color("#1a0505") },
+      uColorHot: { value: new THREE.Color("#dc2626") },
+      uColorPeak: { value: new THREE.Color("#ff8a65") },
+      uOpacity: { value: 0.55 },
     }),
     [],
   );
 
-  // Track mouse
   const handleMouse = useCallback(
     (e: MouseEvent) => {
-      targetMouseRef.current.set(
+      targetMouse.current.set(
         (e.clientX / size.width) * 2 - 1,
         -(e.clientY / size.height) * 2 + 1,
       );
@@ -179,7 +199,6 @@ function FluidMesh() {
     [size],
   );
 
-  // Track scroll
   const handleScroll = useCallback(() => {
     scrollRef.current = window.scrollY;
   }, []);
@@ -193,56 +212,52 @@ function FluidMesh() {
     };
   }, [handleMouse, handleScroll]);
 
-  // Theme-aware colors
+  // Theme colors
   useEffect(() => {
     const update = () => {
-      const isDark = document.documentElement.classList.contains("dark");
-      if (isDark) {
-        uniforms.uColorBase.value.set("#080605");
-        uniforms.uColorAccent.value.set("#2a0808");
-        uniforms.uColorHighlight.value.set("#ef4444");
-        uniforms.uOpacity.value = 0.5;
+      const dark = document.documentElement.classList.contains("dark");
+      if (dark) {
+        uniforms.uColorDeep.value.set("#030202");
+        uniforms.uColorMid.value.set("#180606");
+        uniforms.uColorHot.value.set("#ef4444");
+        uniforms.uColorPeak.value.set("#ffa070");
+        uniforms.uOpacity.value = 0.6;
       } else {
-        uniforms.uColorBase.value.set("#e8e4e0");
-        uniforms.uColorAccent.value.set("#f5e6e6");
-        uniforms.uColorHighlight.value.set("#dc2626");
-        uniforms.uOpacity.value = 0.2;
+        uniforms.uColorDeep.value.set("#ece8e4");
+        uniforms.uColorMid.value.set("#f0dcd8");
+        uniforms.uColorHot.value.set("#dc2626");
+        uniforms.uColorPeak.value.set("#ff6b6b");
+        uniforms.uOpacity.value = 0.18;
       }
     };
-
     update();
-
-    const observer = new MutationObserver(update);
-    observer.observe(document.documentElement, {
+    const obs = new MutationObserver(update);
+    obs.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
     });
-    return () => observer.disconnect();
+    return () => obs.disconnect();
   }, [uniforms]);
 
   useFrame((_, delta) => {
     if (!meshRef.current) return;
-
     const mat = meshRef.current.material as THREE.ShaderMaterial;
     mat.uniforms.uTime.value += delta;
-
-    // Smooth mouse lerp
-    mouseRef.current.lerp(targetMouseRef.current, 0.05);
+    mouseRef.current.lerp(targetMouse.current, 0.04);
     mat.uniforms.uMouse.value.copy(mouseRef.current);
-    mat.uniforms.uScrollY.value = scrollRef.current;
+    mat.uniforms.uScroll.value = scrollRef.current;
   });
 
-  // Responsive plane size
   const aspect = size.width / size.height;
-  const planeW = 5 * Math.max(aspect, 1);
-  const planeH = 5 / Math.min(aspect, 1);
+  const pw = 6 * Math.max(aspect, 1);
+  const ph = 6 / Math.min(aspect, 1);
 
   return (
-    <mesh ref={meshRef} rotation={[-0.3, 0, 0]} position={[0, 0.2, 0]}>
-      <planeGeometry args={[planeW, planeH, 128, 128]} />
+    <mesh ref={meshRef} rotation={[-0.35, 0, 0]} position={[0, 0.3, 0]}>
+      <planeGeometry args={[pw, ph, 160, 160]} />
       <shaderMaterial
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
+        vertexShader={fluidVertex}
+        fragmentShader={fluidFragment}
         uniforms={uniforms}
         transparent
         depthWrite={false}
@@ -252,12 +267,158 @@ function FluidMesh() {
   );
 }
 
-/* ─── Canvas Wrapper ─── */
+/* ═══════════════════════════════════════════════════════════════
+   EMBER PARTICLES — floating sparks
+   ═══════════════════════════════════════════════════════════════ */
+const particleVertex = /* glsl */ `
+  attribute float aSize;
+  attribute float aPhase;
+  attribute float aBrightness;
+
+  uniform float uTime;
+  uniform float uPixelRatio;
+
+  varying float vAlpha;
+  varying float vBright;
+
+  void main() {
+    vec3 pos = position;
+
+    // Gentle sway
+    float t = uTime * 0.3 + aPhase;
+    pos.x += sin(t * 1.3 + pos.y * 0.5) * 0.15;
+    pos.z += cos(t * 0.9 + pos.x * 0.3) * 0.1;
+
+    // Slow upward drift
+    pos.y += mod(uTime * (0.05 + aBrightness * 0.08) + aPhase * 10.0, 8.0) - 4.0;
+
+    vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
+    gl_Position = projectionMatrix * mvPos;
+
+    // Size attenuation
+    gl_PointSize = aSize * uPixelRatio * (200.0 / -mvPos.z);
+
+    // Fade based on Y position (fade out at top/bottom)
+    float yNorm = (pos.y + 4.0) / 8.0;
+    float edgeFade = smoothstep(0.0, 0.15, yNorm) * smoothstep(1.0, 0.8, yNorm);
+
+    // Twinkle
+    float twinkle = sin(uTime * 2.0 + aPhase * 20.0) * 0.3 + 0.7;
+
+    vAlpha = edgeFade * twinkle * (0.3 + aBrightness * 0.7);
+    vBright = aBrightness;
+  }
+`;
+
+const particleFragment = /* glsl */ `
+  uniform vec3 uEmberColor;
+  uniform vec3 uEmberHot;
+
+  varying float vAlpha;
+  varying float vBright;
+
+  void main() {
+    // Soft circle
+    float d = length(gl_PointCoord - 0.5);
+    if (d > 0.5) discard;
+
+    // Glow falloff — bright core, soft halo
+    float core = smoothstep(0.5, 0.05, d);
+    float halo = smoothstep(0.5, 0.2, d) * 0.4;
+    float glow = core + halo;
+
+    vec3 color = mix(uEmberColor, uEmberHot, vBright * core);
+
+    gl_FragColor = vec4(color, glow * vAlpha);
+  }
+`;
+
+const PARTICLE_COUNT = 600;
+
+function Embers() {
+  const pointsRef = useRef<THREE.Points>(null);
+
+  const { geometry, uniforms } = useMemo(() => {
+    const positions = new Float32Array(PARTICLE_COUNT * 3);
+    const sizes = new Float32Array(PARTICLE_COUNT);
+    const phases = new Float32Array(PARTICLE_COUNT);
+    const brightness = new Float32Array(PARTICLE_COUNT);
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 12;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 8;
+      positions[i * 3 + 2] = Math.random() * 3 - 1;
+
+      sizes[i] = Math.random() * 4 + 1;
+      phases[i] = Math.random() * Math.PI * 2;
+      brightness[i] = Math.random() ** 3; // most are dim, few are bright
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+    geo.setAttribute("aPhase", new THREE.BufferAttribute(phases, 1));
+    geo.setAttribute("aBrightness", new THREE.BufferAttribute(brightness, 1));
+
+    const uni = {
+      uTime: { value: 0 },
+      uPixelRatio: { value: Math.min(window.devicePixelRatio, 1.5) },
+      uEmberColor: { value: new THREE.Color("#ff4422") },
+      uEmberHot: { value: new THREE.Color("#ffcc88") },
+    };
+
+    return { geometry: geo, uniforms: uni };
+  }, []);
+
+  // Theme-aware ember colors
+  useEffect(() => {
+    const update = () => {
+      const dark = document.documentElement.classList.contains("dark");
+      if (dark) {
+        uniforms.uEmberColor.value.set("#ee3311");
+        uniforms.uEmberHot.value.set("#ffbb77");
+      } else {
+        uniforms.uEmberColor.value.set("#dc2626");
+        uniforms.uEmberHot.value.set("#ff8888");
+      }
+    };
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => obs.disconnect();
+  }, [uniforms]);
+
+  useFrame((_, delta) => {
+    if (!pointsRef.current) return;
+    const mat = pointsRef.current.material as THREE.ShaderMaterial;
+    mat.uniforms.uTime.value += delta;
+  });
+
+  return (
+    <points ref={pointsRef} geometry={geometry}>
+      <shaderMaterial
+        vertexShader={particleVertex}
+        fragmentShader={particleFragment}
+        uniforms={uniforms}
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCENE — Canvas wrapper
+   ═══════════════════════════════════════════════════════════════ */
 export default function FluidBackground() {
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none">
       <Canvas
-        camera={{ position: [0, 0, 2.5], fov: 50 }}
+        camera={{ position: [0, 0, 3], fov: 50 }}
         dpr={[1, 1.5]}
         gl={{
           antialias: false,
@@ -267,6 +428,7 @@ export default function FluidBackground() {
         style={{ background: "transparent" }}
       >
         <FluidMesh />
+        <Embers />
       </Canvas>
     </div>
   );
