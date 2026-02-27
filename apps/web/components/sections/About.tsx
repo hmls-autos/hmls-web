@@ -1,82 +1,50 @@
 "use client";
 
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { useEffect, useRef } from "react";
 
-gsap.registerPlugin(ScrollTrigger);
-
 export default function About() {
-  const sectionRef = useRef<HTMLElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
 
-    const ctx = gsap.context(() => {
-      // Image parallax reveal
-      gsap.from(imageRef.current, {
-        x: -80,
-        opacity: 0,
-        duration: 1,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 70%",
-          toggleActions: "play none none none",
-        },
-      });
-
-      // Image parallax on scroll
-      const img = imageRef.current?.querySelector("img");
-      if (img) {
-        gsap.to(img, {
-          yPercent: 15,
-          ease: "none",
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: true,
-          },
-        });
+    for (const el of [imageRef.current, textRef.current]) {
+      if (!el) continue;
+      if (prefersReducedMotion) {
+        el.classList.add("visible");
+        continue;
       }
-
-      // Text slide in
-      gsap.from(textRef.current, {
-        x: 80,
-        opacity: 0,
-        duration: 1,
-        delay: 0.2,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 70%",
-          toggleActions: "play none none none",
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            el.classList.add("visible");
+            observer.unobserve(el);
+          }
         },
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
+        { threshold: 0.1 },
+      );
+      observer.observe(el);
+    }
   }, []);
 
   return (
-    <section ref={sectionRef} id="about" className="w-full py-32 bg-background">
+    <section id="about" className="w-full py-32 bg-background">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           {/* Image */}
-          <div ref={imageRef} className="relative">
+          <div ref={imageRef} className="reveal-left relative">
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
               <Image
                 src="/images/engine-bay.png"
                 alt="Engine bay detail"
                 fill
-                className="object-cover scale-110"
+                className="object-cover"
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
-              {/* Gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
             </div>
             {/* Red accent corner */}
@@ -94,7 +62,7 @@ export default function About() {
           </div>
 
           {/* Text */}
-          <div ref={textRef}>
+          <div ref={textRef} className="reveal-right">
             <p className="text-sm uppercase tracking-[0.2em] text-red-400 font-display font-semibold mb-4">
               About Us
             </p>
