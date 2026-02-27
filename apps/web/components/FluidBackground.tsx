@@ -1,11 +1,17 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import {
+  Bloom,
+  EffectComposer,
+  Noise,
+  Vignette,
+} from "@react-three/postprocessing";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 /* ═══════════════════════════════════════════════════════════════
-   GLSL Simplex 3D Noise (Ashima Arts)
+   GLSL — Simplex 3D + Domain Warping + FBM
    ═══════════════════════════════════════════════════════════════ */
 const NOISE_GLSL = /* glsl */ `
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -55,12 +61,40 @@ const NOISE_GLSL = /* glsl */ `
     m = m * m;
     return 105.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
   }
+
+  // Domain warping — warp coords through noise for organic flowing shapes
+  float warpedNoise(vec3 p, float t) {
+    vec3 q = vec3(
+      snoise(p + vec3(0.0, 0.0, t * 0.12)),
+      snoise(p + vec3(5.2, 1.3, t * 0.10)),
+      snoise(p + vec3(1.7, 9.2, t * 0.08))
+    );
+    vec3 r = vec3(
+      snoise(p + 4.0 * q + vec3(1.7, 9.2, t * 0.06)),
+      snoise(p + 4.0 * q + vec3(8.3, 2.8, t * 0.07)),
+      0.0
+    );
+    return snoise(p + 3.0 * r);
+  }
+
+  // FBM — layered noise octaves
+  float fbm(vec3 p, float t) {
+    float v = 0.0;
+    float a = 0.5;
+    vec3 shift = vec3(100.0);
+    for (int i = 0; i < 4; i++) {
+      v += a * snoise(p + t * 0.05 * float(i + 1));
+      p = p * 2.0 + shift;
+      a *= 0.5;
+    }
+    return v;
+  }
 `;
 
 /* ═══════════════════════════════════════════════════════════════
-   FLUID MESH — Molten metal surface
+   LAYER 1: CHROME LIQUID — Domain-warped metallic surface
    ═══════════════════════════════════════════════════════════════ */
-const fluidVertex = /* glsl */ `
+const chromeVertex = /* glsl */ `
   ${NOISE_GLSL}
 
   uniform float uTime;
@@ -71,50 +105,53 @@ const fluidVertex = /* glsl */ `
   varying float vElevation;
   varying vec3 vNormal2;
   varying float vMouseProximity;
+  varying vec3 vWorldPos;
+  varying float vWarp;
 
   void main() {
     vUv = uv;
     vec3 pos = position;
 
-    // 4-octave noise — organic, dramatic displacement
-    float t = uTime * 0.1;
-    float n1 = snoise(vec3(pos.x * 0.5, pos.y * 0.5, t)) * 0.55;
-    float n2 = snoise(vec3(pos.x * 1.2, pos.y * 1.2, t * 1.8 + 50.0)) * 0.22;
-    float n3 = snoise(vec3(pos.x * 2.8, pos.y * 2.8, t * 2.5 + 120.0)) * 0.08;
-    float n4 = snoise(vec3(pos.x * 5.5, pos.y * 5.5, t * 3.5 + 250.0)) * 0.03;
-    float elevation = n1 + n2 + n3 + n4;
+    float t = uTime;
 
-    // Mouse dome + ripple
-    vec2 mWorld = uMouse * 3.0;
+    // Domain warping for organic flow
+    float warp1 = warpedNoise(vec3(pos.xy * 0.3, t * 0.04), t) * 0.7;
+    float warp2 = warpedNoise(vec3(pos.xy * 0.8 + 50.0, t * 0.06), t) * 0.3;
+    float detail = fbm(vec3(pos.xy * 1.5 + 100.0, t * 0.03), t) * 0.12;
+    float elevation = warp1 + warp2 + detail;
+    vWarp = warp1;
+
+    // Mouse interaction — pressure dome + concentric ripples
+    vec2 mWorld = uMouse * 4.0;
     float mDist = distance(pos.xy, mWorld);
-    float dome = smoothstep(2.5, 0.0, mDist) * 0.25;
-    float ripple = sin(mDist * 6.0 - uTime * 2.5) * smoothstep(3.0, 0.5, mDist) * 0.08;
-    elevation += dome + ripple;
-    vMouseProximity = smoothstep(2.5, 0.0, mDist);
+    float dome = smoothstep(3.5, 0.0, mDist) * 0.4;
+    float ripple = sin(mDist * 6.0 - uTime * 4.0) * smoothstep(5.0, 0.5, mDist) * 0.08;
+    float ripple2 = sin(mDist * 12.0 - uTime * 6.0) * smoothstep(3.0, 0.3, mDist) * 0.03;
+    elevation += dome + ripple + ripple2;
+    vMouseProximity = smoothstep(3.5, 0.0, mDist);
 
-    // Scroll-linked wave
-    float s = uScroll * 0.001;
-    elevation += sin(pos.x * 1.5 + s * 5.0) * 0.04;
-    elevation += cos(pos.y * 2.0 + s * 3.0) * 0.03;
+    // Scroll — long wave
+    float s = uScroll * 0.0006;
+    elevation += sin(pos.x * 0.8 + s * 5.0) * 0.06;
 
     pos.z += elevation;
     vElevation = elevation;
+    vWorldPos = pos;
 
-    // Compute displaced normal
-    float e = 0.01;
-    float dx = (snoise(vec3((pos.x + e) * 0.5, pos.y * 0.5, t)) * 0.55
-              + snoise(vec3((pos.x + e) * 1.2, pos.y * 1.2, t * 1.8 + 50.0)) * 0.22)
-             - (n1 + n2);
-    float dy = (snoise(vec3(pos.x * 0.5, (pos.y + e) * 0.5, t)) * 0.55
-              + snoise(vec3(pos.x * 1.2, (pos.y + e) * 1.2, t * 1.8 + 50.0)) * 0.22)
-             - (n1 + n2);
-    vNormal2 = normalize(vec3(-dx / e, -dy / e, 1.0));
+    // Finite-difference normal (2 octaves for smoothness)
+    float e = 0.02;
+    float ex = warpedNoise(vec3((pos.x + e) * 0.3, pos.y * 0.3, t * 0.04), t) * 0.7
+             + warpedNoise(vec3((pos.x + e) * 0.8 + 50.0, pos.y * 0.8 + 50.0, t * 0.06), t) * 0.3;
+    float ey = warpedNoise(vec3(pos.x * 0.3, (pos.y + e) * 0.3, t * 0.04), t) * 0.7
+             + warpedNoise(vec3(pos.x * 0.8 + 50.0, (pos.y + e) * 0.8 + 50.0, t * 0.06), t) * 0.3;
+    float base = warp1 + warp2;
+    vNormal2 = normalize(vec3(-(ex - base) / e, -(ey - base) / e, 1.0));
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   }
 `;
 
-const fluidFragment = /* glsl */ `
+const chromeFragment = /* glsl */ `
   ${NOISE_GLSL}
 
   uniform float uTime;
@@ -123,52 +160,97 @@ const fluidFragment = /* glsl */ `
   uniform vec3 uColorHot;
   uniform vec3 uColorPeak;
   uniform float uOpacity;
+  uniform float uIsDark;
 
   varying vec2 vUv;
   varying float vElevation;
   varying vec3 vNormal2;
   varying float vMouseProximity;
+  varying vec3 vWorldPos;
+  varying float vWarp;
+
+  #define PI 3.141592653589793
+
+  // GGX normal distribution for physically-based specular
+  float D_GGX(float NdotH, float roughness) {
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float d = NdotH * NdotH * (a2 - 1.0) + 1.0;
+    return a2 / (PI * d * d);
+  }
 
   void main() {
     // Vignette
     float cDist = length(vUv - 0.5);
-    float vignette = smoothstep(0.75, 0.15, cDist);
+    float vignette = smoothstep(0.85, 0.05, cDist);
 
-    // Temperature from elevation
-    float temp = smoothstep(-0.3, 0.6, vElevation);
+    // Temperature map from elevation
+    float temp = smoothstep(-0.5, 0.8, vElevation);
 
-    // 4-stop gradient: deep → mid → hot → peak (white-hot)
-    vec3 color = mix(uColorDeep, uColorMid, smoothstep(0.0, 0.35, temp));
-    color = mix(color, uColorHot, smoothstep(0.35, 0.65, temp));
+    // 4-stop color gradient
+    vec3 color = mix(uColorDeep, uColorMid, smoothstep(0.0, 0.25, temp));
+    color = mix(color, uColorHot, smoothstep(0.3, 0.65, temp));
     color = mix(color, uColorPeak, smoothstep(0.75, 1.0, temp));
 
-    // Fresnel rim — strong glow at edges
-    float fresnel = pow(1.0 - abs(dot(vNormal2, vec3(0.0, 0.0, 1.0))), 3.5);
-    color += uColorHot * fresnel * 0.5;
+    // Iridescence — subtle oil-slick rainbow on peaks (dark mode only)
+    float iridAngle = dot(vNormal2, vec3(0.0, 0.0, 1.0));
+    vec3 iridescence = 0.5 + 0.5 * cos(6.283 * (iridAngle * 1.5 + vec3(0.0, 0.33, 0.67) + uTime * 0.02));
+    color += iridescence * smoothstep(0.5, 0.9, temp) * 0.08 * uIsDark;
 
-    // Moving specular highlight — liquid metal reflection
-    vec3 lightA = normalize(vec3(sin(uTime * 0.25) * 0.6, cos(uTime * 0.18) * 0.4, 1.0));
-    vec3 lightB = normalize(vec3(cos(uTime * 0.15) * 0.5, sin(uTime * 0.22) * 0.3, 0.8));
-    float specA = pow(max(dot(vNormal2, lightA), 0.0), 48.0);
-    float specB = pow(max(dot(vNormal2, lightB), 0.0), 24.0);
-    color += uColorPeak * specA * 0.35;
-    color += uColorHot * specB * 0.2;
+    // Fresnel — strong rim glow
+    float fresnel = pow(1.0 - abs(iridAngle), 5.0);
+    color += uColorHot * fresnel * 0.7;
 
-    // Mouse spotlight
-    color += uColorHot * vMouseProximity * 0.35;
-    color += uColorPeak * vMouseProximity * vMouseProximity * 0.2;
+    // GGX specular lights — automotive showroom
+    vec3 viewDir = vec3(0.0, 0.0, 1.0);
 
-    // Heat veins — slow-moving bright cracks
-    float veins = snoise(vec3(vUv.x * 8.0, vUv.y * 8.0, uTime * 0.15));
-    float veinMask = smoothstep(0.35, 0.65, veins) * smoothstep(0.65, 0.35, veins) * 4.0;
-    color += uColorHot * veinMask * 0.12;
+    // Primary sweeping light (slow orbit)
+    vec3 l1 = normalize(vec3(sin(uTime * 0.15) * 1.2, cos(uTime * 0.12) * 0.6, 1.0));
+    vec3 h1 = normalize(l1 + viewDir);
+    float spec1 = D_GGX(max(dot(vNormal2, h1), 0.0), 0.08);
+
+    // Secondary fill light
+    vec3 l2 = normalize(vec3(cos(uTime * 0.08) * 0.8, sin(uTime * 0.1) * 0.9, 0.8));
+    vec3 h2 = normalize(l2 + viewDir);
+    float spec2 = D_GGX(max(dot(vNormal2, h2), 0.0), 0.15);
+
+    // Sharp highlight — razor-thin reflection like on a car body
+    vec3 l3 = normalize(vec3(sin(uTime * 0.25 + 1.5), 0.3, 0.6));
+    vec3 h3 = normalize(l3 + viewDir);
+    float spec3 = D_GGX(max(dot(vNormal2, h3), 0.0), 0.03);
+
+    // Anisotropic stretched highlight (car paint effect)
+    vec3 l4 = normalize(vec3(0.0, sin(uTime * 0.08), 1.0));
+    vec3 h4 = normalize(l4 + viewDir);
+    float aniso = max(dot(vNormal2, h4), 0.0);
+    float anisoSpec = pow(aniso, 256.0) * 0.6;
+
+    color += uColorPeak * spec1 * 0.5;
+    color += uColorHot * spec2 * 0.3;
+    color += vec3(1.0) * spec3 * 0.25;
+    color += vec3(1.0, 0.95, 0.9) * anisoSpec;
+
+    // Mouse glow — bright center with falloff
+    float mousePow = vMouseProximity * vMouseProximity;
+    color += uColorHot * vMouseProximity * 0.5;
+    color += uColorPeak * mousePow * 0.4;
+    color += vec3(1.0) * mousePow * mousePow * 0.15; // white-hot center
+
+    // Subsurface scattering approximation — red glow through peaks
+    float sss = smoothstep(0.2, 0.8, temp) * (1.0 - fresnel) * 0.15;
+    color += uColorHot * sss;
+
+    // Heat veins — flowing through the surface
+    float veins = warpedNoise(vec3(vUv * 8.0, uTime * 0.05), uTime * 0.5);
+    float veinMask = smoothstep(0.2, 0.5, veins) * smoothstep(0.5, 0.2, veins) * 4.0;
+    color += uColorHot * veinMask * 0.06;
 
     float alpha = vignette * uOpacity;
     gl_FragColor = vec4(color, alpha);
   }
 `;
 
-function FluidMesh() {
+function ChromeSurface() {
   const meshRef = useRef<THREE.Mesh>(null);
   const mouseRef = useRef(new THREE.Vector2(0, 0));
   const targetMouse = useRef(new THREE.Vector2(0, 0));
@@ -180,11 +262,12 @@ function FluidMesh() {
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
       uScroll: { value: 0 },
-      uColorDeep: { value: new THREE.Color("#050505") },
-      uColorMid: { value: new THREE.Color("#1a0505") },
-      uColorHot: { value: new THREE.Color("#dc2626") },
-      uColorPeak: { value: new THREE.Color("#ff8a65") },
-      uOpacity: { value: 0.55 },
+      uColorDeep: { value: new THREE.Color("#020101") },
+      uColorMid: { value: new THREE.Color("#150404") },
+      uColorHot: { value: new THREE.Color("#ef4444") },
+      uColorPeak: { value: new THREE.Color("#ffa070") },
+      uOpacity: { value: 0.6 },
+      uIsDark: { value: 1.0 },
     }),
     [],
   );
@@ -217,17 +300,19 @@ function FluidMesh() {
     const update = () => {
       const dark = document.documentElement.classList.contains("dark");
       if (dark) {
-        uniforms.uColorDeep.value.set("#030202");
-        uniforms.uColorMid.value.set("#180606");
+        uniforms.uColorDeep.value.set("#010101");
+        uniforms.uColorMid.value.set("#120303");
         uniforms.uColorHot.value.set("#ef4444");
-        uniforms.uColorPeak.value.set("#ffa070");
-        uniforms.uOpacity.value = 0.6;
+        uniforms.uColorPeak.value.set("#ffaa77");
+        uniforms.uOpacity.value = 0.7;
+        uniforms.uIsDark.value = 1.0;
       } else {
-        uniforms.uColorDeep.value.set("#ece8e4");
-        uniforms.uColorMid.value.set("#f0dcd8");
+        uniforms.uColorDeep.value.set("#f5f0ed");
+        uniforms.uColorMid.value.set("#eeddd8");
         uniforms.uColorHot.value.set("#dc2626");
-        uniforms.uColorPeak.value.set("#ff6b6b");
+        uniforms.uColorPeak.value.set("#ff5555");
         uniforms.uOpacity.value = 0.18;
+        uniforms.uIsDark.value = 0.0;
       }
     };
     update();
@@ -249,15 +334,15 @@ function FluidMesh() {
   });
 
   const aspect = size.width / size.height;
-  const pw = 6 * Math.max(aspect, 1);
-  const ph = 6 / Math.min(aspect, 1);
+  const pw = 8 * Math.max(aspect, 1);
+  const ph = 8 / Math.min(aspect, 1);
 
   return (
-    <mesh ref={meshRef} rotation={[-0.35, 0, 0]} position={[0, 0.3, 0]}>
+    <mesh ref={meshRef} rotation={[-0.25, 0, 0]} position={[0, 0.3, 0]}>
       <planeGeometry args={[pw, ph, 160, 160]} />
       <shaderMaterial
-        vertexShader={fluidVertex}
-        fragmentShader={fluidFragment}
+        vertexShader={chromeVertex}
+        fragmentShader={chromeFragment}
         uniforms={uniforms}
         transparent
         depthWrite={false}
@@ -268,90 +353,105 @@ function FluidMesh() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   EMBER PARTICLES — floating sparks
+   LAYER 2: FLOATING SHARDS — geometric debris with glow
    ═══════════════════════════════════════════════════════════════ */
-const particleVertex = /* glsl */ `
+const SHARD_COUNT = 120;
+
+const shardVertex = /* glsl */ `
   attribute float aSize;
   attribute float aPhase;
   attribute float aBrightness;
+  attribute float aShape;
 
   uniform float uTime;
   uniform float uPixelRatio;
 
   varying float vAlpha;
   varying float vBright;
+  varying float vShape;
 
   void main() {
     vec3 pos = position;
 
-    // Gentle sway
-    float t = uTime * 0.3 + aPhase;
-    pos.x += sin(t * 1.3 + pos.y * 0.5) * 0.15;
-    pos.z += cos(t * 0.9 + pos.x * 0.3) * 0.1;
+    float t = uTime * 0.15 + aPhase;
 
-    // Slow upward drift
-    pos.y += mod(uTime * (0.05 + aBrightness * 0.08) + aPhase * 10.0, 8.0) - 4.0;
+    // Slow orbital drift
+    pos.x += sin(t * 0.7 + pos.y * 0.3) * 0.3;
+    pos.z += cos(t * 0.5 + pos.x * 0.2) * 0.2;
+    pos.y += mod(uTime * (0.02 + aBrightness * 0.04) + aPhase * 10.0, 12.0) - 6.0;
 
     vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mvPos;
-
-    // Size attenuation
     gl_PointSize = aSize * uPixelRatio * (200.0 / -mvPos.z);
 
-    // Fade based on Y position (fade out at top/bottom)
-    float yNorm = (pos.y + 4.0) / 8.0;
-    float edgeFade = smoothstep(0.0, 0.15, yNorm) * smoothstep(1.0, 0.8, yNorm);
+    // Edge fade + twinkle
+    float yNorm = (pos.y + 6.0) / 12.0;
+    float edgeFade = smoothstep(0.0, 0.1, yNorm) * smoothstep(1.0, 0.88, yNorm);
+    float twinkle = sin(uTime * 2.5 + aPhase * 30.0) * 0.3 + 0.7;
 
-    // Twinkle
-    float twinkle = sin(uTime * 2.0 + aPhase * 20.0) * 0.3 + 0.7;
-
-    vAlpha = edgeFade * twinkle * (0.3 + aBrightness * 0.7);
+    vAlpha = edgeFade * twinkle * (0.15 + aBrightness * 0.85);
     vBright = aBrightness;
+    vShape = aShape;
   }
 `;
 
-const particleFragment = /* glsl */ `
+const shardFragment = /* glsl */ `
   uniform vec3 uEmberColor;
   uniform vec3 uEmberHot;
 
   varying float vAlpha;
   varying float vBright;
+  varying float vShape;
 
   void main() {
-    // Soft circle
-    float d = length(gl_PointCoord - 0.5);
+    vec2 c = gl_PointCoord - 0.5;
+    float d = length(c);
     if (d > 0.5) discard;
 
-    // Glow falloff — bright core, soft halo
-    float core = smoothstep(0.5, 0.05, d);
-    float halo = smoothstep(0.5, 0.2, d) * 0.4;
-    float glow = core + halo;
+    float shape;
+    if (vShape < 0.33) {
+      // Diamond
+      shape = 1.0 - (abs(c.x) + abs(c.y)) * 2.0;
+    } else if (vShape < 0.66) {
+      // Soft circle with hard core
+      shape = smoothstep(0.5, 0.0, d);
+    } else {
+      // Cross/star
+      float cross = min(abs(c.x), abs(c.y));
+      shape = smoothstep(0.12, 0.0, cross) * smoothstep(0.5, 0.1, d);
+    }
+    shape = max(shape, 0.0);
 
-    vec3 color = mix(uEmberColor, uEmberHot, vBright * core);
+    // Glow halo
+    float halo = smoothstep(0.5, 0.15, d) * 0.4;
+    float glow = shape + halo;
+
+    vec3 color = mix(uEmberColor, uEmberHot, vBright * shape);
+    // White-hot core for brightest particles
+    color = mix(color, vec3(1.0, 0.98, 0.95), step(0.85, vBright) * shape * shape);
 
     gl_FragColor = vec4(color, glow * vAlpha);
   }
 `;
 
-const PARTICLE_COUNT = 600;
-
-function Embers() {
+function FloatingShards() {
   const pointsRef = useRef<THREE.Points>(null);
 
   const { geometry, uniforms } = useMemo(() => {
-    const positions = new Float32Array(PARTICLE_COUNT * 3);
-    const sizes = new Float32Array(PARTICLE_COUNT);
-    const phases = new Float32Array(PARTICLE_COUNT);
-    const brightness = new Float32Array(PARTICLE_COUNT);
+    const positions = new Float32Array(SHARD_COUNT * 3);
+    const sizes = new Float32Array(SHARD_COUNT);
+    const phases = new Float32Array(SHARD_COUNT);
+    const brightness = new Float32Array(SHARD_COUNT);
+    const shapes = new Float32Array(SHARD_COUNT);
 
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 12;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 8;
-      positions[i * 3 + 2] = Math.random() * 3 - 1;
-
-      sizes[i] = Math.random() * 4 + 1;
+    for (let i = 0; i < SHARD_COUNT; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 16;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 12;
+      positions[i * 3 + 2] = Math.random() * 5 - 2;
+      sizes[i] = Math.random() * 6 + 1.5;
       phases[i] = Math.random() * Math.PI * 2;
-      brightness[i] = Math.random() ** 3; // most are dim, few are bright
+      brightness[i] = Math.random() ** 2.5; // power curve — few very bright
+      shapes[i] = Math.random();
     }
 
     const geo = new THREE.BufferGeometry();
@@ -359,27 +459,27 @@ function Embers() {
     geo.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
     geo.setAttribute("aPhase", new THREE.BufferAttribute(phases, 1));
     geo.setAttribute("aBrightness", new THREE.BufferAttribute(brightness, 1));
+    geo.setAttribute("aShape", new THREE.BufferAttribute(shapes, 1));
 
     const uni = {
       uTime: { value: 0 },
       uPixelRatio: { value: Math.min(window.devicePixelRatio, 1.5) },
-      uEmberColor: { value: new THREE.Color("#ff4422") },
+      uEmberColor: { value: new THREE.Color("#ee3311") },
       uEmberHot: { value: new THREE.Color("#ffcc88") },
     };
 
     return { geometry: geo, uniforms: uni };
   }, []);
 
-  // Theme-aware ember colors
   useEffect(() => {
     const update = () => {
       const dark = document.documentElement.classList.contains("dark");
       if (dark) {
-        uniforms.uEmberColor.value.set("#ee3311");
-        uniforms.uEmberHot.value.set("#ffbb77");
+        uniforms.uEmberColor.value.set("#dd2200");
+        uniforms.uEmberHot.value.set("#ffbb66");
       } else {
-        uniforms.uEmberColor.value.set("#dc2626");
-        uniforms.uEmberHot.value.set("#ff8888");
+        uniforms.uEmberColor.value.set("#cc2222");
+        uniforms.uEmberHot.value.set("#ff7777");
       }
     };
     update();
@@ -400,8 +500,8 @@ function Embers() {
   return (
     <points ref={pointsRef} geometry={geometry}>
       <shaderMaterial
-        vertexShader={particleVertex}
-        fragmentShader={particleFragment}
+        vertexShader={shardVertex}
+        fragmentShader={shardFragment}
         uniforms={uniforms}
         transparent
         depthWrite={false}
@@ -412,23 +512,183 @@ function Embers() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   SCENE — Canvas wrapper
+   LAYER 3: LIGHT SWEEPS — cinematic light streaks
+   ═══════════════════════════════════════════════════════════════ */
+const sweepVertex = /* glsl */ `
+  attribute float aPhase;
+  attribute float aSpeed;
+  attribute float aWidth;
+  attribute float aY;
+
+  uniform float uTime;
+
+  varying float vAlpha;
+  varying float vProgress;
+
+  void main() {
+    vec3 pos = position;
+
+    // Sweep across screen — different speeds
+    float cycle = mod(uTime * aSpeed + aPhase, 3.0) - 1.5;
+    pos.x = cycle * 10.0;
+    pos.y = aY;
+
+    vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
+    gl_Position = projectionMatrix * mvPos;
+    gl_PointSize = aWidth * (200.0 / -mvPos.z);
+
+    // Comet-like fade: bright head, long tail
+    float progress = (cycle + 1.5) / 3.0;
+    vProgress = progress;
+    float headBright = smoothstep(0.0, 0.05, progress) * smoothstep(1.0, 0.7, progress);
+    vAlpha = headBright * 0.25;
+  }
+`;
+
+const sweepFragment = /* glsl */ `
+  uniform vec3 uSweepColor;
+  varying float vAlpha;
+  varying float vProgress;
+
+  void main() {
+    vec2 c = gl_PointCoord - 0.5;
+    // Horizontally stretched ellipse
+    float d = length(vec2(c.x * 0.2, c.y * 2.5));
+    if (d > 0.5) discard;
+
+    float glow = smoothstep(0.5, 0.0, d);
+    float core = smoothstep(0.15, 0.0, d);
+
+    vec3 color = uSweepColor;
+    color += vec3(1.0, 0.98, 0.95) * core * 0.5;
+
+    gl_FragColor = vec4(color, glow * vAlpha);
+  }
+`;
+
+const SWEEP_COUNT = 30;
+
+function LightSweeps() {
+  const pointsRef = useRef<THREE.Points>(null);
+
+  const { geometry, uniforms } = useMemo(() => {
+    const positions = new Float32Array(SWEEP_COUNT * 3);
+    const phases = new Float32Array(SWEEP_COUNT);
+    const speeds = new Float32Array(SWEEP_COUNT);
+    const widths = new Float32Array(SWEEP_COUNT);
+    const ys = new Float32Array(SWEEP_COUNT);
+
+    for (let i = 0; i < SWEEP_COUNT; i++) {
+      positions[i * 3] = 0;
+      positions[i * 3 + 1] = 0;
+      positions[i * 3 + 2] = Math.random() * 2 - 0.5;
+      phases[i] = Math.random() * 3;
+      speeds[i] = 0.06 + Math.random() * 0.1;
+      widths[i] = 4 + Math.random() * 12;
+      ys[i] = (Math.random() - 0.5) * 7;
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geo.setAttribute("aPhase", new THREE.BufferAttribute(phases, 1));
+    geo.setAttribute("aSpeed", new THREE.BufferAttribute(speeds, 1));
+    geo.setAttribute("aWidth", new THREE.BufferAttribute(widths, 1));
+    geo.setAttribute("aY", new THREE.BufferAttribute(ys, 1));
+
+    const uni = {
+      uTime: { value: 0 },
+      uSweepColor: { value: new THREE.Color("#ff4422") },
+    };
+
+    return { geometry: geo, uniforms: uni };
+  }, []);
+
+  useEffect(() => {
+    const update = () => {
+      const dark = document.documentElement.classList.contains("dark");
+      uniforms.uSweepColor.value.set(dark ? "#ff4422" : "#dd3322");
+    };
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => obs.disconnect();
+  }, [uniforms]);
+
+  useFrame((_, delta) => {
+    if (!pointsRef.current) return;
+    const mat = pointsRef.current.material as THREE.ShaderMaterial;
+    mat.uniforms.uTime.value += delta;
+  });
+
+  return (
+    <points ref={pointsRef} geometry={geometry}>
+      <shaderMaterial
+        vertexShader={sweepVertex}
+        fragmentShader={sweepFragment}
+        uniforms={uniforms}
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLL FADE — opacity drops as user scrolls
+   ═══════════════════════════════════════════════════════════════ */
+function useScrollFade(ref: React.RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onScroll = () => {
+      const vh = window.innerHeight;
+      const opacity = Math.max(0, 1 - window.scrollY / (vh * 1.8));
+      el.style.opacity = String(opacity);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [ref]);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCENE — Composited with post-processing
    ═══════════════════════════════════════════════════════════════ */
 export default function FluidBackground() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useScrollFade(containerRef);
+
   return (
-    <div className="fixed inset-0 -z-10 pointer-events-none">
+    <div ref={containerRef} className="fixed inset-0 -z-10 pointer-events-none">
       <Canvas
-        camera={{ position: [0, 0, 3], fov: 50 }}
+        camera={{ position: [0, 0, 4], fov: 50 }}
         dpr={[1, 1.5]}
         gl={{
           antialias: false,
           alpha: true,
           powerPreference: "high-performance",
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.2,
         }}
         style={{ background: "transparent" }}
       >
-        <FluidMesh />
-        <Embers />
+        <ChromeSurface />
+        <FloatingShards />
+        <LightSweeps />
+        <EffectComposer>
+          <Bloom
+            luminanceThreshold={0.3}
+            luminanceSmoothing={0.4}
+            intensity={1.2}
+            mipmapBlur
+          />
+          <Noise opacity={0.03} />
+          <Vignette eskil={false} offset={0.15} darkness={0.6} />
+        </EffectComposer>
       </Canvas>
     </div>
   );
