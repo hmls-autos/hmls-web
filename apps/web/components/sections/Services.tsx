@@ -70,15 +70,17 @@ export default function Services() {
 
       cardsRef.current.forEach((el, i) => {
         if (!el) return;
+        const fromX = i % 2 === 0 ? -30 : 30;
         gsap.from(el, {
-          y: 80,
+          x: fromX,
+          y: 60,
           opacity: 0,
-          duration: 0.7,
-          delay: i * 0.1,
+          duration: 0.8,
+          delay: i * 0.08,
           ease: "power3.out",
           scrollTrigger: {
             trigger: el,
-            start: "top 90%",
+            start: "top 92%",
             toggleActions: "play none none none",
           },
         });

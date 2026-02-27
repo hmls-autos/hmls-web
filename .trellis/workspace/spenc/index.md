@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 1
-- **Last Active**: 2026-02-24
+- **Total Sessions**: 2
+- **Last Active**: 2026-02-25
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~55 | Active |
+| `journal-1.md` | ~108 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 2 | 2026-02-25 | Gemini switch, Drizzle Kit, fork Zypher for tool call fix | `12f89f2`, `f993db8`, `d175a85`, `920cf87`, `70221bc`, `e8b76e8` |
 | 1 | 2026-02-24 | Remove service catalog, add Drizzle Kit, switch to Gemini 2.5 Flash | `920cf87`, `70221bc` |
 <!-- @@@/auto:session-history -->
 

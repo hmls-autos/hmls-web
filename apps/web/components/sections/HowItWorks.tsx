@@ -41,9 +41,9 @@ export default function HowItWorks() {
 
     const ctx = gsap.context(() => {
       gsap.from(headingRef.current, {
-        y: 40,
+        y: 50,
         opacity: 0,
-        duration: 0.8,
+        duration: 1,
         ease: "power3.out",
         scrollTrigger: {
           trigger: headingRef.current,
@@ -55,7 +55,7 @@ export default function HowItWorks() {
       if (lineRef.current) {
         gsap.from(lineRef.current, {
           scaleX: 0,
-          duration: 1.2,
+          duration: 1.5,
           ease: "power2.inOut",
           scrollTrigger: {
             trigger: lineRef.current,
@@ -68,17 +68,35 @@ export default function HowItWorks() {
       cardsRef.current.forEach((el, i) => {
         if (!el) return;
         gsap.from(el, {
-          y: 60,
+          y: 80,
           opacity: 0,
-          duration: 0.8,
+          scale: 0.95,
+          duration: 0.9,
           delay: i * 0.2,
           ease: "power3.out",
           scrollTrigger: {
             trigger: el,
-            start: "top 85%",
+            start: "top 88%",
             toggleActions: "play none none none",
           },
         });
+
+        // Icon pulse animation after card appears
+        const icon = el.querySelector("[data-icon]");
+        if (icon) {
+          gsap.from(icon, {
+            scale: 0,
+            rotation: -180,
+            duration: 0.6,
+            delay: i * 0.2 + 0.4,
+            ease: "back.out(2)",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 88%",
+              toggleActions: "play none none none",
+            },
+          });
+        }
       });
     }, sectionRef);
 
@@ -115,9 +133,12 @@ export default function HowItWorks() {
                 }}
                 className="relative group text-center"
               >
-                <div className="relative mx-auto w-20 h-20 rounded-full bg-surface border border-border flex items-center justify-center mb-8 group-hover:border-red-500/50 transition-colors duration-500">
+                <div
+                  data-icon
+                  className="relative mx-auto w-20 h-20 rounded-full bg-surface border border-border flex items-center justify-center mb-8 group-hover:border-red-500/50 group-hover:shadow-lg group-hover:shadow-red-500/10 transition-all duration-500"
+                >
                   <Icon className="w-8 h-8 text-red-400" strokeWidth={1.5} />
-                  <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-600 flex items-center justify-center text-xs font-display font-bold text-white">
+                  <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-600 flex items-center justify-center text-xs font-display font-bold text-white shadow-lg shadow-red-600/30">
                     {step.number}
                   </div>
                 </div>
