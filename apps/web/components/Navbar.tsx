@@ -1,6 +1,6 @@
 "use client";
 
-import { LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -12,6 +12,11 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/contact", label: "Contact" },
   { href: "/chat", label: "Chat" },
+];
+
+const authLinks = [
+  { href: "/portal", label: "My Portal" },
+  { href: "/admin", label: "Admin", icon: LayoutDashboard },
 ];
 
 export default function Navbar() {
@@ -66,6 +71,22 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+          {isUserLoggedIn &&
+            authLinks.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
+                  pathname.startsWith(href)
+                    ? "text-red-400"
+                    : isTransparent
+                      ? "text-white/70 hover:text-white"
+                      : "text-text-secondary hover:text-text"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
           <ThemeToggle />
           {!isLoading &&
             (isUserLoggedIn ? (

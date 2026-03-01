@@ -13,6 +13,11 @@ const navLinks = [
   { href: "/chat", label: "Chat" },
 ];
 
+const authLinks = [
+  { href: "/portal", label: "My Portal" },
+  { href: "/admin", label: "Admin" },
+];
+
 export default function MobileNav({
   isTransparent = false,
 }: {
@@ -74,6 +79,21 @@ export default function MobileNav({
                 {label}
               </Link>
             ))}
+            {user &&
+              authLinks.map(({ href, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={close}
+                  className={`text-sm transition-colors ${
+                    pathname.startsWith(href)
+                      ? "text-red-400 font-medium"
+                      : "text-text-secondary hover:text-text"
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <span className="text-sm text-text-secondary">Theme</span>
