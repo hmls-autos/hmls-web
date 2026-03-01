@@ -236,6 +236,28 @@ body {
     transform: none;
   }
 
+  /* Metallic design system — disable animations */
+  .weld-seam {
+    animation: none;
+    box-shadow: none;
+  }
+
+  .chrome-reflect {
+    animation: none;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .forge-glow::before {
+    animation: none;
+    opacity: 0.4;
+  }
+
+  .weld-torch-trail:hover::after {
+    animation: none;
+    opacity: 0;
+  }
+
   *,
   *::before,
   *::after {
@@ -268,6 +290,373 @@ body {
     )
     4;
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   METALLIC DESIGN SYSTEM
+   Industrial forge aesthetic: brushed steel, chrome, welding seams,
+   diamond plate, red-hot accents.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Metallic custom properties ── */
+:root {
+  --weld-orange: #f97316;
+  --weld-red: #dc2626;
+  --weld-glow: #f9731680;
+  --chrome-highlight: rgba(255, 255, 255, 0.9);
+  --steel-light: #d4d4d8;
+  --steel-mid: #a1a1aa;
+  --steel-dark: #71717a;
+  --steel-darker: #52525b;
+  --forge-deep: #991b1b;
+  --forge-orange: #c2410c;
+  --bolt-face: #a1a1aa;
+  --bolt-shadow: #52525b;
+}
+
+.dark {
+  --weld-orange: #fb923c;
+  --weld-red: #ef4444;
+  --weld-glow: #fb923c80;
+  --chrome-highlight: rgba(255, 255, 255, 0.7);
+  --steel-light: #a1a1aa;
+  --steel-mid: #71717a;
+  --steel-dark: #52525b;
+  --steel-darker: #3f3f46;
+  --forge-deep: #7f1d1d;
+  --forge-orange: #9a3412;
+  --bolt-face: #71717a;
+  --bolt-shadow: #3f3f46;
+}
+
+/* ── Keyframes ── */
+
+@keyframes weld-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 8px var(--weld-glow),
+      0 0 2px var(--weld-orange);
+  }
+  50% {
+    box-shadow:
+      0 0 16px var(--weld-glow),
+      0 0 4px var(--weld-orange);
+  }
+}
+
+@keyframes chrome-sweep {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes forge-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes weld-torch {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* ── 1. Weld Seam ── */
+.weld-seam {
+  position: relative;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--weld-orange),
+    var(--weld-red),
+    var(--weld-orange)
+  );
+  border-radius: 2px;
+  animation: weld-pulse 3s ease-in-out infinite;
+}
+
+/* ── 2. Chrome Reflect ── */
+.chrome-reflect {
+  background: linear-gradient(
+    90deg,
+    var(--text) 0%,
+    var(--text) 35%,
+    var(--chrome-highlight) 50%,
+    var(--text) 65%,
+    var(--text) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: chrome-sweep 2s ease-in-out 0.5s 1 both;
+}
+
+/* ── 3. Stamped Text ── */
+.stamped-text {
+  color: var(--steel-dark);
+  text-shadow:
+    1px 1px 0 var(--steel-darker),
+    -1px -1px 0 var(--steel-light);
+  opacity: 0.85;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.dark .stamped-text {
+  color: var(--steel-mid);
+  text-shadow:
+    1px 1px 0 rgba(0, 0, 0, 0.6),
+    -1px -1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ── 4. Hex Bolts (container with bolts at corners) ── */
+.hex-bolts {
+  position: relative;
+}
+
+.hex-bolts::before,
+.hex-bolts::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 40% 40%,
+    var(--steel-light),
+    var(--bolt-face) 50%,
+    var(--bolt-shadow) 100%
+  );
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.hex-bolts::before {
+  top: 8px;
+  left: 8px;
+}
+
+.hex-bolts::after {
+  top: 8px;
+  right: 8px;
+}
+
+/* Bottom bolts via a wrapper child — apply .hex-bolts-bottom to a child element */
+.hex-bolts-bottom {
+  position: relative;
+}
+
+.hex-bolts-bottom::before,
+.hex-bolts-bottom::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 40% 40%,
+    var(--steel-light),
+    var(--bolt-face) 50%,
+    var(--bolt-shadow) 100%
+  );
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.hex-bolts-bottom::before {
+  bottom: 8px;
+  left: 8px;
+}
+
+.hex-bolts-bottom::after {
+  bottom: 8px;
+  right: 8px;
+}
+
+/* ── 5. Steel Girder (I-beam divider) ── */
+.steel-girder {
+  position: relative;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.steel-girder::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6px;
+  background: linear-gradient(180deg, var(--steel-light), var(--steel-mid));
+  border-radius: 1px;
+}
+
+.steel-girder::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 6px;
+  bottom: 6px;
+  width: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--steel-mid),
+    var(--steel-light),
+    var(--steel-mid)
+  );
+}
+
+/* Bottom flange via child element with .steel-girder-base */
+.steel-girder-base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  background: linear-gradient(0deg, var(--steel-light), var(--steel-mid));
+  border-radius: 1px;
+}
+
+/* ── 6. Machined Groove ── */
+.machined-groove {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    var(--steel-mid) 3px,
+    var(--steel-mid) 4px
+  );
+  opacity: 0.12;
+}
+
+.machined-groove-horizontal {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 3px,
+    var(--steel-mid) 3px,
+    var(--steel-mid) 4px
+  );
+  opacity: 0.12;
+}
+
+/* ── 7. Forge Glow ── */
+.forge-glow {
+  position: relative;
+}
+
+.forge-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 30%,
+    var(--forge-deep) 70%,
+    var(--forge-orange) 100%
+  );
+  opacity: 0.6;
+  animation: forge-pulse 4s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── 8. Tread Plate ── */
+.tread-plate {
+  background-color: var(--surface-alt);
+  background-image:
+    radial-gradient(
+      ellipse 8px 14px at 10px 10px,
+      var(--steel-mid) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 8px 14px at 30px 25px,
+      var(--steel-mid) 0%,
+      transparent 70%
+    );
+  background-size: 40px 35px;
+  opacity: 0.08;
+}
+
+/* ── 9. Hex Bolt (single, for individual placement) ── */
+.hex-bolt {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 40% 40%,
+    var(--steel-light),
+    var(--bolt-face) 50%,
+    var(--bolt-shadow) 100%
+  );
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+/* ── 10. Weld Torch Trail (hover effect) ── */
+.weld-torch-trail {
+  position: relative;
+  overflow: hidden;
+}
+
+.weld-torch-trail::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--chrome-highlight),
+    var(--weld-orange),
+    var(--weld-red),
+    transparent
+  );
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.weld-torch-trail:hover::after {
+  animation: weld-torch 0.8s ease-in-out 1 both;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   END METALLIC DESIGN SYSTEM
+   ══════════════════════════════════════════════════════════════════════ */
 
 /* Theme transition (View Transitions API) */
 ::view-transition-group(root) {

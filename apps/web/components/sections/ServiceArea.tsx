@@ -37,6 +37,7 @@ export default function ServiceArea() {
         </RevealOnScroll>
 
         <RevealOnScroll>
+          <div className="weld-seam mb-4" aria-hidden="true" />
           <div className="w-full h-[450px] rounded-2xl overflow-hidden border border-border mb-10">
             <Suspense
               fallback={
@@ -46,16 +47,28 @@ export default function ServiceArea() {
               <ServiceMap className="w-full h-full" />
             </Suspense>
           </div>
+          <div className="weld-seam mt-4" aria-hidden="true" />
+        </RevealOnScroll>
+
+        <RevealOnScroll>
+          <div className="steel-girder my-8" aria-hidden="true">
+            <div className="steel-girder-base" />
+          </div>
         </RevealOnScroll>
 
         <RevealOnScroll>
           <div className="flex flex-wrap justify-center gap-3">
-            {cities.map((city) => (
+            {cities.map((city, i) => (
               <span
                 key={city}
-                className="px-5 py-2.5 bg-surface border border-border rounded-full text-sm text-text-secondary font-display hover:border-red-500/30 hover:text-text transition-all duration-300"
+                className="group px-5 py-2.5 bg-surface border border-border rounded-full text-sm font-display hover:border-red-500/30 hover:text-text transition-all duration-300 flex items-center gap-2"
               >
-                {city}
+                <span className="stamped-text text-[9px] font-mono tracking-wider opacity-60">
+                  OC-{String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="text-text-secondary group-hover:text-text transition-colors">
+                  {city}
+                </span>
               </span>
             ))}
             <span className="px-5 py-2.5 text-sm text-text-secondary font-display">

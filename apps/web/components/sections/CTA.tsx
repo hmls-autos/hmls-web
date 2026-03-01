@@ -4,7 +4,7 @@ import RevealOnScroll from "@/components/ui/RevealOnScroll";
 
 export default function CTA() {
   return (
-    <section className="relative w-full py-32 overflow-hidden">
+    <section className="relative w-full py-32 overflow-hidden forge-glow">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-red-700 via-red-600 to-red-800" />
       {/* Grid pattern overlay */}
@@ -22,8 +22,12 @@ export default function CTA() {
         </p>
         <Link
           href="/chat"
-          className="group inline-flex items-center gap-3 px-10 py-5 bg-white text-red-600 rounded-xl text-lg font-display font-bold hover:bg-neutral-100 transition-colors shadow-2xl shadow-black/20"
+          className="group relative inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-b from-zinc-200 via-zinc-100 to-zinc-300 dark:from-zinc-400 dark:via-zinc-300 dark:to-zinc-400 text-zinc-900 rounded-xl text-lg font-display font-bold transition-all duration-300 shadow-2xl shadow-black/30 hover:shadow-black/50 hover:scale-[1.02] border border-zinc-300/50 dark:border-zinc-500/50"
         >
+          <span
+            className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            aria-hidden="true"
+          />
           Get a Free Quote
           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </Link>

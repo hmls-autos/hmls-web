@@ -96,15 +96,27 @@ export default function Navbar() {
             ))}
           <Link
             href="/chat"
-            className="px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+            className="relative px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors overflow-hidden group/quote"
           >
-            Get a Quote
+            <span
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/30 to-transparent opacity-0 group-hover/quote:opacity-100 transition-opacity duration-300 pointer-events-none"
+              aria-hidden="true"
+            />
+            <span className="relative">Get a Quote</span>
           </Link>
         </div>
 
         {/* Mobile nav */}
         <MobileNav isTransparent={isTransparent} />
       </nav>
+
+      {/* Machined groove accent line */}
+      {!isTransparent && (
+        <div
+          className="absolute bottom-0 left-0 right-0 h-px machined-groove-horizontal"
+          aria-hidden="true"
+        />
+      )}
     </header>
   );
 }
