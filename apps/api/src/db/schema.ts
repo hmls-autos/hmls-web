@@ -68,25 +68,6 @@ export const providerScheduleOverrides = pgTable("provider_schedule_overrides", 
   reason: text("reason"),
 });
 
-
-export const conversations = pgTable("conversations", {
-  id: serial("id").primaryKey(),
-  customerId: integer("customer_id").references(() => customers.id),
-  channel: varchar("channel", { length: 20 }).notNull().default("web"),
-  startedAt: timestamp("started_at").defaultNow().notNull(),
-  endedAt: timestamp("ended_at"),
-});
-
-export const messages = pgTable("messages", {
-  id: serial("id").primaryKey(),
-  conversationId: integer("conversation_id")
-    .references(() => conversations.id)
-    .notNull(),
-  role: varchar("role", { length: 20 }).notNull(),
-  content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
 export const quotes = pgTable("quotes", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").references(() => customers.id),
@@ -167,17 +148,6 @@ export const bookings = pgTable("bookings", {
   calcomBookingId: varchar("calcom_booking_id", { length: 100 }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
-
-export const invoices = pgTable("invoices", {
-  id: serial("id").primaryKey(),
-  customerId: integer("customer_id").references(() => customers.id),
-  bookingId: integer("booking_id").references(() => bookings.id),
-  stripeInvoiceId: varchar("stripe_invoice_id", { length: 100 }),
-  items: jsonb("items").notNull(), // [{ service, description, amount }]
-  totalAmount: integer("total_amount").notNull(), // in cents
-  status: varchar("status", { length: 50 }).notNull().default("draft"), // draft, sent, paid
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // --- OLP (Open Labor Project) reference data ---

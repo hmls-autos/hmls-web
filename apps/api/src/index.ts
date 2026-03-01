@@ -4,6 +4,7 @@ import { logger } from "hono/logger";
 import { AppError } from "@hmls/shared/errors";
 import { estimates } from "./routes/estimates.ts";
 import { customers } from "./routes/customers.ts";
+import { portal } from "./routes/portal.ts";
 import { chat, initChat } from "./routes/chat.ts";
 
 // ── Fail fast on required env vars ──
@@ -82,6 +83,7 @@ app.get("/health", (c) => {
 // Mount routes
 app.route("/api/estimates", estimates);
 app.route("/api/customers", customers);
+app.route("/api/portal", portal);
 app.route("/task", chat);
 
 // Start server
