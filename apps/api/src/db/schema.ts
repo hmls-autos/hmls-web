@@ -151,6 +151,22 @@ export const bookings = pgTable("bookings", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// --- Orders (central entity linking estimate → quote → booking) ---
+
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").references(() => customers.id).notNull(),
+  estimateId: integer("estimate_id").references(() => estimates.id),
+  quoteId: integer("quote_id").references(() => quotes.id),
+  bookingId: integer("booking_id").references(() => bookings.id),
+  status: varchar("status", { length: 30 }).notNull().default("estimated"),
+  statusHistory: jsonb("status_history").notNull().default([]),
+  adminNotes: text("admin_notes"),
+  cancellationReason: text("cancellation_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 // --- OLP (Open Labor Project) reference data ---
 
 export const olpVehicles = pgTable("olp_vehicles", {

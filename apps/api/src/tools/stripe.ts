@@ -1,9 +1,10 @@
 import { z } from "zod";
 import Stripe from "stripe";
 import { db, schema } from "../db/client.ts";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { Errors } from "@hmls/shared/errors";
 import { toolResult } from "@hmls/shared/tool-result";
+import { notifyOrderStatusChange } from "../lib/notifications.ts";
 
 function dollarsToCents(dollars: number): number {
   return Math.round(dollars * 100);
@@ -145,11 +146,44 @@ export function createStripeTools(secretKey: string) {
         })
         .returning();
 
+      // Link quote to existing order (find the most recent customer_approved order for this customer)
+      const [existingOrder] = await db
+        .select()
+        .from(schema.orders)
+        .where(
+          and(
+            eq(schema.orders.customerId, params.customerId),
+            eq(schema.orders.status, "customer_approved"),
+            isNull(schema.orders.quoteId),
+          ),
+        )
+        .orderBy(schema.orders.createdAt)
+        .limit(1);
+
+      if (existingOrder) {
+        const history = Array.isArray(existingOrder.statusHistory) ? existingOrder.statusHistory : [];
+        await db
+          .update(schema.orders)
+          .set({
+            quoteId: dbQuote.id,
+            status: "quoted",
+            statusHistory: [
+              ...history,
+              { status: "quoted", timestamp: new Date().toISOString(), actor: "system" },
+            ],
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.orders.id, existingOrder.id));
+
+        notifyOrderStatusChange(existingOrder.id, "quoted");
+      }
+
       return toolResult({
         success: true,
         quoteId: dbQuote.id,
         stripeQuoteId: finalizedQuote.id,
         totalAmount: centsToDollars(totalAmount),
+        orderId: existingOrder?.id ?? null,
         hostedUrl: (finalizedQuote as unknown as Record<string, unknown>)
           .hosted_quote_url as string,
         message: `Quote created for $${

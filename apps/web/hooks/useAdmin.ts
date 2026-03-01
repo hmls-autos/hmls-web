@@ -138,6 +138,33 @@ export function useAdminEstimates() {
   return { estimates: data ?? [], isLoading, isError: !!error, mutate };
 }
 
+export interface Order {
+  id: number;
+  customerId: number;
+  estimateId: number | null;
+  quoteId: number | null;
+  bookingId: number | null;
+  status: string;
+  statusHistory: { status: string; timestamp: string; actor: string }[];
+  adminNotes: string | null;
+  cancellationReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AdminOrder = Order & {
+  customer: { name: string | null; email: string | null; phone: string | null };
+};
+
+export function useAdminOrders(status?: string) {
+  const params = status ? `?status=${encodeURIComponent(status)}` : "";
+  const { data, error, isLoading, mutate } = useSWR<AdminOrder[]>(
+    `/api/admin/orders${params}`,
+    fetcher,
+  );
+  return { orders: data ?? [], isLoading, isError: !!error, mutate };
+}
+
 export function useAdminQuotes(status?: string) {
   const params = status ? `?status=${encodeURIComponent(status)}` : "";
   const { data, error, isLoading } = useSWR<AdminQuote[]>(

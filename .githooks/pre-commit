@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+export PATH="$HOME/.bun/bin:$HOME/.deno/bin:$PATH"
+
 echo "Running pre-commit checks..."
 
 echo ">> Biome lint (web)"

@@ -93,6 +93,28 @@ export function usePortalEstimates() {
   return { estimates: data ?? [], isLoading, isError: !!error };
 }
 
+export interface PortalOrder {
+  id: number;
+  customerId: number;
+  estimateId: number | null;
+  quoteId: number | null;
+  bookingId: number | null;
+  status: string;
+  statusHistory: { status: string; timestamp: string; actor: string }[];
+  adminNotes: string | null;
+  cancellationReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function usePortalOrders() {
+  const { data, error, isLoading, mutate } = useSWR<PortalOrder[]>(
+    "/api/portal/me/orders",
+    fetcher,
+  );
+  return { orders: data ?? [], isLoading, isError: !!error, mutate };
+}
+
 export function usePortalQuotes() {
   const { data, error, isLoading } = useSWR<Quote[]>(
     "/api/portal/me/quotes",

@@ -6,7 +6,9 @@ import { estimates } from "./routes/estimates.ts";
 import { customers } from "./routes/customers.ts";
 import { portal } from "./routes/portal.ts";
 import { admin } from "./routes/admin.ts";
+import { orders } from "./routes/orders.ts";
 import { chat, initChat } from "./routes/chat.ts";
+import { createWebhookRoute } from "./routes/webhook.ts";
 
 // ── Fail fast on required env vars ──
 const DATABASE_URL = Deno.env.get("DATABASE_URL");
@@ -21,7 +23,7 @@ if (!GOOGLE_API_KEY) {
 
 // Warn on optional vars
 for (
-  const key of ["STRIPE_SECRET_KEY", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
+  const key of ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "SUPABASE_URL", "SUPABASE_ANON_KEY"]
 ) {
   if (!Deno.env.get(key)) {
     console.warn(`[config] Optional env var ${key} is not set`);
@@ -47,7 +49,7 @@ app.use(
       "https://www.hmls.autos",
       "http://localhost:3000",
     ],
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
   }),
 );
@@ -81,11 +83,18 @@ app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Mount webhook route (no CORS — Stripe sends raw POST)
+const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+if (stripeKey) {
+  app.route("/webhook", createWebhookRoute(stripeKey));
+}
+
 // Mount routes
 app.route("/api/estimates", estimates);
 app.route("/api/customers", customers);
 app.route("/api/portal", portal);
 app.route("/api/admin", admin);
+app.route("/api/admin/orders", orders);
 app.route("/task", chat);
 
 // Start server

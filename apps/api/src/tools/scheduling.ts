@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db, schema } from "../db/client.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 
@@ -520,6 +520,38 @@ const createBookingTool = {
       console.log(
         `[scheduling] Booking created: #${booking.id} for provider ${params.providerId}`,
       );
+
+      // Link booking to existing order (find the most recent accepted order for this customer)
+      if (resolvedCustomerId) {
+        const [existingOrder] = await db
+          .select()
+          .from(schema.orders)
+          .where(
+            and(
+              eq(schema.orders.customerId, resolvedCustomerId),
+              eq(schema.orders.status, "accepted"),
+              isNull(schema.orders.bookingId),
+            ),
+          )
+          .orderBy(schema.orders.createdAt)
+          .limit(1);
+
+        if (existingOrder) {
+          const history = Array.isArray(existingOrder.statusHistory) ? existingOrder.statusHistory : [];
+          await db
+            .update(schema.orders)
+            .set({
+              bookingId: booking.id,
+              status: "scheduled",
+              statusHistory: [
+                ...history,
+                { status: "scheduled", timestamp: new Date().toISOString(), actor: "system" },
+              ],
+              updatedAt: new Date(),
+            })
+            .where(eq(schema.orders.id, existingOrder.id));
+        }
+      }
 
       return toolResult({
         success: true,

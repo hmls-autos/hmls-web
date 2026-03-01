@@ -5,6 +5,7 @@ import * as schema from "../db/schema.ts";
 import { desc, eq } from "drizzle-orm";
 import { Errors } from "@hmls/shared/errors";
 import { type AuthEnv, requireAuth } from "../middleware/auth.ts";
+import { notifyOrderStatusChange } from "../lib/notifications.ts";
 
 const portal = new Hono<AuthEnv>();
 
@@ -105,6 +106,108 @@ portal.get("/me/quotes", async (c) => {
     .orderBy(desc(schema.quotes.createdAt));
 
   return c.json(rows);
+});
+
+// GET /me/orders — customer's orders
+portal.get("/me/orders", async (c) => {
+  const customerId = c.get("customerId");
+  const rows = await db
+    .select()
+    .from(schema.orders)
+    .where(eq(schema.orders.customerId, customerId))
+    .orderBy(desc(schema.orders.createdAt));
+
+  return c.json(rows);
+});
+
+// POST /me/orders/:id/approve — customer approves an estimate
+portal.post("/me/orders/:id/approve", async (c) => {
+  const customerId = c.get("customerId");
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+  }
+
+  const [order] = await db
+    .select()
+    .from(schema.orders)
+    .where(eq(schema.orders.id, id))
+    .limit(1);
+
+  if (!order || order.customerId !== customerId) {
+    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+  }
+
+  if (order.status !== "estimated") {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: `Order is '${order.status}', not 'estimated'` } },
+      400,
+    );
+  }
+
+  const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+  const [updated] = await db
+    .update(schema.orders)
+    .set({
+      status: "customer_approved",
+      statusHistory: [
+        ...history,
+        { status: "customer_approved", timestamp: new Date().toISOString(), actor: "customer" },
+      ],
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.orders.id, id))
+    .returning();
+
+  notifyOrderStatusChange(id, "customer_approved");
+
+  return c.json(updated);
+});
+
+// POST /me/orders/:id/decline — customer declines an estimate
+portal.post("/me/orders/:id/decline", async (c) => {
+  const customerId = c.get("customerId");
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+  }
+
+  const [order] = await db
+    .select()
+    .from(schema.orders)
+    .where(eq(schema.orders.id, id))
+    .limit(1);
+
+  if (!order || order.customerId !== customerId) {
+    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+  }
+
+  if (order.status !== "estimated") {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: `Order is '${order.status}', not 'estimated'` } },
+      400,
+    );
+  }
+
+  const body = await c.req.json<{ reason?: string }>().catch(() => ({}));
+  const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+  const [updated] = await db
+    .update(schema.orders)
+    .set({
+      status: "customer_declined",
+      statusHistory: [
+        ...history,
+        { status: "customer_declined", timestamp: new Date().toISOString(), actor: "customer" },
+      ],
+      cancellationReason: (body as { reason?: string }).reason ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.orders.id, id))
+    .returning();
+
+  notifyOrderStatusChange(id, "customer_declined");
+
+  return c.json(updated);
 });
 
 export { portal };

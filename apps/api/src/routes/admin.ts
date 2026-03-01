@@ -19,6 +19,7 @@ admin.get("/dashboard", async (c) => {
     [bookingCount],
     [estimateCount],
     [quoteCount],
+    [orderCount],
     upcomingBookings,
     recentCustomers,
     pendingQuotes,
@@ -27,6 +28,7 @@ admin.get("/dashboard", async (c) => {
     db.select({ count: count() }).from(schema.bookings),
     db.select({ count: count() }).from(schema.estimates),
     db.select({ count: count() }).from(schema.quotes),
+    db.select({ count: count() }).from(schema.orders),
     db
       .select()
       .from(schema.bookings)
@@ -62,6 +64,7 @@ admin.get("/dashboard", async (c) => {
       bookings: bookingCount.count,
       estimates: estimateCount.count,
       quotes: quoteCount.count,
+      orders: orderCount.count,
       revenue30d: revenueResult.total,
     },
     upcomingBookings,

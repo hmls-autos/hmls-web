@@ -3,6 +3,7 @@
 import {
   BarChart3,
   Calendar,
+  ClipboardList,
   FileText,
   LayoutDashboard,
   Receipt,
@@ -18,6 +19,7 @@ import { fetcher } from "@/lib/fetcher";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/orders", label: "Orders", icon: ClipboardList },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
   { href: "/admin/estimates", label: "Estimates", icon: FileText },

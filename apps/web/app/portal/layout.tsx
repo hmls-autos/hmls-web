@@ -2,6 +2,7 @@
 
 import {
   Calendar,
+  ClipboardList,
   FileText,
   LayoutDashboard,
   Receipt,
@@ -15,6 +16,7 @@ import { useAuth } from "@/components/AuthProvider";
 
 const navItems = [
   { href: "/portal", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/portal/orders", label: "My Orders", icon: ClipboardList },
   { href: "/portal/bookings", label: "Bookings", icon: Calendar },
   { href: "/portal/estimates", label: "Estimates", icon: FileText },
   { href: "/portal/quotes", label: "Quotes", icon: Receipt },

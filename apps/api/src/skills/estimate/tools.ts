@@ -12,6 +12,7 @@ import {
 } from "./pricing.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 import type { DiscountType, ServiceInput } from "./types.ts";
+import { notifyOrderStatusChange } from "../../lib/notifications.ts";
 
 const discountEnum = z.enum([
   "returning_customer",
@@ -230,11 +231,27 @@ export const createEstimateTool = {
         })
         .returning();
 
+      // Auto-create order linked to this estimate
+      const [order] = await db
+        .insert(schema.orders)
+        .values({
+          customerId: customer.id,
+          estimateId: estimate.id,
+          status: "estimated",
+          statusHistory: [
+            { status: "estimated", timestamp: new Date().toISOString(), actor: "system" },
+          ],
+        })
+        .returning();
+
+      notifyOrderStatusChange(order.id, "estimated");
+
       const baseUrl = "/api/estimates";
 
       return toolResult({
         success: true,
         estimateId: estimate.id,
+        orderId: order.id,
         vehicle: `${params.vehicle.year} ${params.vehicle.make} ${params.vehicle.model}`,
         downloadUrl: `${baseUrl}/${estimate.id}/pdf`,
         shareUrl: `${baseUrl}/${estimate.id}/pdf?token=${shareToken}`,
