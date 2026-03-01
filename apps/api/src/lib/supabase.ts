@@ -17,6 +17,7 @@ function getSupabase() {
 export interface AuthUser {
   id: string;
   email: string;
+  role: string;
 }
 
 export async function verifyToken(token: string): Promise<AuthUser | null> {
@@ -32,5 +33,6 @@ export async function verifyToken(token: string): Promise<AuthUser | null> {
   return {
     id: user.id,
     email: user.email!,
+    role: (user.app_metadata?.role as string) ?? "customer",
   };
 }
