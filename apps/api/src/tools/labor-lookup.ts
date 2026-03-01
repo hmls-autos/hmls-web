@@ -62,7 +62,7 @@ export const lookupLaborTimeTool = {
       );
 
     if (vehicles.length === 0) {
-      // Try fuzzy model match
+      // Try fuzzy make + model match
       const fuzzyVehicles = await db
         .select({
           id: schema.olpVehicles.id,
@@ -75,7 +75,7 @@ export const lookupLaborTimeTool = {
         .from(schema.olpVehicles)
         .where(
           and(
-            ilike(schema.olpVehicles.make, params.make),
+            ilike(schema.olpVehicles.make, `%${params.make}%`),
             ilike(schema.olpVehicles.model, `%${params.model}%`),
             lte(schema.olpVehicles.yearStart, params.year),
             gte(schema.olpVehicles.yearEnd, params.year),
@@ -97,10 +97,15 @@ export const lookupLaborTimeTool = {
 
     const vehicleIds = vehicles.map((v) => v.id);
 
-    // 2. Search labor times for matching service
+    // 2. Search labor times for matching service (fuzzy: match each word independently)
+    const serviceWords = params.service
+      .split(/\s+/)
+      .filter((w) => w.length > 1);
     const conditions = [
       inArray(schema.olpLaborTimes.vehicleId, vehicleIds),
-      ilike(schema.olpLaborTimes.name, `%${params.service}%`),
+      ...serviceWords.map((word) =>
+        ilike(schema.olpLaborTimes.name, `%${word}%`)
+      ),
     ];
 
     if (params.category) {
@@ -119,6 +124,36 @@ export const lookupLaborTimeTool = {
       .from(schema.olpLaborTimes)
       .where(and(...conditions))
       .limit(30);
+
+    if (laborTimes.length === 0 && serviceWords.length > 1) {
+      // Fallback: try matching ANY word (OR instead of AND) to surface partial matches
+      const orConditions = [
+        inArray(schema.olpLaborTimes.vehicleId, vehicleIds),
+        sql`(${sql.join(
+          serviceWords.map(
+            (word) => sql`${schema.olpLaborTimes.name} ilike ${"%" + word + "%"}`,
+          ),
+          sql` OR `,
+        )})`,
+      ];
+      if (params.category) {
+        orConditions.push(
+          ilike(schema.olpLaborTimes.category, params.category),
+        );
+      }
+      const fallbackTimes = await db
+        .select({
+          name: schema.olpLaborTimes.name,
+          category: schema.olpLaborTimes.category,
+          laborHours: schema.olpLaborTimes.laborHours,
+          vehicleId: schema.olpLaborTimes.vehicleId,
+        })
+        .from(schema.olpLaborTimes)
+        .where(and(...orConditions))
+        .limit(30);
+
+      laborTimes.push(...fallbackTimes);
+    }
 
     if (laborTimes.length === 0) {
       return toolResult({
@@ -203,11 +238,28 @@ export const listOlpCategoriesTool = {
       );
 
     if (vehicles.length === 0) {
-      return toolResult({
-        found: false,
-        vehicle: `${params.year} ${params.make} ${params.model}`,
-        message: "Vehicle not found in OLP database.",
-      });
+      // Try fuzzy model match
+      const fuzzyVehicles = await db
+        .select({ id: schema.olpVehicles.id, engine: schema.olpVehicles.engine })
+        .from(schema.olpVehicles)
+        .where(
+          and(
+            ilike(schema.olpVehicles.make, `%${params.make}%`),
+            ilike(schema.olpVehicles.model, `%${params.model}%`),
+            lte(schema.olpVehicles.yearStart, params.year),
+            gte(schema.olpVehicles.yearEnd, params.year),
+          ),
+        );
+
+      if (fuzzyVehicles.length === 0) {
+        return toolResult({
+          found: false,
+          vehicle: `${params.year} ${params.make} ${params.model}`,
+          message: "Vehicle not found in OLP database.",
+        });
+      }
+
+      vehicles.push(...fuzzyVehicles);
     }
 
     const vehicleIds = vehicles.map((v) => v.id);
