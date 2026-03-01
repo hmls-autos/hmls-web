@@ -4,7 +4,6 @@ import {
   Calendar,
   FileText,
   LayoutDashboard,
-  Menu,
   Receipt,
   User,
   X,
@@ -109,23 +108,6 @@ export default function PortalLayout({
 
       {/* Main content */}
       <main className="flex-1 min-w-0">
-        {/* Mobile header */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-border">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(true)}
-            className="p-1.5 rounded-lg hover:bg-surface-alt"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <span className="text-sm font-medium text-text-secondary">
-            {navItems.find((n) =>
-              n.href === "/portal"
-                ? pathname === "/portal"
-                : pathname.startsWith(n.href),
-            )?.label ?? "Portal"}
-          </span>
-        </div>
         <div className="p-4 md:p-8 max-w-5xl">{children}</div>
       </main>
     </div>
