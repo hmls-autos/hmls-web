@@ -180,6 +180,27 @@ admin.get("/estimates", async (c) => {
   );
 });
 
+// DELETE /estimates/:id
+admin.delete("/estimates/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid estimate ID" } }, 400);
+  }
+
+  const [existing] = await db
+    .select({ id: schema.estimates.id })
+    .from(schema.estimates)
+    .where(eq(schema.estimates.id, id))
+    .limit(1);
+
+  if (!existing) {
+    return c.json({ error: { code: "NOT_FOUND", message: "Estimate not found" } }, 404);
+  }
+
+  await db.delete(schema.estimates).where(eq(schema.estimates.id, id));
+  return c.json({ success: true });
+});
+
 // GET /quotes — all quotes
 admin.get("/quotes", async (c) => {
   const status = c.req.query("status");

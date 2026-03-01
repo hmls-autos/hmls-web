@@ -131,11 +131,11 @@ export function useAdminBookings(status?: string) {
 }
 
 export function useAdminEstimates() {
-  const { data, error, isLoading } = useSWR<AdminEstimate[]>(
+  const { data, error, isLoading, mutate } = useSWR<AdminEstimate[]>(
     "/api/admin/estimates",
     fetcher,
   );
-  return { estimates: data ?? [], isLoading, isError: !!error };
+  return { estimates: data ?? [], isLoading, isError: !!error, mutate };
 }
 
 export function useAdminQuotes(status?: string) {

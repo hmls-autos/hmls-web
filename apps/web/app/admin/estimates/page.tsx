@@ -1,7 +1,9 @@
 "use client";
 
-import { ExternalLink, FileText } from "lucide-react";
+import { ExternalLink, FileText, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { useAdminEstimates } from "@/hooks/useAdmin";
+import { createClient } from "@/lib/supabase/client";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -18,8 +20,33 @@ function formatCents(cents: number) {
   });
 }
 
+const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
+
 export default function EstimatesPage() {
-  const { estimates, isLoading } = useAdminEstimates();
+  const { estimates, isLoading, mutate } = useAdminEstimates();
+  const [deleting, setDeleting] = useState<number | null>(null);
+
+  async function handleDelete(id: number) {
+    if (!confirm("Delete this estimate? This cannot be undone.")) return;
+    setDeleting(id);
+    try {
+      const {
+        data: { session },
+      } = await createClient().auth.getSession();
+      const res = await fetch(`${AGENT_URL}/api/admin/estimates/${id}`, {
+        method: "DELETE",
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {},
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      mutate();
+    } catch {
+      alert("Failed to delete estimate.");
+    } finally {
+      setDeleting(null);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -68,6 +95,15 @@ export default function EstimatesPage() {
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(e.id)}
+                        disabled={deleting === e.id}
+                        className="text-text-secondary hover:text-red-500 transition-colors disabled:opacity-50"
+                        title="Delete estimate"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                     <p className="text-xs text-text-secondary mt-0.5">
                       {e.customer.name ?? "Unknown"}{" "}
