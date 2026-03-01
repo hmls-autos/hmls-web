@@ -681,9 +681,9 @@ body {
 
 /* Leaflet attribution — subtle but present for license compliance */
 .leaflet-control-attribution {
-  font-size: 9px !important;
+  font-size: 9px;
   opacity: 0.3;
-  background: transparent !important;
+  background: transparent;
   transition: opacity 0.2s;
 }
 .leaflet-control-attribution:hover {

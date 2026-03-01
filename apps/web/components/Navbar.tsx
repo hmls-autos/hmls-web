@@ -1,6 +1,6 @@
 "use client";
 
-import { LogIn, LogOut, LayoutDashboard } from "lucide-react";
+import { LayoutDashboard, LogIn, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
