@@ -180,6 +180,16 @@ admin.get("/estimates", async (c) => {
   );
 });
 
+// DELETE /estimates/batch — bulk delete
+admin.delete("/estimates/batch", async (c) => {
+  const body = await c.req.json<{ ids: number[] }>();
+  if (!Array.isArray(body.ids) || body.ids.length === 0 || body.ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "ids must be a non-empty array of positive integers" } }, 400);
+  }
+  await db.delete(schema.estimates).where(sql`${schema.estimates.id} IN ${body.ids}`);
+  return c.json({ success: true, deleted: body.ids.length });
+});
+
 // DELETE /estimates/:id
 admin.delete("/estimates/:id", async (c) => {
   const id = Number(c.req.param("id"));
