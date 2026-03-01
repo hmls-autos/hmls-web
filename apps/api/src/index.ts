@@ -5,6 +5,7 @@ import { AppError } from "@hmls/shared/errors";
 import { estimates } from "./routes/estimates.ts";
 import { customers } from "./routes/customers.ts";
 import { portal } from "./routes/portal.ts";
+import { admin } from "./routes/admin.ts";
 import { chat, initChat } from "./routes/chat.ts";
 
 // ── Fail fast on required env vars ──
@@ -84,6 +85,7 @@ app.get("/health", (c) => {
 app.route("/api/estimates", estimates);
 app.route("/api/customers", customers);
 app.route("/api/portal", portal);
+app.route("/api/admin", admin);
 app.route("/task", chat);
 
 // Start server
