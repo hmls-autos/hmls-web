@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { EstimateCard } from "@/components/EstimateCard";
 import { Markdown } from "@/components/ui/Markdown";
 import { useAgentChat } from "@/hooks/useAgentChat";
 import { toolDisplayNames } from "@/lib/agent-tools";
@@ -34,6 +35,7 @@ export default function ChatWidgetPanel({
     isLoading,
     error,
     currentTool,
+    estimateCards,
     sendMessage,
     clearMessages,
     clearError,
@@ -155,6 +157,12 @@ export default function ChatWidgetPanel({
                 )}
               </div>
             </div>
+          ))}
+
+        {/* Estimate cards */}
+        {isAuthenticated &&
+          estimateCards.map((ec) => (
+            <EstimateCard key={ec.id} data={ec.data} />
           ))}
 
         {/* Tool indicator */}

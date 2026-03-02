@@ -3,6 +3,7 @@
 import { type Message as AgentMessage, HttpAgent } from "@ag-ui/client";
 import { type RefObject, useCallback, useRef, useState } from "react";
 import type { BookingConfirmationData } from "@/components/BookingConfirmation";
+import type { EstimateCardData } from "@/components/EstimateCard";
 import type { QuestionData } from "@/components/QuestionCard";
 import type { SlotPickerData } from "@/components/SlotPicker";
 
@@ -33,6 +34,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     useState<SlotPickerData | null>(null);
   const [bookingConfirmations, setBookingConfirmations] = useState<
     Array<{ id: string; data: BookingConfirmationData }>
+  >([]);
+  const [estimateCards, setEstimateCards] = useState<
+    Array<{ id: string; data: EstimateCardData }>
   >([]);
   const agentRef = useRef<HttpAgent | null>(null);
   const toolCallNamesRef = useRef<Map<string, string>>(new Map());
@@ -172,6 +176,19 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
                   },
                 ]);
               }
+              if (
+                toolName === "create_estimate" &&
+                result.success &&
+                result.items
+              ) {
+                setEstimateCards((prev) => [
+                  ...prev,
+                  {
+                    id: crypto.randomUUID(),
+                    data: result as EstimateCardData,
+                  },
+                ]);
+              }
             } catch {
               // ignore parse errors
             }
@@ -239,6 +256,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     setPendingQuestion(null);
     setPendingSlotPicker(null);
     setBookingConfirmations([]);
+    setEstimateCards([]);
     agentRef.current = null;
   }, []);
 
@@ -254,6 +272,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     pendingQuestion,
     pendingSlotPicker,
     bookingConfirmations,
+    estimateCards,
     sendMessage,
     answerQuestion,
     selectSlot,

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { BookingConfirmation } from "@/components/BookingConfirmation";
+import { EstimateCard } from "@/components/EstimateCard";
 import { QuestionCard } from "@/components/QuestionCard";
 import { SlotPicker } from "@/components/SlotPicker";
 import { Markdown } from "@/components/ui/Markdown";
@@ -29,6 +30,7 @@ function ChatPageInner() {
     pendingQuestion,
     pendingSlotPicker,
     bookingConfirmations,
+    estimateCards,
     sendMessage,
     answerQuestion,
     selectSlot,
@@ -288,6 +290,13 @@ function ChatPageInner() {
                 disabled={isLoading}
               />
             )}
+          </AnimatePresence>
+
+          {/* Estimate cards */}
+          <AnimatePresence>
+            {estimateCards.map((ec) => (
+              <EstimateCard key={ec.id} data={ec.data} />
+            ))}
           </AnimatePresence>
 
           {/* Booking confirmations */}
