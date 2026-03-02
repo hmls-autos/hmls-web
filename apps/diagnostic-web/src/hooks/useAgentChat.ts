@@ -1,13 +1,7 @@
 "use client";
 
 import { type Message as AgentMessage, HttpAgent } from "@ag-ui/client";
-import {
-  type RefObject,
-  startTransition,
-  useCallback,
-  useRef,
-  useState,
-} from "react";
+import { type RefObject, useCallback, useRef, useState } from "react";
 
 const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8001";
 
@@ -41,6 +35,44 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const focusInput = useCallback(() => {
     inputRef?.current?.focus();
   }, [inputRef]);
+
+  // Char-by-char streaming buffer
+  const bufferRef = useRef("");
+  const rafRef = useRef<number>(0);
+  const CHARS_PER_FRAME = 3;
+
+  const drainBuffer = useCallback(
+    (msgId: string) => {
+      if (bufferRef.current.length === 0) {
+        rafRef.current = 0;
+        return;
+      }
+      const chunk = bufferRef.current.slice(0, CHARS_PER_FRAME);
+      bufferRef.current = bufferRef.current.slice(CHARS_PER_FRAME);
+      setMessages((m) =>
+        m.map((msg) =>
+          msg.id === msgId ? { ...msg, content: msg.content + chunk } : msg,
+        ),
+      );
+      scrollToBottom();
+      rafRef.current = requestAnimationFrame(() => drainBuffer(msgId));
+    },
+    [scrollToBottom],
+  );
+
+  const flushBuffer = useCallback((msgId: string) => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = 0;
+    const remaining = bufferRef.current;
+    bufferRef.current = "";
+    if (remaining) {
+      setMessages((m) =>
+        m.map((msg) =>
+          msg.id === msgId ? { ...msg, content: msg.content + remaining } : msg,
+        ),
+      );
+    }
+  }, []);
 
   const getAgent = useCallback(() => {
     if (!agentRef.current) {
@@ -87,16 +119,12 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
             setTimeout(scrollToBottom, 0);
           },
           onTextMessageContentEvent: ({ event }) => {
-            startTransition(() => {
-              setMessages((m) =>
-                m.map((msg) =>
-                  msg.id === assistantId
-                    ? { ...msg, content: msg.content + event.delta }
-                    : msg,
-                ),
+            bufferRef.current += event.delta;
+            if (!rafRef.current) {
+              rafRef.current = requestAnimationFrame(() =>
+                drainBuffer(assistantId),
               );
-            });
-            scrollToBottom();
+            }
           },
           onToolCallStartEvent: ({ event }) => {
             setCurrentTool(event.toolCallName);
@@ -106,10 +134,12 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
             setCurrentTool(null);
           },
           onRunFinishedEvent: () => {
+            flushBuffer(assistantId);
             setIsLoading(false);
             focusInput();
           },
           onRunErrorEvent: ({ event }) => {
+            flushBuffer(assistantId);
             const msg =
               (event as { message?: string }).message ||
               "Agent encountered an error";
@@ -120,6 +150,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           },
         });
       } catch (err) {
+        flushBuffer(assistantId);
         const msg =
           err instanceof Error ? err.message : "Failed to connect to agent";
         console.error("[agent] Connection error:", msg);
@@ -128,7 +159,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         focusInput();
       }
     },
-    [scrollToBottom, focusInput, getAgent],
+    [scrollToBottom, focusInput, getAgent, drainBuffer, flushBuffer],
   );
 
   const clearMessages = useCallback(() => {
