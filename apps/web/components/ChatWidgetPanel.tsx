@@ -162,7 +162,11 @@ export default function ChatWidgetPanel({
         {/* Estimate cards */}
         {isAuthenticated &&
           estimateCards.map((ec) => (
-            <EstimateCard key={ec.id} data={ec.data} />
+            <div key={ec.id} className="flex justify-start">
+              <div className="max-w-[80%]">
+                <EstimateCard data={ec.data} />
+              </div>
+            </div>
           ))}
 
         {/* Tool indicator */}

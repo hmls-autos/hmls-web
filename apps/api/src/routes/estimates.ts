@@ -100,7 +100,7 @@ estimates.get("/:id/pdf", async (c) => {
   return new Response(pdfStream as unknown as ReadableStream, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="HMLS-Estimate-${id}.pdf"`,
+      "Content-Disposition": `inline; filename="HMLS-Estimate-${id}.pdf"`,
     },
   });
 });

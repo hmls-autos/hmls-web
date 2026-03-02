@@ -295,7 +295,16 @@ function ChatPageInner() {
           {/* Estimate cards */}
           <AnimatePresence>
             {estimateCards.map((ec) => (
-              <EstimateCard key={ec.id} data={ec.data} />
+              <motion.div
+                key={ec.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-start"
+              >
+                <div className="max-w-[80%]">
+                  <EstimateCard data={ec.data} />
+                </div>
+              </motion.div>
             ))}
           </AnimatePresence>
 
