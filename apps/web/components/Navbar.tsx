@@ -14,14 +14,12 @@ const navLinks = [
   { href: "/chat", label: "Chat" },
 ];
 
-const authLinks = [
-  { href: "/portal", label: "My Portal" },
-  { href: "/admin", label: "Admin", icon: LayoutDashboard },
-];
+const portalLink = { href: "/portal", label: "My Portal" };
+const adminLink = { href: "/admin", label: "Admin", icon: LayoutDashboard };
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user, supabase, isLoading } = useAuth();
+  const { user, supabase, isLoading, isAdmin } = useAuth();
   const isUserLoggedIn = !!user;
   const isHome = pathname === "/";
   const [scrolled, setScrolled] = useState(false);
@@ -71,22 +69,36 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
-          {isUserLoggedIn &&
-            authLinks.map(({ href, label }) => (
+          {isUserLoggedIn && (
+            <>
               <Link
-                key={href}
-                href={href}
+                href={portalLink.href}
                 className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
-                  pathname.startsWith(href)
+                  pathname.startsWith(portalLink.href)
                     ? "text-red-400"
                     : isTransparent
                       ? "text-white/70 hover:text-white"
                       : "text-text-secondary hover:text-text"
                 }`}
               >
-                {label}
+                {portalLink.label}
               </Link>
-            ))}
+              {isAdmin && (
+                <Link
+                  href={adminLink.href}
+                  className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
+                    pathname.startsWith(adminLink.href)
+                      ? "text-red-400"
+                      : isTransparent
+                        ? "text-white/70 hover:text-white"
+                        : "text-text-secondary hover:text-text"
+                  }`}
+                >
+                  {adminLink.label}
+                </Link>
+              )}
+            </>
+          )}
           <ThemeToggle />
           {!isLoading &&
             (isUserLoggedIn ? (

@@ -9,6 +9,7 @@ type AuthContextType = {
   session: Session | null;
   supabase: ReturnType<typeof createClient>;
   isLoading: boolean;
+  isAdmin: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -52,7 +53,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   return (
-    <AuthContext.Provider value={{ user, session, supabase, isLoading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        supabase,
+        isLoading,
+        isAdmin: user?.app_metadata?.role === "admin",
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

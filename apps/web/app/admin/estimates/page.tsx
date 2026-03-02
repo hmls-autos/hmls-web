@@ -194,7 +194,7 @@ export default function EstimatesPage() {
                             {formatCents(e.priceRangeHigh)}
                           </h3>
                           <a
-                            href={`/api/estimates/${e.id}/pdf?token=${e.shareToken}`}
+                            href={`${AGENT_URL}/api/estimates/${e.id}/pdf?token=${e.shareToken}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-text-secondary hover:text-red-primary transition-colors"

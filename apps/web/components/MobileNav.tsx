@@ -24,10 +24,8 @@ const navLinks = [
   { href: "/chat", label: "Chat" },
 ];
 
-const authLinks = [
-  { href: "/portal", label: "My Portal" },
-  { href: "/admin", label: "Admin" },
-];
+const portalLink = { href: "/portal", label: "My Portal" };
+const adminLink = { href: "/admin", label: "Admin" };
 
 const portalSubNav = [
   { href: "/portal", label: "Dashboard", icon: LayoutDashboard },
@@ -52,7 +50,7 @@ export default function MobileNav({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const { user, supabase, isLoading } = useAuth();
+  const { user, supabase, isLoading, isAdmin } = useAuth();
 
   const close = useCallback(() => setIsOpen(false), []);
 
@@ -73,7 +71,11 @@ export default function MobileNav({
 
   const isOnPortal = pathname.startsWith("/portal");
   const isOnAdmin = pathname.startsWith("/admin");
-  const subNav = isOnPortal ? portalSubNav : isOnAdmin ? adminSubNav : null;
+  const subNav = isOnPortal
+    ? portalSubNav
+    : isOnAdmin && isAdmin
+      ? adminSubNav
+      : null;
 
   return (
     <div className="md:hidden">
@@ -140,21 +142,34 @@ export default function MobileNav({
                 {label}
               </Link>
             ))}
-            {user &&
-              authLinks.map(({ href, label }) => (
+            {user && (
+              <>
                 <Link
-                  key={href}
-                  href={href}
+                  href={portalLink.href}
                   onClick={close}
                   className={`text-sm transition-colors ${
-                    pathname.startsWith(href)
+                    pathname.startsWith(portalLink.href)
                       ? "text-red-400 font-medium"
                       : "text-text-secondary hover:text-text"
                   }`}
                 >
-                  {label}
+                  {portalLink.label}
                 </Link>
-              ))}
+                {isAdmin && (
+                  <Link
+                    href={adminLink.href}
+                    onClick={close}
+                    className={`text-sm transition-colors ${
+                      pathname.startsWith(adminLink.href)
+                        ? "text-red-400 font-medium"
+                        : "text-text-secondary hover:text-text"
+                    }`}
+                  >
+                    {adminLink.label}
+                  </Link>
+                )}
+              </>
+            )}
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <span className="text-sm text-text-secondary">Theme</span>
