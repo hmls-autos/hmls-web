@@ -169,9 +169,12 @@ admin.get("/estimates", async (c) => {
       estimate: schema.estimates,
       customerName: schema.customers.name,
       customerEmail: schema.customers.email,
+      orderId: schema.orders.id,
+      orderStatus: schema.orders.status,
     })
     .from(schema.estimates)
     .leftJoin(schema.customers, eq(schema.estimates.customerId, schema.customers.id))
+    .leftJoin(schema.orders, eq(schema.orders.estimateId, schema.estimates.id))
     .orderBy(desc(schema.estimates.createdAt))
     .limit(200);
 
@@ -179,6 +182,8 @@ admin.get("/estimates", async (c) => {
     rows.map((r) => ({
       ...r.estimate,
       customer: { name: r.customerName, email: r.customerEmail },
+      orderId: r.orderId,
+      orderStatus: r.orderStatus,
     })),
   );
 });

@@ -237,6 +237,20 @@ export default function EstimatesPage() {
                     </span>
                   </div>
 
+                  {/* Linked order */}
+                  {e.orderId && (
+                    <div className="flex flex-wrap gap-2 mb-3 ml-7">
+                      <a
+                        href="/admin/orders"
+                        className="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 hover:underline"
+                      >
+                        Order #{e.orderId}
+                        {e.orderStatus &&
+                          ` · ${e.orderStatus.replace(/_/g, " ")}`}
+                      </a>
+                    </div>
+                  )}
+
                   {/* Line items */}
                   <div className="space-y-1 mb-3 ml-7">
                     {e.items.map((item) => (

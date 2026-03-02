@@ -36,6 +36,8 @@ export type AdminBooking = Booking & {
 
 export type AdminEstimate = Estimate & {
   customer: { name: string | null; email: string | null };
+  orderId: number | null;
+  orderStatus: string | null;
 };
 
 export type AdminQuote = Quote & {

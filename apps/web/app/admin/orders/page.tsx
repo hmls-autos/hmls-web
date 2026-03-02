@@ -148,19 +148,28 @@ function OrderCard({
       {/* Linked entities */}
       <div className="flex flex-wrap gap-2 mb-3">
         {order.estimateId && (
-          <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+          <a
+            href="/admin/estimates"
+            className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 hover:underline"
+          >
             Estimate #{order.estimateId}
-          </span>
+          </a>
         )}
         {order.quoteId && (
-          <span className="text-xs px-2 py-0.5 rounded bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
+          <a
+            href="/admin/quotes"
+            className="text-xs px-2 py-0.5 rounded bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 hover:underline"
+          >
             Quote #{order.quoteId}
-          </span>
+          </a>
         )}
         {order.bookingId && (
-          <span className="text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+          <a
+            href="/admin/bookings"
+            className="text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 hover:underline"
+          >
             Booking #{order.bookingId}
-          </span>
+          </a>
         )}
       </div>
 
