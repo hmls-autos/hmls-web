@@ -41,6 +41,8 @@ export interface Estimate {
   expiresAt: string;
   convertedToQuoteId: number | null;
   createdAt: string;
+  orderId?: number | null;
+  orderStatus?: string | null;
 }
 
 export interface Quote {

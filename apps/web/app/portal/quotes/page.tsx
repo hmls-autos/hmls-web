@@ -1,6 +1,7 @@
 "use client";
 
-import { Receipt } from "lucide-react";
+import { CreditCard, Receipt } from "lucide-react";
+import Link from "next/link";
 import { usePortalQuotes } from "@/hooks/usePortal";
 
 function formatDate(dateStr: string) {
@@ -104,8 +105,32 @@ export default function QuotesPage() {
                 ))}
               </div>
 
+              {/* Links + payment */}
+              <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-border">
+                {q.bookingId && (
+                  <Link
+                    href="/portal/bookings"
+                    className="text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 hover:underline"
+                  >
+                    Booking #{q.bookingId}
+                  </Link>
+                )}
+                {q.stripePaymentUrl &&
+                  (q.status === "sent" || q.status === "draft") && (
+                    <a
+                      href={q.stripePaymentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors ml-auto"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      Pay Now
+                    </a>
+                  )}
+              </div>
+
               {q.expiresAt && (
-                <p className="mt-3 pt-3 border-t border-border text-xs text-text-secondary">
+                <p className="mt-2 text-xs text-text-secondary">
                   Expires {formatDate(q.expiresAt)}
                 </p>
               )}

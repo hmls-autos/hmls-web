@@ -1,7 +1,10 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { Download, FileText } from "lucide-react";
+import Link from "next/link";
 import { usePortalEstimates } from "@/hooks/usePortal";
+
+const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -82,6 +85,38 @@ export default function EstimatesPage() {
                           : "Active"}
                     </span>
                   </div>
+                </div>
+
+                {/* Linked order + PDF */}
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {e.orderId && (
+                    <Link
+                      href="/portal/orders"
+                      className="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 hover:underline"
+                    >
+                      Order #{e.orderId}
+                      {e.orderStatus
+                        ? ` · ${e.orderStatus.replace(/_/g, " ")}`
+                        : ""}
+                    </Link>
+                  )}
+                  {e.convertedToQuoteId && (
+                    <Link
+                      href="/portal/quotes"
+                      className="text-xs px-2 py-0.5 rounded bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 hover:underline"
+                    >
+                      Quote #{e.convertedToQuoteId}
+                    </Link>
+                  )}
+                  <a
+                    href={`${AGENT_URL}/api/estimates/${e.id}/pdf?token=${e.shareToken}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-text-secondary hover:text-text transition-colors ml-auto"
+                  >
+                    <Download className="w-3 h-3" />
+                    PDF
+                  </a>
                 </div>
 
                 {/* Line items */}

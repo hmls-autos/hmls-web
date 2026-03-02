@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { db } from "../db/client.ts";
 import * as schema from "../db/schema.ts";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { Errors } from "@hmls/shared/errors";
 import { type AuthEnv, requireAuth } from "../middleware/auth.ts";
 import { notifyOrderStatusChange } from "../lib/notifications.ts";
@@ -84,12 +84,28 @@ portal.get("/me/bookings", async (c) => {
   return c.json(rows);
 });
 
-// GET /me/estimates — customer's estimates
+// GET /me/estimates — customer's estimates (with linked order info)
 portal.get("/me/estimates", async (c) => {
   const customerId = c.get("customerId");
   const rows = await db
-    .select()
+    .select({
+      id: schema.estimates.id,
+      customerId: schema.estimates.customerId,
+      items: schema.estimates.items,
+      subtotal: schema.estimates.subtotal,
+      priceRangeLow: schema.estimates.priceRangeLow,
+      priceRangeHigh: schema.estimates.priceRangeHigh,
+      notes: schema.estimates.notes,
+      shareToken: schema.estimates.shareToken,
+      validDays: schema.estimates.validDays,
+      expiresAt: schema.estimates.expiresAt,
+      convertedToQuoteId: schema.estimates.convertedToQuoteId,
+      createdAt: schema.estimates.createdAt,
+      orderId: sql<number | null>`${schema.orders.id}`.as("orderId"),
+      orderStatus: sql<string | null>`${schema.orders.status}`.as("orderStatus"),
+    })
     .from(schema.estimates)
+    .leftJoin(schema.orders, eq(schema.orders.estimateId, schema.estimates.id))
     .where(eq(schema.estimates.customerId, customerId))
     .orderBy(desc(schema.estimates.createdAt));
 

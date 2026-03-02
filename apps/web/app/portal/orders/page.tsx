@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, ClipboardList, X as XIcon } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { type PortalOrder, usePortalOrders } from "@/hooks/usePortal";
 import { createClient } from "@/lib/supabase/client";
@@ -121,19 +122,28 @@ function OrderCard({
       {/* Linked entities */}
       <div className="flex flex-wrap gap-2 mb-3">
         {order.estimateId && (
-          <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+          <Link
+            href="/portal/estimates"
+            className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 hover:underline"
+          >
             Estimate #{order.estimateId}
-          </span>
+          </Link>
         )}
         {order.quoteId && (
-          <span className="text-xs px-2 py-0.5 rounded bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
+          <Link
+            href="/portal/quotes"
+            className="text-xs px-2 py-0.5 rounded bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 hover:underline"
+          >
             Quote #{order.quoteId}
-          </span>
+          </Link>
         )}
         {order.bookingId && (
-          <span className="text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400">
+          <Link
+            href="/portal/bookings"
+            className="text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 hover:underline"
+          >
             Booking #{order.bookingId}
-          </span>
+          </Link>
         )}
       </div>
 
