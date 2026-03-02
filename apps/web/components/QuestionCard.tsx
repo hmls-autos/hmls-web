@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState } from "react";
 
 export interface QuestionOption {
   label: string;
@@ -20,6 +21,9 @@ interface QuestionCardProps {
 }
 
 export function QuestionCard({ data, onSelect, disabled }: QuestionCardProps) {
+  const [customInput, setCustomInput] = useState("");
+  const [showCustom, setShowCustom] = useState(false);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -53,6 +57,48 @@ export function QuestionCard({ data, onSelect, disabled }: QuestionCardProps) {
               )}
             </motion.button>
           ))}
+          {showCustom ? (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && customInput.trim()) {
+                    onSelect(customInput.trim());
+                  }
+                }}
+                placeholder="Type your answer..."
+                disabled={disabled}
+                className="flex-1 px-4 py-3 rounded-xl border border-border bg-surface text-sm text-text placeholder:text-text-secondary focus:outline-none focus:border-red-primary/50 disabled:opacity-50"
+              />
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                disabled={disabled || !customInput.trim()}
+                onClick={() => {
+                  if (customInput.trim()) onSelect(customInput.trim());
+                }}
+                className="px-4 py-3 rounded-xl border border-red-primary bg-red-primary text-white text-sm font-medium hover:bg-red-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send
+              </motion.button>
+            </div>
+          ) : (
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={disabled}
+              onClick={() => setShowCustom(true)}
+              className="w-full text-left px-4 py-3 rounded-xl border border-dashed border-border bg-surface hover:border-red-primary/50 hover:bg-red-light/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className="text-sm text-text-secondary">
+                Other — type my own answer
+              </span>
+            </motion.button>
+          )}
         </div>
       </div>
     </motion.div>
