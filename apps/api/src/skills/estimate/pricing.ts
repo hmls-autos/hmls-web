@@ -46,8 +46,6 @@ export async function getPricingConfig(): Promise<PricingConfig> {
     partsMarkupTier4: m.get("parts_markup_tier4_pct") ?? 15,
 
     // Disposal / environmental
-    shopSuppliesPct: m.get("shop_supplies_pct") ?? 5,
-    shopSuppliesMax: m.get("shop_supplies_max") ?? 2500,
     hazmatDisposalFee: m.get("hazmat_disposal_fee") ?? 1500,
     tireDisposalFee: m.get("tire_disposal_fee") ?? 500,
     batteryCoreCharge: m.get("battery_core_charge") ?? 2500,
@@ -185,21 +183,6 @@ export function buildFeeItems(
       description: `${extraMiles} mi beyond ${config.baseTravelMiles} mi base @ $${(config.perMileFee / 100).toFixed(2)}/mi`,
       price: travelFee,
     });
-  }
-
-  // Shop supplies (% of labor, capped)
-  if (opts.totalLaborCents > 0) {
-    const shopSupplies = Math.min(
-      Math.round(opts.totalLaborCents * (config.shopSuppliesPct / 100)),
-      config.shopSuppliesMax,
-    );
-    if (shopSupplies > 0) {
-      items.push({
-        name: "Shop Supplies",
-        description: `${config.shopSuppliesPct}% of labor (max $${(config.shopSuppliesMax / 100).toFixed(2)})`,
-        price: shopSupplies,
-      });
-    }
   }
 
   // Disposal / environmental fees (per service)

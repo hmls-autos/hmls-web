@@ -44,8 +44,6 @@ export interface PricingConfig {
   partsMarkupTier4: number; // > $500
 
   // Disposal / environmental
-  shopSuppliesPct: number;
-  shopSuppliesMax: number;
   hazmatDisposalFee: number;
   tireDisposalFee: number; // per tire
   batteryCoreCharge: number;

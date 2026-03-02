@@ -83,13 +83,57 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       } as AgentMessage);
 
       let assistantId = "";
-      let buffer = "";
+      // Streaming render buffer: incoming deltas queue up here
+      // and drain smoothly via requestAnimationFrame
+      let fullBuffer = "";
+      let renderedLength = 0;
+      let rafId = 0;
+      const CHARS_PER_FRAME = 3;
+
+      const flushBuffer = () => {
+        if (renderedLength >= fullBuffer.length) {
+          rafId = 0;
+          return;
+        }
+        const nextLen = Math.min(
+          renderedLength + CHARS_PER_FRAME,
+          fullBuffer.length,
+        );
+        const rendered = fullBuffer.slice(0, nextLen);
+        renderedLength = nextLen;
+        setMessages((m) =>
+          m.map((msg) =>
+            msg.id === assistantId ? { ...msg, content: rendered } : msg,
+          ),
+        );
+        scrollToBottom();
+        rafId = requestAnimationFrame(flushBuffer);
+      };
+
+      const enqueueText = (delta: string) => {
+        fullBuffer += delta;
+        if (!rafId) {
+          rafId = requestAnimationFrame(flushBuffer);
+        }
+      };
+
+      const flushRemaining = () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        if (renderedLength < fullBuffer.length) {
+          setMessages((m) =>
+            m.map((msg) =>
+              msg.id === assistantId ? { ...msg, content: fullBuffer } : msg,
+            ),
+          );
+        }
+      };
 
       try {
         await agent.runAgent(undefined, {
           onTextMessageStartEvent: ({ event }) => {
             assistantId = event.messageId;
-            buffer = "";
+            fullBuffer = "";
+            renderedLength = 0;
             setMessages((m) => [
               ...m,
               { id: assistantId, role: "assistant", content: "" },
@@ -97,13 +141,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
             setTimeout(scrollToBottom, 0);
           },
           onTextMessageContentEvent: ({ event }) => {
-            buffer += event.delta;
-            setMessages((m) =>
-              m.map((msg) =>
-                msg.id === assistantId ? { ...msg, content: buffer } : msg,
-              ),
-            );
-            setTimeout(scrollToBottom, 0);
+            enqueueText(event.delta);
           },
           onToolCallStartEvent: ({ event }) => {
             setCurrentTool(event.toolCallName);
@@ -143,10 +181,12 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
             setTimeout(scrollToBottom, 0);
           },
           onRunFinishedEvent: () => {
+            flushRemaining();
             setIsLoading(false);
             focusInput();
           },
           onRunErrorEvent: ({ event }) => {
+            flushRemaining();
             const msg =
               (event as { message?: string }).message ||
               "Agent encountered an error";
@@ -157,6 +197,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           },
         });
       } catch (err) {
+        flushRemaining();
         const msg =
           err instanceof Error ? err.message : "Failed to connect to agent";
         console.error("[agent] Connection error:", msg);

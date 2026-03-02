@@ -11,7 +11,7 @@ import {
   getPricingConfig,
 } from "./pricing.ts";
 import { toolResult } from "@hmls/shared/tool-result";
-import type { DiscountType, ServiceInput } from "./types.ts";
+import type { DiscountType, LineItem, ServiceInput } from "./types.ts";
 import { notifyOrderStatusChange } from "../../lib/notifications.ts";
 
 const discountEnum = z.enum([
@@ -28,7 +28,7 @@ export const createEstimateTool = {
   description:
     "Generate a price estimate for services. Provide vehicle info directly (year/make/model). " +
     "If the user is a known customer, also pass customerId to save the estimate to their account. " +
-    "The system automatically applies shop supplies, disposal fees, time surcharges, travel fees, and discounts.",
+    "The system automatically applies disposal fees, time surcharges, travel fees, and discounts.",
   schema: z.object({
     customerId: z
       .number()
@@ -48,7 +48,12 @@ export const createEstimateTool = {
         z.object({
           name: z.string().describe("Service name"),
           description: z.string().describe("Brief description"),
-          laborHours: z.number().describe("Labor hours from OLP lookup"),
+          laborHours: z
+            .number()
+            .optional()
+            .describe(
+              "Labor hours from OLP lookup, or your best estimate if OLP has no data",
+            ),
           partsCost: z
             .number()
             .optional()
@@ -70,6 +75,18 @@ export const createEstimateTool = {
         }),
       )
       .describe("List of services to include in estimate"),
+    customItems: z
+      .array(
+        z.object({
+          name: z.string().describe("Item name (e.g. 'Diagnostic Fee', 'Custom Fabrication')"),
+          description: z.string().describe("Brief description of the charge"),
+          price: z.number().describe("Price in dollars (e.g. 95 for $95)"),
+        }),
+      )
+      .optional()
+      .describe(
+        "Freeform line items that bypass the labor/parts pricing engine. Use for diagnostic fees, custom work, flat-rate services, or anything not in OLP.",
+      ),
     notes: z
       .string()
       .optional()
@@ -125,6 +142,7 @@ export const createEstimateTool = {
       customerId?: number;
       vehicle: { year: number; make: string; model: string };
       services: ServiceInput[];
+      customItems?: { name: string; description: string; price: number }[];
       notes?: string;
       validDays?: number;
       isRush?: boolean;
@@ -154,6 +172,13 @@ export const createEstimateTool = {
       params.services.map((s) => calculatePrice(s)),
     );
 
+    // 2b. Convert custom items (dollars → cents)
+    const customLineItems: LineItem[] = (params.customItems ?? []).map((c) => ({
+      name: c.name,
+      description: c.description,
+      price: Math.round(c.price * 100),
+    }));
+
     const config = await getPricingConfig();
     const laborCents = params.services.reduce(
       (sum, s) => sum + Math.round((s.laborHours ?? 0) * config.hourlyRate),
@@ -174,7 +199,7 @@ export const createEstimateTool = {
     });
 
     // 4. Combine all items
-    const allItems = [...serviceItems, ...feeItems];
+    const allItems = [...serviceItems, ...customLineItems, ...feeItems];
 
     // 5. Calculate subtotal before discount
     const subtotalBeforeDiscount = allItems.reduce(

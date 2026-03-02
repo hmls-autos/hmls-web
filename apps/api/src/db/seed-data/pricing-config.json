@@ -110,16 +110,6 @@
     "description": "First responder discount %"
   },
   {
-    "key": "shop_supplies_pct",
-    "value": 5,
-    "description": "Shop supplies fee % of labor (max $25)"
-  },
-  {
-    "key": "shop_supplies_max",
-    "value": 2500,
-    "description": "Maximum shop supplies fee in cents ($25)"
-  },
-  {
     "key": "hazmat_disposal_fee",
     "value": 1500,
     "description": "Hazardous material disposal fee in cents ($15)"
