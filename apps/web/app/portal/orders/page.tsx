@@ -3,94 +3,14 @@
 import { Check, ClipboardList, X as XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Spinner } from "@/components/ui/Spinner";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { type PortalOrder, usePortalOrders } from "@/hooks/usePortal";
-import { createClient } from "@/lib/supabase/client";
-
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
-
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  estimated: {
-    label: "Pending Review",
-    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  },
-  customer_approved: {
-    label: "Approved",
-    color:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  },
-  customer_declined: {
-    label: "Declined",
-    color:
-      "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400",
-  },
-  quoted: {
-    label: "Quote Ready",
-    color:
-      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  },
-  accepted: {
-    label: "Paid",
-    color:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  },
-  declined: {
-    label: "Quote Declined",
-    color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  },
-  scheduled: {
-    label: "Scheduled",
-    color:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  },
-  in_progress: {
-    label: "In Progress",
-    color:
-      "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  },
-  completed: {
-    label: "Completed",
-    color:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  },
-  cancelled: {
-    label: "Cancelled",
-    color:
-      "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400",
-  },
-};
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const {
-    data: { session },
-  } = await createClient().auth.getSession();
-  return session?.access_token
-    ? { Authorization: `Bearer ${session.access_token}` }
-    : {};
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const config = STATUS_CONFIG[status] ?? {
-    label: status,
-    color: "bg-neutral-100 text-neutral-500",
-  };
-  return (
-    <span
-      className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${config.color}`}
-    >
-      {config.label}
-    </span>
-  );
-}
+import { authFetch } from "@/lib/fetcher";
+import { formatDateTime } from "@/lib/format";
+import { PORTAL_ORDER_STATUS } from "@/lib/status";
 
 function OrderCard({
   order,
@@ -111,10 +31,10 @@ function OrderCard({
             <h3 className="text-sm font-semibold text-text">
               Order #{order.id}
             </h3>
-            <StatusBadge status={order.status} />
+            <StatusBadge status={order.status} config={PORTAL_ORDER_STATUS} />
           </div>
           <p className="text-xs text-text-secondary mt-0.5">
-            {formatDate(order.createdAt)}
+            {formatDateTime(order.createdAt)}
           </p>
         </div>
       </div>
@@ -167,7 +87,7 @@ function OrderCard({
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-text-secondary shrink-0" />
                 <span>
-                  {STATUS_CONFIG[entry.status]?.label ?? entry.status}
+                  {PORTAL_ORDER_STATUS[entry.status]?.label ?? entry.status}
                 </span>
                 <span className="text-text-secondary/60">
                   {new Date(entry.timestamp).toLocaleDateString("en-US", {
@@ -231,23 +151,13 @@ export default function PortalOrdersPage() {
   ) {
     setLoading(orderId);
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(
-        `${AGENT_URL}/api/portal/me/orders/${orderId}/${action}`,
-        {
-          method: "POST",
-          headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify(reason ? { reason } : {}),
-        },
-      );
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert(err.error?.message || `Failed to ${action} order`);
-        return;
-      }
+      await authFetch(`/api/portal/me/orders/${orderId}/${action}`, {
+        method: "POST",
+        body: JSON.stringify(reason ? { reason } : {}),
+      });
       mutate();
-    } catch {
-      alert(`Failed to ${action} order`);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : `Failed to ${action} order`);
     } finally {
       setLoading(null);
     }
@@ -256,27 +166,23 @@ export default function PortalOrdersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-red-primary border-t-transparent rounded-full animate-spin" />
+        <Spinner />
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-text mb-1">
-        My Orders
-      </h1>
-      <p className="text-sm text-text-secondary mb-8">
-        Track your service orders from estimate to completion.
-      </p>
+      <PageHeader
+        title="My Orders"
+        subtitle="Track your service orders from estimate to completion."
+      />
 
       {orders.length === 0 ? (
-        <div className="bg-surface border border-border rounded-xl p-8 text-center">
-          <ClipboardList className="w-8 h-8 text-text-secondary mx-auto mb-3" />
-          <p className="text-text-secondary text-sm">
-            No orders yet. Start a chat to get an estimate!
-          </p>
-        </div>
+        <EmptyState
+          icon={ClipboardList}
+          message="No orders yet. Start a chat to get an estimate!"
+        />
       ) : (
         <div className="space-y-3">
           {orders.map((order) => (

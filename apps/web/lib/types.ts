@@ -78,3 +78,15 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Customer {
+  id: number;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  vehicleInfo: { make?: string; model?: string; year?: string } | null;
+  stripeCustomerId?: string | null;
+  role?: string;
+  createdAt: string;
+}

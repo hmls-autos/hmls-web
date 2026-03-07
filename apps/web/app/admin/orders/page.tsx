@@ -2,70 +2,13 @@
 
 import { ChevronRight, ClipboardList } from "lucide-react";
 import { useState } from "react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Spinner } from "@/components/ui/Spinner";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { type AdminOrder, useAdminOrders } from "@/hooks/useAdmin";
-import { createClient } from "@/lib/supabase/client";
-
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
-
-const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  estimated: {
-    label: "Estimated",
-    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  },
-  customer_approved: {
-    label: "Customer Approved",
-    color:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  },
-  customer_declined: {
-    label: "Customer Declined",
-    color:
-      "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400",
-  },
-  quoted: {
-    label: "Quoted",
-    color:
-      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  },
-  accepted: {
-    label: "Accepted",
-    color:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  },
-  declined: {
-    label: "Declined",
-    color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  },
-  scheduled: {
-    label: "Scheduled",
-    color:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  },
-  in_progress: {
-    label: "In Progress",
-    color:
-      "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-  },
-  completed: {
-    label: "Completed",
-    color:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  },
-  cancelled: {
-    label: "Cancelled",
-    color:
-      "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400",
-  },
-};
-
-const TRANSITIONS: Record<string, string[]> = {
-  estimated: ["customer_approved", "customer_declined", "cancelled"],
-  customer_approved: ["quoted", "cancelled"],
-  quoted: ["accepted", "declined", "cancelled"],
-  accepted: ["scheduled", "cancelled"],
-  scheduled: ["in_progress", "cancelled"],
-  in_progress: ["completed", "cancelled"],
-};
+import { authFetch } from "@/lib/fetcher";
+import { formatDateTime } from "@/lib/format";
+import { ORDER_STATUS, ORDER_TRANSITIONS } from "@/lib/status";
 
 const FILTER_OPTIONS = [
   { value: "", label: "All" },
@@ -79,39 +22,6 @@ const FILTER_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const {
-    data: { session },
-  } = await createClient().auth.getSession();
-  return session?.access_token
-    ? { Authorization: `Bearer ${session.access_token}` }
-    : {};
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const config = STATUS_CONFIG[status] ?? {
-    label: status,
-    color: "bg-neutral-100 text-neutral-500",
-  };
-  return (
-    <span
-      className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${config.color}`}
-    >
-      {config.label}
-    </span>
-  );
-}
-
 function OrderCard({
   order,
   onTransition,
@@ -121,7 +31,7 @@ function OrderCard({
   onTransition: (orderId: number, newStatus: string) => void;
   transitioning: number | null;
 }) {
-  const allowed = TRANSITIONS[order.status] ?? [];
+  const allowed = ORDER_TRANSITIONS[order.status] ?? [];
 
   return (
     <div className="bg-surface border border-border rounded-xl p-5 hover:border-border-hover transition-colors">
@@ -131,7 +41,7 @@ function OrderCard({
             <h3 className="text-sm font-semibold text-text">
               Order #{order.id}
             </h3>
-            <StatusBadge status={order.status} />
+            <StatusBadge status={order.status} config={ORDER_STATUS} />
           </div>
           <p className="text-xs text-text-secondary mt-0.5">
             {order.customer.name ?? "Unknown"}{" "}
@@ -187,14 +97,14 @@ function OrderCard({
 
       <div className="flex items-center justify-between">
         <span className="text-xs text-text-secondary">
-          {formatDate(order.createdAt)}
+          {formatDateTime(order.createdAt)}
         </span>
 
         {/* Transition buttons */}
         {allowed.length > 0 && (
           <div className="flex gap-2">
             {allowed.map((next) => {
-              const config = STATUS_CONFIG[next];
+              const config = ORDER_STATUS[next];
               const isCancelling = next === "cancelled";
               return (
                 <button
@@ -242,23 +152,13 @@ export default function OrdersPage() {
   ) {
     setTransitioning(orderId);
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(
-        `${AGENT_URL}/api/admin/orders/${orderId}/status`,
-        {
-          method: "PATCH",
-          headers: { ...headers, "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus, cancellationReason }),
-        },
-      );
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert(err.error?.message || "Failed to update order status");
-        return;
-      }
+      await authFetch(`/api/admin/orders/${orderId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: newStatus, cancellationReason }),
+      });
       mutate();
-    } catch {
-      alert("Failed to update order status");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to update order status");
     } finally {
       setTransitioning(null);
     }
@@ -267,7 +167,7 @@ export default function OrdersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-red-primary border-t-transparent rounded-full animate-spin" />
+        <Spinner />
       </div>
     );
   }
@@ -300,12 +200,12 @@ export default function OrdersPage() {
       </div>
 
       {orders.length === 0 ? (
-        <div className="bg-surface border border-border rounded-xl p-8 text-center">
-          <ClipboardList className="w-8 h-8 text-text-secondary mx-auto mb-3" />
-          <p className="text-sm text-text-secondary">
-            {filter ? `No orders with status '${filter}'.` : "No orders yet."}
-          </p>
-        </div>
+        <EmptyState
+          icon={ClipboardList}
+          message={
+            filter ? `No orders with status '${filter}'.` : "No orders yet."
+          }
+        />
       ) : (
         <div className="space-y-3">
           {orders.map((order) => (

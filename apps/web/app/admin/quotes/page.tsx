@@ -2,36 +2,12 @@
 
 import { DollarSign, Receipt } from "lucide-react";
 import { useState } from "react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Spinner } from "@/components/ui/Spinner";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useAdminQuotes } from "@/hooks/useAdmin";
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatCents(cents: number) {
-  return (cents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-}
-
-const statusStyles: Record<string, string> = {
-  draft:
-    "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
-  sent: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  viewed:
-    "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-  accepted:
-    "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  paid: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  declined: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  expired:
-    "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400",
-};
+import { formatCents, formatDate } from "@/lib/format";
+import { QUOTE_STATUS } from "@/lib/status";
 
 const statusFilters = [
   { value: "", label: "All" },
@@ -73,15 +49,15 @@ export default function QuotesPage() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="w-6 h-6 border-2 border-red-primary border-t-transparent rounded-full animate-spin" />
+          <Spinner />
         </div>
       ) : quotes.length === 0 ? (
-        <div className="bg-surface border border-border rounded-xl p-8 text-center">
-          <Receipt className="w-8 h-8 text-text-secondary mx-auto mb-3" />
-          <p className="text-sm text-text-secondary">
-            {statusFilter ? "No quotes with this status." : "No quotes yet."}
-          </p>
-        </div>
+        <EmptyState
+          icon={Receipt}
+          message={
+            statusFilter ? "No quotes with this status." : "No quotes yet."
+          }
+        />
       ) : (
         <div className="space-y-3">
           {quotes.map((q) => (
@@ -104,13 +80,7 @@ export default function QuotesPage() {
                     )}
                   </p>
                 </div>
-                <span
-                  className={`text-xs font-medium px-2.5 py-1 rounded-full capitalize whitespace-nowrap ${
-                    statusStyles[q.status] ?? statusStyles.draft
-                  }`}
-                >
-                  {q.status}
-                </span>
+                <StatusBadge status={q.status} config={QUOTE_STATUS} />
               </div>
 
               {/* Line items */}

@@ -1,6 +1,8 @@
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
-import type { Booking, Estimate, Order, Quote } from "@/lib/types";
+import type { Booking, Customer, Estimate, Order, Quote } from "@/lib/types";
+
+export type { Customer };
 
 interface DashboardStats {
   customers: number;
@@ -8,17 +10,6 @@ interface DashboardStats {
   estimates: number;
   quotes: number;
   revenue30d: number;
-}
-
-export interface Customer {
-  id: number;
-  name: string | null;
-  phone: string | null;
-  email: string | null;
-  address: string | null;
-  vehicleInfo: { make?: string; model?: string; year?: string } | null;
-  role: string;
-  createdAt: string;
 }
 
 interface DashboardData {

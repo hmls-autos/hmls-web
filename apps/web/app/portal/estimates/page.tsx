@@ -2,24 +2,12 @@
 
 import { Download, FileText } from "lucide-react";
 import Link from "next/link";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Spinner } from "@/components/ui/Spinner";
 import { usePortalEstimates } from "@/hooks/usePortal";
-
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatCents(cents: number) {
-  return (cents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-}
+import { AGENT_URL } from "@/lib/config";
+import { formatCents, formatDate } from "@/lib/format";
 
 export default function EstimatesPage() {
   const { estimates, isLoading } = usePortalEstimates();
@@ -27,25 +15,20 @@ export default function EstimatesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-red-primary border-t-transparent rounded-full animate-spin" />
+        <Spinner />
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-display font-bold text-text mb-1">
-        Estimates
-      </h1>
-      <p className="text-sm text-text-secondary mb-8">
-        Price estimates for requested services.
-      </p>
+      <PageHeader
+        title="Estimates"
+        subtitle="Price estimates for requested services."
+      />
 
       {estimates.length === 0 ? (
-        <div className="bg-surface border border-border rounded-xl p-8 text-center">
-          <FileText className="w-8 h-8 text-text-secondary mx-auto mb-3" />
-          <p className="text-text-secondary text-sm">No estimates yet.</p>
-        </div>
+        <EmptyState icon={FileText} message="No estimates yet." />
       ) : (
         <div className="space-y-3">
           {estimates.map((e) => {
