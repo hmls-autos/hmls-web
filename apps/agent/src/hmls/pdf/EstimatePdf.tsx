@@ -128,10 +128,8 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   footer: {
-    position: "absolute",
-    bottom: 40,
-    left: 40,
-    right: 40,
+    marginTop: "auto",
+    paddingTop: 20,
   },
   termsTitle: {
     fontSize: 10,
@@ -301,51 +299,60 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
           </View>
         )}
 
-        {/* Terms & Agreement */}
+        {/* Footer */}
         <View style={styles.footer}>
-          <View style={styles.termsBox}>
-            <Text style={styles.termsTitle}>Terms &amp; Conditions</Text>
-            <Text style={styles.termsText}>
-              1. Authorization: By proceeding with this estimate, you authorize HMLS Mobile Mechanic
-              to perform the services listed above.
-            </Text>
-            <Text style={styles.termsText}>
-              2. Warranty: All parts and labor are covered by a 90-day (3-month) warranty from the
-              date of service. Warranty does not cover normal wear and tear, misuse, or pre-existing
-              conditions not addressed in this estimate.
-            </Text>
-            <Text style={styles.termsText}>
-              3. Cost Overages: If additional repairs are needed beyond this estimate, we will contact
-              you for authorization before proceeding with any extra work.
-            </Text>
-            <Text style={styles.termsText}>
-              4. Replaced Parts: You may request return of replaced parts at the time of
-              authorization.
-            </Text>
-            <Text style={styles.termsText}>
-              5. No-Show Fee: A $75 fee will be charged if you are not available at the scheduled
-              time and location without prior notice.
-            </Text>
-            <Text style={styles.termsText}>
-              6. Cancellation: Cancellations made less than 24 hours before the scheduled
-              appointment are subject to a $50 cancellation fee.
-            </Text>
-            <Text style={styles.termsText}>
-              7. After-Hours Surcharge: Services performed outside standard hours (Mon-Fri
-              8AM-6PM) may include a surcharge of up to $75.
-            </Text>
-            <Text style={styles.termsText}>
-              8. Diagnostic Fee: A diagnostic/trip fee may apply and is non-refundable regardless
-              of whether you proceed with repairs.
-            </Text>
-            <Text style={styles.termsText}>
-              9. Payment: Payment is due upon completion of service. We accept cash, card, and
-              digital payments. This estimate is valid until {formatDate(estimate.expiresAt)}.
-            </Text>
-          </View>
           <Text style={styles.cta}>
             Ready to proceed? Reply in chat or call us to schedule your service.
           </Text>
+          <Text style={styles.contact}>
+            HMLS Mobile Mechanic | Orange County, CA | Mon-Sat 8AM-12AM
+          </Text>
+        </View>
+      </Page>
+
+      {/* Page 2: Terms & Conditions */}
+      <Page size="LETTER" style={styles.page}>
+        <View style={styles.termsBox}>
+          <Text style={styles.termsTitle}>Terms &amp; Conditions</Text>
+          <Text style={styles.termsText}>
+            1. Authorization: By proceeding with this estimate, you authorize HMLS Mobile Mechanic
+            to perform the services listed above.
+          </Text>
+          <Text style={styles.termsText}>
+            2. Warranty: All parts and labor are covered by a 90-day (3-month) warranty from the
+            date of service. Warranty does not cover normal wear and tear, misuse, or pre-existing
+            conditions not addressed in this estimate.
+          </Text>
+          <Text style={styles.termsText}>
+            3. Cost Overages: If additional repairs are needed beyond this estimate, we will contact
+            you for authorization before proceeding with any extra work.
+          </Text>
+          <Text style={styles.termsText}>
+            4. Replaced Parts: You may request return of replaced parts at the time of
+            authorization.
+          </Text>
+          <Text style={styles.termsText}>
+            5. No-Show Fee: A $75 fee will be charged if you are not available at the scheduled
+            time and location without prior notice.
+          </Text>
+          <Text style={styles.termsText}>
+            6. Cancellation: Cancellations made less than 24 hours before the scheduled
+            appointment are subject to a $50 cancellation fee.
+          </Text>
+          <Text style={styles.termsText}>
+            7. After-Hours Surcharge: Services performed outside standard hours (Mon-Fri
+            8AM-6PM) may include a surcharge of up to $75.
+          </Text>
+          <Text style={styles.termsText}>
+            8. Diagnostic Fee: A diagnostic/trip fee may apply and is non-refundable regardless
+            of whether you proceed with repairs.
+          </Text>
+          <Text style={styles.termsText}>
+            9. Payment: Payment is due upon completion of service. We accept cash, card, and
+            digital payments. This estimate is valid until {formatDate(estimate.expiresAt)}.
+          </Text>
+        </View>
+        <View style={styles.footer}>
           <Text style={styles.contact}>
             HMLS Mobile Mechanic | Orange County, CA | Mon-Sat 8AM-12AM
           </Text>
