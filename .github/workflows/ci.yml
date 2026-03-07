@@ -45,5 +45,14 @@ jobs:
       - name: Type Check (web)
         run: cd apps/web && bun run typecheck
 
+      - name: Build (web)
+        run: cd apps/web && bun run build
+
+      - name: Lint (deno)
+        run: deno task lint
+
+      - name: Format Check (deno)
+        run: deno task fmt:check
+
       - name: Check API
         run: deno task check
