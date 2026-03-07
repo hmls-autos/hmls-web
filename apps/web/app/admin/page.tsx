@@ -2,22 +2,9 @@
 
 import { Calendar, DollarSign, FileText, Receipt, Users } from "lucide-react";
 import Link from "next/link";
+import { Spinner } from "@/components/ui/Spinner";
 import { useAdminDashboard } from "@/hooks/useAdmin";
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatCents(cents: number) {
-  return (cents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-}
+import { formatCents, formatDate } from "@/lib/format";
 
 function StatCard({
   label,
@@ -49,7 +36,7 @@ export default function AdminDashboard() {
   if (isLoading || !data) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-red-primary border-t-transparent rounded-full animate-spin" />
+        <Spinner />
       </div>
     );
   }

@@ -2,34 +2,12 @@
 
 import { ExternalLink, FileText, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Spinner } from "@/components/ui/Spinner";
 import { useAdminEstimates } from "@/hooks/useAdmin";
-import { createClient } from "@/lib/supabase/client";
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatCents(cents: number) {
-  return (cents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-}
-
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
-
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const {
-    data: { session },
-  } = await createClient().auth.getSession();
-  return session?.access_token
-    ? { Authorization: `Bearer ${session.access_token}` }
-    : {};
-}
+import { AGENT_URL } from "@/lib/config";
+import { authFetch } from "@/lib/fetcher";
+import { formatCents, formatDate } from "@/lib/format";
 
 export default function EstimatesPage() {
   const { estimates, isLoading, mutate } = useAdminEstimates();
@@ -58,12 +36,7 @@ export default function EstimatesPage() {
     if (!confirm("Delete this estimate? This cannot be undone.")) return;
     setDeleting(id);
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`${AGENT_URL}/api/admin/estimates/${id}`, {
-        method: "DELETE",
-        headers,
-      });
-      if (!res.ok) throw new Error("Delete failed");
+      await authFetch(`/api/admin/estimates/${id}`, { method: "DELETE" });
       setSelected((prev) => {
         const next = new Set(prev);
         next.delete(id);
@@ -88,13 +61,10 @@ export default function EstimatesPage() {
       return;
     setBatchDeleting(true);
     try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`${AGENT_URL}/api/admin/estimates/batch`, {
+      await authFetch("/api/admin/estimates/batch", {
         method: "DELETE",
-        headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ ids }),
       });
-      if (!res.ok) throw new Error("Batch delete failed");
       setSelected(new Set());
       mutate();
     } catch {
@@ -107,7 +77,7 @@ export default function EstimatesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-red-primary border-t-transparent rounded-full animate-spin" />
+        <Spinner />
       </div>
     );
   }
@@ -147,10 +117,7 @@ export default function EstimatesPage() {
       )}
 
       {estimates.length === 0 ? (
-        <div className="bg-surface border border-border rounded-xl p-8 text-center">
-          <FileText className="w-8 h-8 text-text-secondary mx-auto mb-3" />
-          <p className="text-sm text-text-secondary">No estimates yet.</p>
-        </div>
+        <EmptyState icon={FileText} message="No estimates yet." />
       ) : (
         <>
           {/* Select all */}

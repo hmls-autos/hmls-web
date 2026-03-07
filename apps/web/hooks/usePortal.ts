@@ -1,18 +1,8 @@
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
-import type { Booking, Estimate, Order, Quote } from "@/lib/types";
+import type { Booking, Customer, Estimate, Order, Quote } from "@/lib/types";
 
-export interface PortalCustomer {
-  id: number;
-  name: string | null;
-  phone: string | null;
-  email: string | null;
-  address: string | null;
-  vehicleInfo: { make?: string; model?: string; year?: string } | null;
-  stripeCustomerId: string | null;
-  createdAt: string;
-}
-
+export type PortalCustomer = Customer;
 export type PortalOrder = Order;
 
 export function usePortalCustomer() {

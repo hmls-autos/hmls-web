@@ -1,6 +1,5 @@
+import { AGENT_URL } from "@/lib/config";
 import { createClient } from "@/lib/supabase/client";
-
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
 
 let _supabase: ReturnType<typeof createClient> | null = null;
 
@@ -25,6 +24,28 @@ export async function fetcher<T>(path: string): Promise<T> {
     const error = new Error("Fetch failed") as Error & { status: number };
     error.status = res.status;
     throw error;
+  }
+  return res.json();
+}
+
+export async function authFetch<T = unknown>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const {
+    data: { session },
+  } = await getSupabase().auth.getSession();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+  if (session?.access_token) {
+    headers.Authorization = `Bearer ${session.access_token}`;
+  }
+  const res = await fetch(`${AGENT_URL}${path}`, { ...options, headers });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error?.message ?? `Request failed (${res.status})`);
   }
   return res.json();
 }

@@ -2,11 +2,11 @@
 
 import { Check, Pencil, User } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "@/components/AuthProvider";
+import { Spinner } from "@/components/ui/Spinner";
 import { usePortalCustomer } from "@/hooks/usePortal";
+import { authFetch } from "@/lib/fetcher";
 
 export default function ProfilePage() {
-  const { session } = useAuth();
   const { customer, isLoading, mutate } = usePortalCustomer();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -31,14 +31,8 @@ export default function ProfilePage() {
   async function handleSave() {
     setSaving(true);
     try {
-      const agentUrl =
-        process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
-      const res = await fetch(`${agentUrl}/api/portal/me`, {
+      await authFetch("/api/portal/me", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token}`,
-        },
         body: JSON.stringify({
           name: name || undefined,
           phone: phone || undefined,
@@ -50,10 +44,8 @@ export default function ProfilePage() {
           },
         }),
       });
-      if (res.ok) {
-        await mutate();
-        setEditing(false);
-      }
+      await mutate();
+      setEditing(false);
     } finally {
       setSaving(false);
     }
@@ -62,7 +54,7 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-red-primary border-t-transparent rounded-full animate-spin" />
+        <Spinner />
       </div>
     );
   }

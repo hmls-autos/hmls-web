@@ -14,49 +14,15 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Spinner } from "@/components/ui/Spinner";
 import {
   type Customer,
   useAdminCustomer,
   useAdminCustomers,
 } from "@/hooks/useAdmin";
-import { createClient } from "@/lib/supabase/client";
-
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8080";
-
-async function adminFetch(path: string, options: RequestInit = {}) {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options.headers as Record<string, string>),
-  };
-  if (session?.access_token) {
-    headers.Authorization = `Bearer ${session.access_token}`;
-  }
-  const res = await fetch(`${AGENT_URL}${path}`, { ...options, headers });
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    throw new Error(body?.error?.message ?? `Request failed (${res.status})`);
-  }
-  return res.json();
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatCents(cents: number) {
-  return (cents / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-  });
-}
+import { authFetch } from "@/lib/fetcher";
+import { formatCents, formatDate } from "@/lib/format";
 
 // ---------- Shared form fields ----------
 
@@ -270,7 +236,7 @@ function CustomerDetail({
     setSaving(true);
     setError(null);
     try {
-      await adminFetch(`/api/admin/customers/${id}`, {
+      await authFetch(`/api/admin/customers/${id}`, {
         method: "PATCH",
         body: JSON.stringify(formToPayload(form)),
       });
@@ -287,7 +253,7 @@ function CustomerDetail({
     setDeleting(true);
     setError(null);
     try {
-      await adminFetch(`/api/admin/customers/${id}`, { method: "DELETE" });
+      await authFetch(`/api/admin/customers/${id}`, { method: "DELETE" });
       await mutateList();
       onDeleted();
     } catch (e) {
@@ -299,7 +265,7 @@ function CustomerDetail({
   if (isLoading || !data) {
     return (
       <div className="flex items-center justify-center py-10">
-        <div className="w-5 h-5 border-2 border-red-primary border-t-transparent rounded-full animate-spin" />
+        <Spinner className="w-5 h-5" />
       </div>
     );
   }
@@ -520,7 +486,7 @@ function CreateCustomerModal({
     setSaving(true);
     setError(null);
     try {
-      const customer = await adminFetch("/api/admin/customers", {
+      const customer = await authFetch<{ id: number }>("/api/admin/customers", {
         method: "POST",
         body: JSON.stringify(formToPayload(form)),
       });
@@ -641,17 +607,15 @@ export default function CustomersPage() {
         <div>
           {isLoading ? (
             <div className="flex items-center justify-center py-10">
-              <div className="w-5 h-5 border-2 border-red-primary border-t-transparent rounded-full animate-spin" />
+              <Spinner className="w-5 h-5" />
             </div>
           ) : customers.length === 0 ? (
-            <div className="bg-surface border border-border rounded-xl p-8 text-center">
-              <Users className="w-8 h-8 text-text-secondary mx-auto mb-3" />
-              <p className="text-sm text-text-secondary">
-                {search
-                  ? "No customers match your search."
-                  : "No customers yet."}
-              </p>
-            </div>
+            <EmptyState
+              icon={Users}
+              message={
+                search ? "No customers match your search." : "No customers yet."
+              }
+            />
           ) : (
             <div className="bg-surface border border-border rounded-xl divide-y divide-border">
               {customers.map((c) => (
@@ -684,12 +648,10 @@ export default function CustomersPage() {
           {selectedId ? (
             <CustomerDetail id={selectedId} onDeleted={handleDeleted} />
           ) : (
-            <div className="bg-surface border border-border rounded-xl p-8 text-center">
-              <Users className="w-8 h-8 text-text-secondary mx-auto mb-3" />
-              <p className="text-sm text-text-secondary">
-                Select a customer to view details.
-              </p>
-            </div>
+            <EmptyState
+              icon={Users}
+              message="Select a customer to view details."
+            />
           )}
         </div>
       </div>
