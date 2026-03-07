@@ -17,10 +17,7 @@ echo ">> Next.js build (web)"
 cd apps/web && bun run build
 cd - > /dev/null
 
-echo ">> Deno check (api)"
-deno task check:api
-
-echo ">> Deno check (diagnostic)"
-deno task check:diagnostic
+echo ">> Deno check (gateway + agent)"
+deno task check
 
 echo "All checks passed!"

@@ -8,23 +8,23 @@ repository.
 ```bash
 # Dev servers
 cd apps/web && bun run dev       # Next.js on port 3000
-deno task dev:api                # API agent on port 8080
-deno task dev:diagnostic         # Diagnostic agent
+deno task dev:api                # API + diagnostic agent on port 8080
+# Main API: http://localhost:8080
+# Diagnostic API: http://diag.localhost:8080
 
 # Build & quality
 cd apps/web && bun run build     # Build Next.js
 cd apps/web && bun run lint      # Lint with Biome
 cd apps/web && bun run typecheck # TypeScript type checking
-deno task check                  # Deno check both apps
+deno task check                  # Deno check gateway + agent
 deno task lint                   # Deno lint (excludes web)
 deno task fmt:check              # Deno format check (excludes web)
 
 # Database (Supabase PostgreSQL — no local DB needed)
-deno task --cwd apps/api db:push      # Push schema changes to DB (dev)
-deno task --cwd apps/api db:generate  # Generate migration files
-deno task --cwd apps/api db:migrate   # Apply migrations (production)
-deno task --cwd apps/api db:studio    # Drizzle Studio GUI
-deno task --cwd apps/api db:seed      # Seed data
+deno task --cwd apps/agent db:push      # Push schema changes to DB (dev)
+deno task --cwd apps/agent db:generate  # Generate migration files
+deno task --cwd apps/agent db:migrate   # Apply migrations (production)
+deno task --cwd apps/agent db:studio    # Drizzle Studio GUI
 ```
 
 ## Setup
@@ -45,15 +45,26 @@ shared deps go there, app-specific deps in each app's `deno.json`.
 ```
 apps/
 ├── web/                # Next.js 16 frontend (React 19, Tailwind CSS 4) → Deno Deploy
-├── api/                # Deno AI agent (Zypher framework, Gemini 2.5 Flash, AG-UI protocol) → Deno Deploy
-└── diagnostic-agent/   # Deno diagnostic agent → Deno Deploy
+├── gateway/            # HTTP server (Hono, routing, auth, CORS) → Deno Deploy
+└── agent/              # AI agents + domain logic (library package)
+    ├── llm/            #   GeminiOpenAIProvider (shared)
+    ├── db/             #   Drizzle schema + client (shared)
+    ├── hmls/           #   HMLS agent, tools, skills, PDF
+    └── diagnostic/     #   Diagnostic agent, tools, lib, PDF
 packages/
 └── shared/             # @hmls/shared — shared utilities (errors, toolResult, db client)
 ```
 
-### Service Communication
+### Service Communication & Subdomain Routing
+
+The API server uses hostname-based dispatch to route requests:
+- **`localhost:8080`** / default → Main HMLS API (estimates, portal, admin, chat)
+- **`diag.localhost:8080`** / `api.diag.hmls.autos` → Diagnostic API (sessions, billing, vehicles, chat)
+
+Each sub-app has its own CORS, auth middleware, and error handler. No middleware leaks between domains.
 
 - **Web → Agent**: Direct AG-UI protocol connection via `@ag-ui/client` (port 8080)
+- **DiagWeb → Agent**: AG-UI via `http://diag.localhost:8080` / `https://api.diag.hmls.autos`
 - **Agent → DB**: Direct Supabase PostgreSQL connection via Drizzle ORM
 
 ### Key Patterns
@@ -64,38 +75,45 @@ packages/
 - `@hmls/shared/tool-result` - MCP-compliant tool result helper
 - `@hmls/shared/db` - Schema-agnostic `createDbClient(schema)` factory
 
-**API Routes** (`apps/api/src/routes/`): Hono sub-routers mounted by `index.ts`
+**Gateway Routes** (`apps/gateway/src/routes/`): Hono sub-routers mounted by `hmls-app.ts`
 
 - `estimates.ts` - GET estimate, GET estimate PDF
-- `customers.ts` - GET customer
-- `chat.ts` - AG-UI streaming endpoint + agent cache
-
-**Agent Tools** (`apps/api/src/tools/`): Zod-validated functions the AI can call
-
-- `customer.ts` - Customer CRUD
-- `stripe.ts` - Payments/invoices
-
-**Agent Skills** (`apps/api/src/skills/`): Multi-tool workflows
-
-- `estimate` - Calculate prices, generate PDFs
-
-**Diagnostic Routes** (`apps/diagnostic-agent/src/routes/`): Hono sub-routers mounted by `main.ts`
-
-- `sessions.ts` - CRUD for diagnostic sessions
-- `input.ts` - Process diagnostic input (text, OBD, media)
 - `chat.ts` - AG-UI streaming endpoint
+- `orders.ts`, `admin.ts`, `portal.ts` - CRUD routes
+- `webhook.ts` - Stripe webhook handler
+- `diagnostic/` - Diagnostic sub-app routes (sessions, input, chat, billing, reports, vehicles)
 
-**Database Schema** (`apps/api/src/db/schema.ts`): Drizzle ORM
+**Gateway Middleware** (`apps/gateway/src/middleware/`): Auth + admin middleware
+
+- `auth.ts` - HMLS: requireAuth, optionalAuth
+- `admin.ts` - Admin role check
+- `diagnostic/` - Diagnostic-specific auth, credits, tier
+
+**Agent Package** (`apps/agent/`): `@hmls/agent` with sub-path exports
+
+- `@hmls/agent` → Agent factories, types, diagnostic lib, notifications, PDF components
+- `@hmls/agent/db` → Drizzle DB client + schema
+
+**HMLS Agent** (`apps/agent/src/hmls/`): Zypher + Gemini 2.5 Flash
+
+- `agent.ts` - createHmlsAgent() factory
+- `tools/` - stripe, scheduling, labor-lookup, parts-lookup, ask-user-question
+- `skills/estimate/` - Pricing, PDF generation
+- `pdf/EstimatePdf.tsx` - React-PDF estimate template
+
+**Diagnostic Agent** (`apps/agent/src/diagnostic/`): Zypher + Gemini 2.5 Flash
+
+- `agent.ts` - createDiagnosticAgent() factory
+- `tools/` - Vision analysis, audio spectrogram, OBD lookup, storage
+- `lib/` - Stripe credits, Supabase storage, agent cache
+- `pdf/diagnostic-report.tsx` - React-PDF diagnostic report
+
+**Database Schema** (`apps/agent/src/db/schema.ts`): Drizzle ORM
 
 - customers, conversations, messages, bookings, quotes, estimates
 - `pricingConfig` / `vehiclePricing` tables for dynamic pricing
 - `olpVehicles` / `olpLaborTimes` tables for OLP labor data
-
-**Seed Data** (`apps/api/src/db/seed-data/`): JSON files imported by `seed.ts`
-
-- `pricing-config.json`, `vehicle-pricing.json`, `providers.json`
-
-**PDF Generation** (`apps/api/src/pdf/`): React-PDF templates served by API routes
+- `userProfiles` / `vehicles` / `diagnosticSessions` / `diagnosticMedia` / `obdCodes` for diagnostic
 
 ## Pre-Push CI
 
@@ -105,8 +123,7 @@ packages/
 cd apps/web && bun run lint        # Biome lint
 cd apps/web && bun run typecheck   # TypeScript check
 cd apps/web && bun run build       # Next.js build
-deno task check:api                # Deno check API
-deno task check:diagnostic         # Deno check diagnostic agent
+deno task check                    # Deno check gateway + agent
 ```
 
 Do not push if any of these fail.
@@ -136,6 +153,9 @@ Required in `.env`:
 DATABASE_URL=postgres://postgres.[ref]:[password]@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
 GOOGLE_API_KEY=...              # Google AI Studio key for Gemini 2.5 Flash
 STRIPE_SECRET_KEY=sk_test_...
+SUPABASE_URL=...                # Supabase project URL
+SUPABASE_ANON_KEY=...           # Supabase anon key
+SUPABASE_SERVICE_ROLE_KEY=...   # Supabase service role key (diagnostic media storage)
 ```
 
 Optional in web (`.env.local`):
@@ -162,16 +182,17 @@ deno deploy env delete <KEY> --app hmls-api --org spinsirr
 | App | Domain | Hosting |
 |-----|--------|---------|
 | Web (HMLS) | `https://hmls.autos` | Deno Deploy |
-| API Agent | — | Deno Deploy |
+| API (main + diagnostic) | `https://api.diag.hmls.autos` (diagnostic) | Deno Deploy (`hmls-api`) |
 | Diagnostic Web | `https://diag.hmls.autos` | Vercel (`prj_EzagTZlxfjG6U6h3Cbdt8uWjPwdO`, scope: `spinsirrs-projects`) |
-| Diagnostic Agent | `https://api.diag.hmls.autos` | Deno Deploy |
+
+Both main API and diagnostic API run in the same Deno Deploy app (`hmls-api`), routed by hostname.
 
 ### Cloudflare DNS (zone: `hmls.autos`)
 
 | Type | Name | Target | Proxy |
 |------|------|--------|-------|
 | CNAME | `diag` | `cname.vercel-dns.com` | DNS only (gray cloud) |
-| CNAME | `api.diag` | `<deno-deploy-project>.deno.dev` | DNS only (gray cloud) |
+| CNAME | `api.diag` | `hmls-api.deno.dev` | DNS only (gray cloud) |
 
 ### Supabase Auth (project: `ddkapmjkubklyzuciscd`)
 

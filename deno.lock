@@ -2,18 +2,16 @@
   "version": "5",
   "specifiers": {
     "jsr:@corespeed/mcp-store-client@^1.18.0": "1.18.0",
-    "jsr:@std/assert@1": "1.0.18",
-    "jsr:@std/assert@^1.0.17": "1.0.18",
-    "jsr:@std/collections@^1.1.3": "1.1.5",
+    "jsr:@std/assert@^1.0.17": "1.0.19",
+    "jsr:@std/collections@^1.1.3": "1.1.6",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/front-matter@^1.0.9": "1.0.9",
-    "jsr:@std/fs@^1.0.21": "1.0.22",
-    "jsr:@std/fs@^1.0.22": "1.0.22",
+    "jsr:@std/fs@^1.0.21": "1.0.23",
+    "jsr:@std/fs@^1.0.22": "1.0.23",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/toml@^1.0.3": "1.0.11",
-    "jsr:@std/yaml@^1.0.5": "1.0.11",
-    "jsr:@zypher/agent@*": "0.9.5",
+    "jsr:@std/yaml@^1.0.5": "1.0.12",
     "jsr:@zypher/agent@0.9": "0.9.5",
     "jsr:@zypher/agent@0.9.5": "0.9.5",
     "jsr:@zypher/agui@0.3.0": "0.3.0",
@@ -22,7 +20,7 @@
     "npm:@ag-ui/core@^0.0.42": "0.0.42",
     "npm:@anthropic-ai/sdk@~0.71.2": "0.71.2_zod@4.3.6",
     "npm:@aws-sdk/client-s3@^3.974.0": "3.995.0",
-    "npm:@aws-sdk/s3-request-presigner@^3.974.0": "3.990.0",
+    "npm:@aws-sdk/s3-request-presigner@^3.974.0": "3.995.0",
     "npm:@modelcontextprotocol/sdk@^1.25.3": "1.26.0_zod@4.3.6_hono@4.11.9_ajv@8.18.0_express@5.2.1",
     "npm:@react-pdf/renderer@^4.3.2": "4.3.2_react@19.2.3",
     "npm:@supabase/supabase-js@^2.95.0": "2.95.3",
@@ -48,14 +46,14 @@
     "@corespeed/mcp-store-client@1.18.0": {
       "integrity": "8968ecdc6b94fbac1a06f43d962595ba4eea71945bab06f19359d955124bc218"
     },
-    "@std/assert@1.0.18": {
-      "integrity": "270245e9c2c13b446286de475131dc688ca9abcd94fc5db41d43a219b34d1c78",
+    "@std/assert@1.0.19": {
+      "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
       "dependencies": [
         "jsr:@std/internal"
       ]
     },
-    "@std/collections@1.1.5": {
-      "integrity": "c37cc6bbbbf90fec3e782535a46c9c8a3210f19118c61add71fcea86b0ffd491"
+    "@std/collections@1.1.6": {
+      "integrity": "b458160ce65ea5ad35da05d0a5cbee4b583677c8b443a10d7beb0c4ac63f2baa"
     },
     "@std/encoding@1.0.10": {
       "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
@@ -67,8 +65,8 @@
         "jsr:@std/yaml"
       ]
     },
-    "@std/fs@1.0.22": {
-      "integrity": "de0f277a58a867147a8a01bc1b181d0dfa80bfddba8c9cf2bacd6747bcec9308",
+    "@std/fs@1.0.23": {
+      "integrity": "3ecbae4ce4fee03b180fa710caff36bb5adb66631c46a6460aaad49515565a37",
       "dependencies": [
         "jsr:@std/internal",
         "jsr:@std/path"
@@ -89,14 +87,14 @@
         "jsr:@std/collections"
       ]
     },
-    "@std/yaml@1.0.11": {
-      "integrity": "bd139ce77f2d06cbed3713c8b26d301d2a2e12ecc7986130a268107e212143ee"
+    "@std/yaml@1.0.12": {
+      "integrity": "7deabca4545bcedd07c5f69ea53acea71b8b4c67562f224e17b90d75944cb20c"
     },
     "@zypher/agent@0.9.5": {
       "integrity": "d47d1b38814f59d4fe06fedbdc30de3b319e5baa5b50552c538a2c05c4c24104",
       "dependencies": [
         "jsr:@corespeed/mcp-store-client",
-        "jsr:@std/assert@^1.0.17",
+        "jsr:@std/assert",
         "jsr:@std/encoding",
         "jsr:@std/fs@^1.0.22",
         "jsr:@std/path",
@@ -233,7 +231,7 @@
         "@aws-sdk/middleware-ssec",
         "@aws-sdk/middleware-user-agent",
         "@aws-sdk/region-config-resolver",
-        "@aws-sdk/signature-v4-multi-region@3.995.0",
+        "@aws-sdk/signature-v4-multi-region",
         "@aws-sdk/types",
         "@aws-sdk/util-endpoints@3.995.0",
         "@aws-sdk/util-user-agent-browser",
@@ -619,26 +617,15 @@
         "tslib"
       ]
     },
-    "@aws-sdk/s3-request-presigner@3.990.0": {
-      "integrity": "sha512-cex+QPepH6a2gPBERvOnbPxxLeAtp1P1smnCVzxZ236YBy5XeIBMGySknrG7WZoCu9CqiXv1sfI/+sJPcM7QdQ==",
+    "@aws-sdk/s3-request-presigner@3.995.0": {
+      "integrity": "sha512-+eJYJcB6XkViGbSAoWl7sQx3izt2y64Oy6SWec/HY2a6ibd5RtUJbEIkvoS2RUu7drm4yu2WyLgSNMQg/7nt0g==",
       "dependencies": [
-        "@aws-sdk/signature-v4-multi-region@3.990.0",
+        "@aws-sdk/signature-v4-multi-region",
         "@aws-sdk/types",
         "@aws-sdk/util-format-url",
         "@smithy/middleware-endpoint",
         "@smithy/protocol-http",
         "@smithy/smithy-client",
-        "@smithy/types",
-        "tslib"
-      ]
-    },
-    "@aws-sdk/signature-v4-multi-region@3.990.0": {
-      "integrity": "sha512-O55s1eFmKi+2Ko5T1hbdxL6tFVONGscSVe9VRxS4m91Tlbo9iG2Q2HvKWq1DuKQAuUWSUfMmjrRt07JNzizr2A==",
-      "dependencies": [
-        "@aws-sdk/middleware-sdk-s3",
-        "@aws-sdk/types",
-        "@smithy/protocol-http",
-        "@smithy/signature-v4",
         "@smithy/types",
         "tslib"
       ]
@@ -2584,7 +2571,7 @@
       "npm:zod@^4.3.5"
     ],
     "members": {
-      "apps/api": {
+      "apps/agent": {
         "dependencies": [
           "npm:@react-pdf/renderer@^4.3.2",
           "npm:@supabase/supabase-js@^2.95.0",
@@ -2593,9 +2580,8 @@
           "npm:react@^19.2.3"
         ]
       },
-      "apps/diagnostic-agent": {
+      "apps/gateway": {
         "dependencies": [
-          "jsr:@std/assert@1",
           "npm:@react-pdf/renderer@^4.3.2",
           "npm:@supabase/supabase-js@^2.95.0",
           "npm:react@^19.2.3"

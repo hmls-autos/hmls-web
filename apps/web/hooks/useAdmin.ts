@@ -10,7 +10,7 @@ interface DashboardStats {
   revenue30d: number;
 }
 
-interface Customer {
+export interface Customer {
   id: number;
   name: string | null;
   phone: string | null;
@@ -65,28 +65,28 @@ export function useAdminDashboard() {
 
 export function useAdminCustomers(search?: string) {
   const params = search ? `?search=${encodeURIComponent(search)}` : "";
-  const { data, error, isLoading } = useSWR<Customer[]>(
+  const { data, error, isLoading, mutate } = useSWR<Customer[]>(
     `/api/admin/customers${params}`,
     fetcher,
   );
-  return { customers: data ?? [], isLoading, isError: !!error };
+  return { customers: data ?? [], isLoading, isError: !!error, mutate };
 }
 
 export function useAdminCustomer(id: number | null) {
-  const { data, error, isLoading } = useSWR<CustomerDetail>(
+  const { data, error, isLoading, mutate } = useSWR<CustomerDetail>(
     id ? `/api/admin/customers/${id}` : null,
     fetcher,
   );
-  return { data, isLoading, isError: !!error };
+  return { data, isLoading, isError: !!error, mutate };
 }
 
 export function useAdminBookings(status?: string) {
   const params = status ? `?status=${encodeURIComponent(status)}` : "";
-  const { data, error, isLoading } = useSWR<AdminBooking[]>(
+  const { data, error, isLoading, mutate } = useSWR<AdminBooking[]>(
     `/api/admin/bookings${params}`,
     fetcher,
   );
-  return { bookings: data ?? [], isLoading, isError: !!error };
+  return { bookings: data ?? [], isLoading, isError: !!error, mutate };
 }
 
 export function useAdminEstimates() {
@@ -108,9 +108,9 @@ export function useAdminOrders(status?: string) {
 
 export function useAdminQuotes(status?: string) {
   const params = status ? `?status=${encodeURIComponent(status)}` : "";
-  const { data, error, isLoading } = useSWR<AdminQuote[]>(
+  const { data, error, isLoading, mutate } = useSWR<AdminQuote[]>(
     `/api/admin/quotes${params}`,
     fetcher,
   );
-  return { quotes: data ?? [], isLoading, isError: !!error };
+  return { quotes: data ?? [], isLoading, isError: !!error, mutate };
 }
