@@ -133,18 +133,27 @@ const styles = StyleSheet.create({
     left: 40,
     right: 40,
   },
-  disclaimer: {
-    fontSize: 9,
-    color: "#666666",
-    marginBottom: 15,
+  termsTitle: {
+    fontSize: 10,
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
+  termsText: {
+    fontSize: 8,
+    color: "#4b5563",
+    lineHeight: 1.5,
+    marginBottom: 4,
+  },
+  termsBox: {
     padding: 10,
     backgroundColor: "#f9fafb",
     borderRadius: 4,
+    marginBottom: 10,
   },
   cta: {
     fontSize: 10,
     textAlign: "center",
-    marginBottom: 15,
+    marginBottom: 10,
   },
   contact: {
     fontSize: 9,
@@ -292,14 +301,48 @@ export function EstimatePdf({ estimate, customer }: EstimatePdfProps) {
           </View>
         )}
 
-        {/* Footer */}
+        {/* Terms & Agreement */}
         <View style={styles.footer}>
-          <Text style={styles.disclaimer}>
-            By proceeding with this estimate, you authorize HMLS Mobile Mechanic to perform the
-            services listed above. This estimate is valid until {formatDate(estimate.expiresAt)}.
-            Final price may vary based on actual conditions found during service. Payment is due upon
-            completion of service.
-          </Text>
+          <View style={styles.termsBox}>
+            <Text style={styles.termsTitle}>Terms &amp; Conditions</Text>
+            <Text style={styles.termsText}>
+              1. Authorization: By proceeding with this estimate, you authorize HMLS Mobile Mechanic
+              to perform the services listed above.
+            </Text>
+            <Text style={styles.termsText}>
+              2. Warranty: All parts and labor are covered by a 90-day (3-month) warranty from the
+              date of service. Warranty does not cover normal wear and tear, misuse, or pre-existing
+              conditions not addressed in this estimate.
+            </Text>
+            <Text style={styles.termsText}>
+              3. Cost Overages: If additional repairs are needed beyond this estimate, we will contact
+              you for authorization before proceeding with any extra work.
+            </Text>
+            <Text style={styles.termsText}>
+              4. Replaced Parts: You may request return of replaced parts at the time of
+              authorization.
+            </Text>
+            <Text style={styles.termsText}>
+              5. No-Show Fee: A $75 fee will be charged if you are not available at the scheduled
+              time and location without prior notice.
+            </Text>
+            <Text style={styles.termsText}>
+              6. Cancellation: Cancellations made less than 24 hours before the scheduled
+              appointment are subject to a $50 cancellation fee.
+            </Text>
+            <Text style={styles.termsText}>
+              7. After-Hours Surcharge: Services performed outside standard hours (Mon-Fri
+              8AM-6PM) may include a surcharge of up to $75.
+            </Text>
+            <Text style={styles.termsText}>
+              8. Diagnostic Fee: A diagnostic/trip fee may apply and is non-refundable regardless
+              of whether you proceed with repairs.
+            </Text>
+            <Text style={styles.termsText}>
+              9. Payment: Payment is due upon completion of service. We accept cash, card, and
+              digital payments. This estimate is valid until {formatDate(estimate.expiresAt)}.
+            </Text>
+          </View>
           <Text style={styles.cta}>
             Ready to proceed? Reply in chat or call us to schedule your service.
           </Text>
