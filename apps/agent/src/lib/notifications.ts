@@ -15,6 +15,7 @@ interface NotificationContext {
   estimateTotal?: string; // formatted dollar amount
   quoteTotal?: string;
   portalUrl: string;
+  reviewUrl?: string; // one-click estimate review link
 }
 
 const PORTAL_URL = "https://hmls.autos/portal";
@@ -25,7 +26,7 @@ const STATUS_EMAILS: Record<string, EmailTemplate> = {
     body: (ctx) =>
       `Hi ${ctx.customerName},\n\nYour estimate${
         ctx.estimateTotal ? ` (~${ctx.estimateTotal})` : ""
-      } is ready for review.\n\nPlease log in to approve or decline:\n${ctx.portalUrl}/orders\n\nThanks,\nHMLS Team`,
+      } is ready for review.\n\nView details and approve or decline with one tap:\n${ctx.reviewUrl ?? `${ctx.portalUrl}/orders`}\n\nThanks,\nHMLS Team`,
   },
   customer_approved: {
     subject: "Estimate Approved — We're Preparing Your Quote",
@@ -144,7 +145,7 @@ export async function notifyOrderStatusChange(
       portalUrl: PORTAL_URL,
     };
 
-    // Add estimate total if available
+    // Add estimate total + review URL if available
     if (order.estimateId) {
       const [estimate] = await db
         .select()
@@ -155,6 +156,8 @@ export async function notifyOrderStatusChange(
         ctx.estimateTotal = `$${(estimate.priceRangeLow / 100).toFixed(0)}–$${
           (estimate.priceRangeHigh / 100).toFixed(0)
         }`;
+        ctx.reviewUrl =
+          `https://hmls.autos/estimate/${estimate.id}?token=${estimate.shareToken}`;
       }
     }
 
