@@ -2,13 +2,13 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { AppError } from "@hmls/shared/errors";
-import { type AuthContext, authenticateRequest } from "./middleware/diagnostic/auth.ts";
-import { sessions } from "./routes/diagnostic/sessions.ts";
-import { input } from "./routes/diagnostic/input.ts";
-import { chat } from "./routes/diagnostic/chat.ts";
-import { billing, webhookHandler } from "./routes/diagnostic/billing.ts";
-import { reports } from "./routes/diagnostic/reports.ts";
-import { vehicleRoutes } from "./routes/diagnostic/vehicles.ts";
+import { type AuthContext, authenticateRequest } from "./middleware/fixo/auth.ts";
+import { sessions } from "./routes/fixo/sessions.ts";
+import { input } from "./routes/fixo/input.ts";
+import { chat } from "./routes/fixo/chat.ts";
+import { billing, webhookHandler } from "./routes/fixo/billing.ts";
+import { reports } from "./routes/fixo/reports.ts";
+import { vehicleRoutes } from "./routes/fixo/vehicles.ts";
 
 const DEV_MODE = Deno.env.get("DEV_MODE") === "true";
 

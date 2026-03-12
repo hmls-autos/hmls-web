@@ -3,10 +3,10 @@ import { eachValueFrom } from "rxjs-for-await";
 import { db, schema } from "@hmls/agent/db";
 import { eq } from "drizzle-orm";
 import { getAgent, type InputType, uploadMedia } from "@hmls/agent";
-import { processCredits } from "../../middleware/diagnostic/credits.ts";
-import { checkFreeTierLimit } from "../../middleware/diagnostic/tier.ts";
+import { processCredits } from "../../middleware/fixo/credits.ts";
+import { checkFreeTierLimit } from "../../middleware/fixo/tier.ts";
 import { createAguiEventStream } from "@zypher/agui";
-import type { AuthContext } from "../../middleware/diagnostic/auth.ts";
+import type { AuthContext } from "../../middleware/fixo/auth.ts";
 
 type Variables = { auth: AuthContext };
 

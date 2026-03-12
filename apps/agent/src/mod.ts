@@ -1,6 +1,6 @@
 // Agent factories
 export { type AgentConfig, type CreateAgentOptions, createHmlsAgent } from "./hmls/agent.ts";
-export { createDiagnosticAgent, type CreateDiagnosticAgentOptions } from "./diagnostic/agent.ts";
+export { createDiagnosticAgent, type CreateDiagnosticAgentOptions } from "./fixo/agent.ts";
 
 // Types
 export { formatUserContext, type UserContext } from "./types/user-context.ts";
@@ -19,19 +19,19 @@ export {
   handleSubscriptionWebhook,
   type InputType,
   stripe,
-} from "./diagnostic/lib/stripe.ts";
+} from "./fixo/lib/stripe.ts";
 export {
   deleteMedia,
   getMedia,
   getMediaUrl,
   uploadMedia,
   type UploadResult,
-} from "./diagnostic/lib/storage.ts";
-export { getAgent } from "./diagnostic/lib/agent-cache.ts";
+} from "./fixo/lib/storage.ts";
+export { getAgent } from "./fixo/lib/agent-cache.ts";
 
 // Notifications
 export { notifyOrderStatusChange } from "./lib/notifications.ts";
 
 // PDF components (for gateway rendering)
 export { EstimatePdf } from "./hmls/pdf/EstimatePdf.tsx";
-export { DiagnosticReportPdf } from "./diagnostic/pdf/diagnostic-report.tsx";
+export { DiagnosticReportPdf } from "./fixo/pdf/fixo-report.tsx";

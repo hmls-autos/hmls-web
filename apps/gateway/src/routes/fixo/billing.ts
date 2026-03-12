@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type Stripe from "stripe";
-import type { AuthContext } from "../../middleware/diagnostic/auth.ts";
+import type { AuthContext } from "../../middleware/fixo/auth.ts";
 import {
   createCheckoutSession,
   createPortalSession,

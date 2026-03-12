@@ -3,7 +3,7 @@ import { renderToStream } from "@react-pdf/renderer";
 import { db, schema } from "@hmls/agent/db";
 import { eq } from "drizzle-orm";
 import { DiagnosticReportPdf } from "@hmls/agent";
-import type { AuthContext } from "../../middleware/diagnostic/auth.ts";
+import type { AuthContext } from "../../middleware/fixo/auth.ts";
 
 type Variables = { auth: AuthContext };
 

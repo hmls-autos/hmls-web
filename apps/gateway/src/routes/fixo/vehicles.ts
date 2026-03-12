@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db, schema } from "@hmls/agent/db";
 import { and, eq } from "drizzle-orm";
-import type { AuthContext } from "../../middleware/diagnostic/auth.ts";
+import type { AuthContext } from "../../middleware/fixo/auth.ts";
 
 type Variables = { auth: AuthContext };
 
