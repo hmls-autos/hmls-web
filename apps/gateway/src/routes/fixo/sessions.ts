@@ -7,12 +7,12 @@ type Variables = { auth: AuthContext };
 
 const sessions = new Hono<{ Variables: Variables }>();
 
-// POST /diagnostics - Start new session
+// POST /sessions - Start new session
 sessions.post("/", async (c) => {
   const auth = c.get("auth");
 
   const [session] = await db
-    .insert(schema.diagnosticSessions)
+    .insert(schema.fixoSessions)
     .values({
       userId: auth.userId,
       customerId: auth.customerId ?? null,
@@ -22,38 +22,38 @@ sessions.post("/", async (c) => {
   return c.json({
     sessionId: session.id,
     status: session.status,
-    message: "Diagnostic session started. Send inputs to analyze.",
+    message: "Fixo session started. Send inputs to analyze.",
   });
 });
 
-// GET /diagnostics - List sessions
+// GET /sessions - List sessions
 sessions.get("/", async (c) => {
   const auth = c.get("auth");
 
   // Match by userId (SaaS) or customerId (legacy)
-  const conditions = [eq(schema.diagnosticSessions.userId, auth.userId)];
+  const conditions = [eq(schema.fixoSessions.userId, auth.userId)];
   if (auth.customerId) {
-    conditions.push(eq(schema.diagnosticSessions.customerId, auth.customerId));
+    conditions.push(eq(schema.fixoSessions.customerId, auth.customerId));
   }
 
   const sessions_ = await db
     .select()
-    .from(schema.diagnosticSessions)
+    .from(schema.fixoSessions)
     .where(or(...conditions))
-    .orderBy(desc(schema.diagnosticSessions.createdAt));
+    .orderBy(desc(schema.fixoSessions.createdAt));
 
   return c.json({ sessions: sessions_ });
 });
 
-// GET /diagnostics/:id - Get session details
+// GET /sessions/:id - Get session details
 sessions.get("/:id", async (c) => {
   const auth = c.get("auth");
   const sessionId = parseInt(c.req.param("id"));
 
   const [session] = await db
     .select()
-    .from(schema.diagnosticSessions)
-    .where(eq(schema.diagnosticSessions.id, sessionId))
+    .from(schema.fixoSessions)
+    .where(eq(schema.fixoSessions.id, sessionId))
     .limit(1);
 
   if (
@@ -66,8 +66,8 @@ sessions.get("/:id", async (c) => {
 
   const media = await db
     .select()
-    .from(schema.diagnosticMedia)
-    .where(eq(schema.diagnosticMedia.sessionId, sessionId));
+    .from(schema.fixoMedia)
+    .where(eq(schema.fixoMedia.sessionId, sessionId));
 
   const codes = await db
     .select()

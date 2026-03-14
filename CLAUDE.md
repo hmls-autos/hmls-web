@@ -8,9 +8,9 @@ repository.
 ```bash
 # Dev servers
 cd apps/web && bun run dev       # Next.js on port 3000
-deno task dev:api                # API + diagnostic agent on port 8080
+deno task dev:api                # API + Fixo agent on port 8080
 # Main API: http://localhost:8080
-# Diagnostic API: http://diag.localhost:8080
+# Fixo API: http://fixo.localhost:8080
 
 # Build & quality
 cd apps/web && bun run build     # Build Next.js
@@ -50,7 +50,7 @@ apps/
     ├── llm/            #   GeminiOpenAIProvider (shared)
     ├── db/             #   Drizzle schema + client (shared)
     ├── hmls/           #   HMLS agent, tools, skills, PDF
-    └── diagnostic/     #   Diagnostic agent, tools, lib, PDF
+    └── fixo/           #   Fixo agent, tools, lib, PDF
 packages/
 └── shared/             # @hmls/shared — shared utilities (errors, toolResult, db client)
 ```
@@ -60,14 +60,14 @@ packages/
 The API server uses hostname-based dispatch to route requests:
 
 - **`localhost:8080`** / default → Main HMLS API (estimates, portal, admin, chat)
-- **`diag.localhost:8080`** / `api.diag.hmls.autos` → Diagnostic API (sessions, billing, vehicles,
+- **`fixo.localhost:8080`** / `api.fixo.hmls.autos` → Fixo API (sessions, billing, vehicles,
   chat)
 
 Each sub-app has its own CORS, auth middleware, and error handler. No middleware leaks between
 domains.
 
 - **Web → Agent**: Direct AG-UI protocol connection via `@ag-ui/client` (port 8080)
-- **DiagWeb → Agent**: AG-UI via `http://diag.localhost:8080` / `https://api.diag.hmls.autos`
+- **Fixo Web → Agent**: AG-UI via `http://fixo.localhost:8080` / `https://api.fixo.hmls.autos`
 - **Agent → DB**: Direct Supabase PostgreSQL connection via Drizzle ORM
 
 ### Key Patterns
@@ -84,17 +84,17 @@ domains.
 - `chat.ts` - AG-UI streaming endpoint
 - `orders.ts`, `admin.ts`, `portal.ts` - CRUD routes
 - `webhook.ts` - Stripe webhook handler
-- `diagnostic/` - Diagnostic sub-app routes (sessions, input, chat, billing, reports, vehicles)
+- `fixo/` - Fixo sub-app routes (sessions, input, chat, billing, reports, vehicles)
 
 **Gateway Middleware** (`apps/gateway/src/middleware/`): Auth + admin middleware
 
 - `auth.ts` - HMLS: requireAuth, optionalAuth
 - `admin.ts` - Admin role check
-- `diagnostic/` - Diagnostic-specific auth, credits, tier
+- `fixo/` - Fixo-specific auth, credits, tier
 
 **Agent Package** (`apps/agent/`): `@hmls/agent` with sub-path exports
 
-- `@hmls/agent` → Agent factories, types, diagnostic lib, notifications, PDF components
+- `@hmls/agent` → Agent factories, types, fixo lib, notifications, PDF components
 - `@hmls/agent/db` → Drizzle DB client + schema
 
 **HMLS Agent** (`apps/agent/src/hmls/`): Zypher + Gemini 2.5 Flash
@@ -104,19 +104,19 @@ domains.
 - `skills/estimate/` - Pricing, PDF generation
 - `pdf/EstimatePdf.tsx` - React-PDF estimate template
 
-**Diagnostic Agent** (`apps/agent/src/diagnostic/`): Zypher + Gemini 2.5 Flash
+**Fixo Agent** (`apps/agent/src/fixo/`): Zypher + Gemini 2.5 Flash
 
-- `agent.ts` - createDiagnosticAgent() factory
+- `agent.ts` - createFixoAgent() factory
 - `tools/` - Vision analysis, audio spectrogram, OBD lookup, storage
 - `lib/` - Stripe credits, Supabase storage, agent cache
-- `pdf/diagnostic-report.tsx` - React-PDF diagnostic report
+- `pdf/fixo-report.tsx` - React-PDF fixo report
 
 **Database Schema** (`apps/agent/src/db/schema.ts`): Drizzle ORM
 
 - customers, conversations, messages, bookings, quotes, estimates
 - `pricingConfig` / `vehiclePricing` tables for dynamic pricing
 - `olpVehicles` / `olpLaborTimes` tables for OLP labor data
-- `userProfiles` / `vehicles` / `diagnosticSessions` / `diagnosticMedia` / `obdCodes` for diagnostic
+- `userProfiles` / `vehicles` / `fixoSessions` / `fixoMedia` / `obdCodes` for fixo
 
 ## Pre-Push CI
 
@@ -158,7 +158,7 @@ GOOGLE_API_KEY=...              # Google AI Studio key for Gemini 2.5 Flash
 STRIPE_SECRET_KEY=sk_test_...
 SUPABASE_URL=...                # Supabase project URL
 SUPABASE_ANON_KEY=...           # Supabase anon key
-SUPABASE_SERVICE_ROLE_KEY=...   # Supabase service role key (diagnostic media storage)
+SUPABASE_SERVICE_ROLE_KEY=...   # Supabase service role key (fixo media storage)
 ```
 
 Optional in web (`.env.local`):
@@ -185,17 +185,17 @@ deno deploy env delete <KEY> --app hmls-api --org spinsirr
 | App                     | Domain                                     | Hosting                                                                  |
 | ----------------------- | ------------------------------------------ | ------------------------------------------------------------------------ |
 | Web (HMLS)              | `https://hmls.autos`                       | Deno Deploy                                                              |
-| API (main + diagnostic) | `https://api.diag.hmls.autos` (diagnostic) | Deno Deploy (`hmls-api`)                                                 |
-| Diagnostic Web          | `https://diag.hmls.autos`                  | Vercel (`prj_EzagTZlxfjG6U6h3Cbdt8uWjPwdO`, scope: `spinsirrs-projects`) |
+| API (main + fixo)       | `https://api.fixo.hmls.autos` (fixo)       | Deno Deploy (`hmls-api`)                                                 |
+| Fixo Web                | `https://fixo.hmls.autos`                  | Vercel (`prj_EzagTZlxfjG6U6h3Cbdt8uWjPwdO`, scope: `spinsirrs-projects`) |
 
-Both main API and diagnostic API run in the same Deno Deploy app (`hmls-api`), routed by hostname.
+Both main API and Fixo API run in the same Deno Deploy app (`hmls-api`), routed by hostname.
 
 ### Cloudflare DNS (zone: `hmls.autos`)
 
 | Type  | Name       | Target                 | Proxy                 |
 | ----- | ---------- | ---------------------- | --------------------- |
-| CNAME | `diag`     | `cname.vercel-dns.com` | DNS only (gray cloud) |
-| CNAME | `api.diag` | `hmls-api.deno.dev`    | DNS only (gray cloud) |
+| CNAME | `fixo`     | `cname.vercel-dns.com` | DNS only (gray cloud) |
+| CNAME | `api.fixo` | `hmls-api.deno.dev`    | DNS only (gray cloud) |
 
 ### Supabase Auth (project: `ddkapmjkubklyzuciscd`)
 
@@ -205,13 +205,13 @@ Both main API and diagnostic API run in the same Deno Deploy app (`hmls-api`), r
 - **Redirect URLs**:
   - `https://hmls.autos`
   - `http://localhost:3000`
-  - `https://diag.hmls.autos/**`
-  - `http://localhost:3001/**` (diagnostic local dev)
+  - `https://fixo.hmls.autos/**`
+  - `http://localhost:3001/**` (fixo local dev)
 
-### Vercel Environment Variables (diagnostic-web)
+### Vercel Environment Variables (fixo-web)
 
 ```bash
 vercel env add NEXT_PUBLIC_SUPABASE_URL --scope spinsirrs-projects
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY --scope spinsirrs-projects
-vercel env add NEXT_PUBLIC_AGENT_URL --scope spinsirrs-projects  # https://api.diag.hmls.autos
+vercel env add NEXT_PUBLIC_AGENT_URL --scope spinsirrs-projects  # https://api.fixo.hmls.autos
 ```

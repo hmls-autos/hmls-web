@@ -187,7 +187,7 @@ export const olpLaborTimes = pgTable("olp_labor_times", {
   uniqueJob: unique().on(table.vehicleId, table.slug),
 }));
 
-// --- Diagnostic tables ---
+// --- Fixo tables ---
 
 export const userTierEnum = pgEnum("user_tier", ["free", "plus"]);
 
@@ -224,35 +224,35 @@ export const vehicles = pgTable(
   (table) => [index("idx_vehicles_user").on(table.userId)],
 );
 
-export const sessionStatusEnum = pgEnum("diagnostic_session_status", [
+export const sessionStatusEnum = pgEnum("fixo_session_status", [
   "pending",
   "processing",
   "complete",
   "failed",
 ]);
 
-export const mediaTypeEnum = pgEnum("diagnostic_media_type", [
+export const mediaTypeEnum = pgEnum("fixo_media_type", [
   "photo",
   "audio",
   "video",
   "obd_photo",
 ]);
 
-export const processingStatusEnum = pgEnum("diagnostic_processing_status", [
+export const processingStatusEnum = pgEnum("fixo_processing_status", [
   "pending",
   "processing",
   "complete",
   "failed",
 ]);
 
-export const obdSourceEnum = pgEnum("diagnostic_obd_source", [
+export const obdSourceEnum = pgEnum("fixo_obd_source", [
   "manual",
   "bluetooth",
   "ocr",
 ]);
 
-export const diagnosticSessions = pgTable(
-  "diagnostic_sessions",
+export const fixoSessions = pgTable(
+  "fixo_sessions",
   {
     id: serial("id").primaryKey(),
     customerId: integer("customer_id")
@@ -265,16 +265,16 @@ export const diagnosticSessions = pgTable(
     completedAt: timestamp("completed_at"),
     result: jsonb("result"),
   },
-  (table) => [index("idx_diagnostic_sessions_customer").on(table.customerId)],
+  (table) => [index("idx_fixo_sessions_customer").on(table.customerId)],
 );
 
-export const diagnosticMedia = pgTable(
-  "diagnostic_media",
+export const fixoMedia = pgTable(
+  "fixo_media",
   {
     id: serial("id").primaryKey(),
     sessionId: integer("session_id")
       .notNull()
-      .references(() => diagnosticSessions.id),
+      .references(() => fixoSessions.id),
     type: mediaTypeEnum("type").notNull(),
     storageKey: text("r2_key").notNull(),
     creditCost: integer("credit_cost").notNull(),
@@ -285,31 +285,31 @@ export const diagnosticMedia = pgTable(
     transcription: text("transcription"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [index("idx_diagnostic_media_session").on(table.sessionId)],
+  (table) => [index("idx_fixo_media_session").on(table.sessionId)],
 );
 
 export const obdCodes = pgTable(
-  "diagnostic_obd_codes",
+  "fixo_obd_codes",
   {
     id: serial("id").primaryKey(),
     sessionId: integer("session_id")
       .notNull()
-      .references(() => diagnosticSessions.id),
+      .references(() => fixoSessions.id),
     code: text("code").notNull(),
     source: obdSourceEnum("source").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (table) => [index("idx_diagnostic_obd_codes_session").on(table.sessionId)],
+  (table) => [index("idx_fixo_obd_codes_session").on(table.sessionId)],
 );
 
-// Diagnostic types
+// Fixo types
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type NewUserProfile = typeof userProfiles.$inferInsert;
 export type Vehicle = typeof vehicles.$inferSelect;
 export type NewVehicle = typeof vehicles.$inferInsert;
-export type DiagnosticSession = typeof diagnosticSessions.$inferSelect;
-export type NewDiagnosticSession = typeof diagnosticSessions.$inferInsert;
-export type DiagnosticMedia = typeof diagnosticMedia.$inferSelect;
-export type NewDiagnosticMedia = typeof diagnosticMedia.$inferInsert;
+export type FixoSession = typeof fixoSessions.$inferSelect;
+export type NewFixoSession = typeof fixoSessions.$inferInsert;
+export type FixoMedia = typeof fixoMedia.$inferSelect;
+export type NewFixoMedia = typeof fixoMedia.$inferInsert;
 export type ObdCode = typeof obdCodes.$inferSelect;
 export type NewObdCode = typeof obdCodes.$inferInsert;

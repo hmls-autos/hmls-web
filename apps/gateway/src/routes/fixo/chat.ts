@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { eachValueFrom } from "rxjs-for-await";
 import { concatMap, from, pipe } from "rxjs";
-import { createDiagnosticAgent } from "@hmls/agent";
+import { createFixoAgent } from "@hmls/agent";
 import {
   convertAguiMessagesToZypher,
   createAguiEventStream,
@@ -60,7 +60,7 @@ chat.post("/", async (c) => {
 
   const { threadId, runId, messages } = input;
   console.log(
-    `[diagnostic-agent] threadId=${threadId}, messages=${messages.length}`,
+    `[fixo-agent] threadId=${threadId}, messages=${messages.length}`,
   );
 
   // Convert previous messages to Zypher format for conversation context.
@@ -70,7 +70,7 @@ chat.post("/", async (c) => {
     ? convertAguiMessagesToZypher(historyMessages)
     : undefined;
 
-  const agentInstance = await createDiagnosticAgent({ initialMessages });
+  const agentInstance = await createFixoAgent({ initialMessages });
   const aguiStream = createAguiEventStream({
     agent: agentInstance,
     messages,
@@ -84,7 +84,7 @@ chat.post("/", async (c) => {
         await stream.writeSSE({ data: JSON.stringify(event) });
       }
     } catch (error) {
-      console.error(`[diagnostic-agent] Stream error:`, error);
+      console.error(`[fixo-agent] Stream error:`, error);
       await stream.writeSSE({
         data: JSON.stringify({
           type: "RUN_ERROR",

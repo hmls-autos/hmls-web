@@ -29,11 +29,11 @@ export async function checkFreeTierLimit(
 
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
-    .from(schema.diagnosticSessions)
+    .from(schema.fixoSessions)
     .where(
       and(
-        eq(schema.diagnosticSessions.userId, auth.userId),
-        gte(schema.diagnosticSessions.createdAt, monthStart),
+        eq(schema.fixoSessions.userId, auth.userId),
+        gte(schema.fixoSessions.createdAt, monthStart),
       ),
     );
 

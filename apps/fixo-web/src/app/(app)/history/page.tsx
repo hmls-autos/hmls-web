@@ -4,10 +4,9 @@ import { AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { AGENT_URL } from "@/lib/config";
 
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8001";
-
-interface DiagnosticSession {
+interface FixoSession {
   id: number;
   status: string;
   createdAt: string;
@@ -65,7 +64,7 @@ function formatDate(dateStr: string) {
 
 export default function HistoryPage() {
   const { session } = useAuth();
-  const [sessions, setSessions] = useState<DiagnosticSession[]>([]);
+  const [sessions, setSessions] = useState<FixoSession[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,7 +72,7 @@ export default function HistoryPage() {
 
     async function fetchSessions() {
       try {
-        const res = await fetch(`${AGENT_URL}/diagnostics`, {
+        const res = await fetch(`${AGENT_URL}/sessions`, {
           headers: { Authorization: `Bearer ${session?.access_token}` },
         });
         if (res.ok) {

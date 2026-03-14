@@ -19,19 +19,19 @@ const allTools = [
   getMediaTool,
 ];
 
-export interface CreateDiagnosticAgentOptions {
+export interface CreateFixoAgentOptions {
   /** Previous conversation messages to restore context */
   initialMessages?: ZypherMessage[];
 }
 
-export async function createDiagnosticAgent(options?: CreateDiagnosticAgentOptions) {
+export async function createFixoAgent(options?: CreateFixoAgentOptions) {
   const apiKey = Deno.env.get("GOOGLE_API_KEY");
   if (!apiKey) {
     throw new Error("GOOGLE_API_KEY is required");
   }
 
   const modelId = Deno.env.get("AGENT_MODEL") || DEFAULT_MODEL;
-  console.log(`[diagnostic-agent] Creating agent with model: ${modelId}`);
+  console.log(`[fixo-agent] Creating agent with model: ${modelId}`);
 
   const isDenoDeploy = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
 
@@ -77,7 +77,7 @@ export async function createDiagnosticAgent(options?: CreateDiagnosticAgentOptio
       (s) => s.metadata.name,
     );
     if (skillNames.length > 0) {
-      console.log(`[diagnostic-agent] Skills loaded: ${skillNames.join(", ")}`);
+      console.log(`[fixo-agent] Skills loaded: ${skillNames.join(", ")}`);
     }
   }
 

@@ -7,7 +7,7 @@
 ## Overview
 
 The shared `@hmls/shared/errors` package provides a standardized error system. The API app uses it
-consistently; the diagnostic-agent has some inconsistencies to be aware of.
+consistently; the fixo agent has some inconsistencies to be aware of.
 
 ---
 

@@ -1,11 +1,11 @@
 // Agent factories
 export { type AgentConfig, type CreateAgentOptions, createHmlsAgent } from "./hmls/agent.ts";
-export { createDiagnosticAgent, type CreateDiagnosticAgentOptions } from "./fixo/agent.ts";
+export { createFixoAgent, type CreateFixoAgentOptions } from "./fixo/agent.ts";
 
 // Types
 export { formatUserContext, type UserContext } from "./types/user-context.ts";
 
-// Diagnostic business logic (used by gateway middleware/routes)
+// Fixo business logic (used by gateway middleware/routes)
 export {
   addCredits,
   calculateAudioCredits,

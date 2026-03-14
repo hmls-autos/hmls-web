@@ -1,11 +1,11 @@
-import { createDiagnosticAgent } from "../agent.ts";
+import { createFixoAgent } from "../agent.ts";
 
 // Agent singleton
-let agent: Awaited<ReturnType<typeof createDiagnosticAgent>> | null = null;
+let agent: Awaited<ReturnType<typeof createFixoAgent>> | null = null;
 
 export async function getAgent() {
   if (!agent) {
-    agent = await createDiagnosticAgent();
+    agent = await createFixoAgent();
   }
   return agent;
 }

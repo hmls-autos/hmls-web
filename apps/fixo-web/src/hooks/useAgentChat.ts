@@ -2,8 +2,7 @@
 
 import { type Message as AgentMessage, HttpAgent } from "@ag-ui/client";
 import { type RefObject, useCallback, useRef, useState } from "react";
-
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8001";
+import { AGENT_URL } from "@/lib/config";
 
 export interface Message {
   id: string;

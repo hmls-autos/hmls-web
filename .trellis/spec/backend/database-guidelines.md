@@ -35,21 +35,21 @@ export const customers = pgTable("customers", {
 | ------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------- |
 | Table names   | `snake_case`, plural                                                     | `diagnostic_sessions`, `customers`                                  |
 | Column names  | `snake_case` in DB, `camelCase` in TypeScript                            | `labor_hours` -> `laborHours`                                       |
-| Primary keys  | `serial("id").primaryKey()` or `uuid("id").primaryKey().defaultRandom()` | API uses `serial`; diagnostic uses `uuid`                           |
+| Primary keys  | `serial("id").primaryKey()` or `uuid("id").primaryKey().defaultRandom()` | API uses `serial`; fixo uses `uuid`                                 |
 | Timestamps    | `timestamp("created_at").defaultNow().notNull()`                         | Every table has `createdAt`                                         |
 | Foreign keys  | Inline `.references(() => table.id)`                                     | `customerId: integer("customer_id").references(() => customers.id)` |
 | Money         | `integer` in **cents**                                                   | `totalAmount: integer("total_amount").notNull()`                    |
 | JSON columns  | `jsonb` with inline comment documenting shape                            | `items: jsonb("items").notNull()`                                   |
-| Status fields | `varchar` with string union (API) or `pgEnum` (diagnostic)               | `varchar("status", { length: 50 }).default("draft")`                |
+| Status fields | `varchar` with string union (API) or `pgEnum` (fixo)                     | `varchar("status", { length: 50 }).default("draft")`                |
 
 ### Inferred Types
 
 Export `$inferSelect` and `$inferInsert` types from schema files:
 
 ```typescript
-// apps/diagnostic-agent/src/db/schema.ts
-export type DiagnosticSession = typeof diagnosticSessions.$inferSelect;
-export type NewDiagnosticSession = typeof diagnosticSessions.$inferInsert;
+// apps/agent/src/db/schema.ts
+export type FixoSession = typeof diagnosticSessions.$inferSelect;
+export type NewFixoSession = typeof diagnosticSessions.$inferInsert;
 ```
 
 ### Indexes

@@ -12,15 +12,15 @@ type Variables = { auth: AuthContext };
 
 const input = new Hono<{ Variables: Variables }>();
 
-// POST /diagnostics/:id/input - Process input (non-streaming)
+// POST /sessions/:id/input - Process input (non-streaming)
 input.post("/:id/input", async (c) => {
   const auth = c.get("auth");
   const sessionId = parseInt(c.req.param("id"));
 
   const [session] = await db
     .select()
-    .from(schema.diagnosticSessions)
-    .where(eq(schema.diagnosticSessions.id, sessionId))
+    .from(schema.fixoSessions)
+    .where(eq(schema.fixoSessions.id, sessionId))
     .limit(1);
 
   if (
@@ -62,12 +62,12 @@ input.post("/:id/input", async (c) => {
 
   // Update session
   await db
-    .update(schema.diagnosticSessions)
+    .update(schema.fixoSessions)
     .set({
       creditsCharged: session.creditsCharged + creditCharged,
       status: "processing",
     })
-    .where(eq(schema.diagnosticSessions.id, sessionId));
+    .where(eq(schema.fixoSessions.id, sessionId));
 
   // Handle different input types
   let agentInput: string;
@@ -109,7 +109,7 @@ input.post("/:id/input", async (c) => {
       spectrogramUrl = spectrogramUpload.url;
     }
 
-    await db.insert(schema.diagnosticMedia).values({
+    await db.insert(schema.fixoMedia).values({
       sessionId,
       type: type === "photo" ? "photo" : type === "audio" ? "audio" : "video",
       storageKey: uploadResult.key,

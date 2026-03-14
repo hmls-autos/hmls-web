@@ -1,5 +1,5 @@
 import { createHmlsApp } from "./hmls-app.ts";
-import { createDiagnosticApp } from "./fixo-app.ts";
+import { createFixoApp } from "./fixo-app.ts";
 
 // ── Fail fast on required env vars ──
 const DATABASE_URL = Deno.env.get("DATABASE_URL");
@@ -27,23 +27,23 @@ for (
 }
 
 const mainApp = createHmlsApp({ googleApiKey: GOOGLE_API_KEY });
-const diagApp = createDiagnosticApp();
+const fixoApp = createFixoApp();
 
 // ── Subdomain dispatch ──
-const DIAG_HOSTS = ["api.diag.hmls.autos", "diag.localhost"];
+const FIXO_HOSTS = ["api.fixo.hmls.autos", "fixo.localhost"];
 
 function handler(request: Request): Response | Promise<Response> {
   const host = (request.headers.get("host") ?? "").split(":")[0];
-  if (DIAG_HOSTS.includes(host)) {
-    return diagApp.fetch(request);
+  if (FIXO_HOSTS.includes(host)) {
+    return fixoApp.fetch(request);
   }
 
-  // Path-based routing: /diag/* → diagnostic app (strip prefix)
+  // Path-based routing: /fixo/* → fixo app (strip prefix)
   const url = new URL(request.url);
-  if (url.pathname === "/diag" || url.pathname.startsWith("/diag/")) {
-    const newPath = url.pathname.slice("/diag".length) || "/";
+  if (url.pathname === "/fixo" || url.pathname.startsWith("/fixo/")) {
+    const newPath = url.pathname.slice("/fixo".length) || "/";
     const newUrl = new URL(newPath + url.search, url.origin);
-    return diagApp.fetch(new Request(newUrl, request));
+    return fixoApp.fetch(new Request(newUrl, request));
   }
 
   return mainApp.fetch(request);
@@ -58,5 +58,5 @@ if (isDenoDeploy) {
   const port = Number(Deno.env.get("HTTP_PORT")) || 8080;
   Deno.serve({ port }, handler);
   console.log(`[server] HMLS API running on http://localhost:${port}`);
-  console.log(`[server] Diagnostic API available at http://diag.localhost:${port}`);
+  console.log(`[server] Fixo API available at http://fixo.localhost:${port}`);
 }

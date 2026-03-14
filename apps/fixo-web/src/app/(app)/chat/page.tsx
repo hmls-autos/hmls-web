@@ -12,9 +12,8 @@ import { CameraCapture } from "@/components/media/CameraCapture";
 import { ObdInput } from "@/components/media/ObdInput";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useAgentChat } from "@/hooks/useAgentChat";
-import type { AudioRecording } from "@/hooks/useAudioRecorder";
-
-const AGENT_URL = process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8001";
+import { useMediaUpload } from "@/hooks/useMediaUpload";
+import { AGENT_URL } from "@/lib/config";
 
 function WelcomeScreen() {
   return (
@@ -48,12 +47,17 @@ export default function ChatPage() {
       accessToken: session?.access_token,
     });
 
+  const { handleAudioSend, handlePhotoCapture, handleFilePick } =
+    useMediaUpload({
+      accessToken: session?.access_token,
+      sessionIdRef,
+      sendMessage,
+    });
+
   const handleDownloadReport = useCallback(
     async (sessionId: number) => {
       if (!session?.access_token) return;
-      const agentUrl =
-        process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8001";
-      const res = await fetch(`${agentUrl}/diagnostics/${sessionId}/report`, {
+      const res = await fetch(`${AGENT_URL}/sessions/${sessionId}/report`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) return;
@@ -66,180 +70,6 @@ export default function ChatPage() {
       URL.revokeObjectURL(url);
     },
     [session?.access_token],
-  );
-
-  const handleAudioSend = useCallback(
-    async (recording: AudioRecording) => {
-      if (!session?.access_token) return;
-
-      // Create a session if we don't have one
-      if (!sessionIdRef.current) {
-        const res = await fetch(`${AGENT_URL}/diagnostics`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        if (!res.ok) {
-          sendMessage("[Audio recording failed to upload]");
-          return;
-        }
-        const data = await res.json();
-        sessionIdRef.current = data.sessionId;
-      }
-
-      // POST audio + spectrogram to the input endpoint
-      const res = await fetch(
-        `${AGENT_URL}/diagnostics/${sessionIdRef.current}/input`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: "audio",
-            content: recording.base64,
-            spectrogramBase64: recording.spectrogramBase64,
-            filename: `recording-${Date.now()}.webm`,
-            contentType: "audio/webm",
-            durationSeconds: recording.durationSeconds,
-          }),
-        },
-      );
-
-      if (res.ok) {
-        const data = await res.json();
-        sendMessage(
-          `[Audio recording: ${recording.durationSeconds}s] Analyze this engine/vehicle sound.`,
-        );
-        if (data.response) {
-          // The backend already ran analysis — show the response in chat
-          void data.response;
-        }
-      } else {
-        sendMessage("[Audio upload failed — please try again]");
-      }
-    },
-    [session?.access_token, sendMessage],
-  );
-
-  const handlePhotoCapture = useCallback(
-    async (dataUrl: string) => {
-      if (!session?.access_token) return;
-
-      const base64 = dataUrl.split(",")[1];
-
-      // Create a session if we don't have one
-      if (!sessionIdRef.current) {
-        const res = await fetch(`${AGENT_URL}/diagnostics`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-        });
-        if (!res.ok) {
-          sendMessage("[Photo upload failed]");
-          return;
-        }
-        const data = await res.json();
-        sessionIdRef.current = data.sessionId;
-      }
-
-      // Upload to backend
-      const res = await fetch(
-        `${AGENT_URL}/diagnostics/${sessionIdRef.current}/input`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: "photo",
-            content: base64,
-            filename: `photo-${Date.now()}.jpg`,
-            contentType: "image/jpeg",
-          }),
-        },
-      );
-
-      if (res.ok) {
-        sendMessage(
-          "[Photo attached] Analyze this image for vehicle diagnostics.",
-          { imageUrl: dataUrl },
-        );
-      } else {
-        sendMessage("[Photo upload failed — please try again]");
-      }
-    },
-    [session?.access_token, sendMessage],
-  );
-
-  const handleFilePick = useCallback(
-    (file: File) => {
-      if (!session?.access_token) return;
-
-      // Reject files over 10MB
-      if (file.size > 10 * 1024 * 1024) {
-        sendMessage("[Photo too large — maximum 10MB]");
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const dataUrl = reader.result as string;
-        const base64 = dataUrl.split(",")[1];
-
-        // Create session if needed
-        if (!sessionIdRef.current) {
-          const res = await fetch(`${AGENT_URL}/diagnostics`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-              "Content-Type": "application/json",
-            },
-          });
-          if (!res.ok) {
-            sendMessage("[Photo upload failed]");
-            return;
-          }
-          const data = await res.json();
-          sessionIdRef.current = data.sessionId;
-        }
-
-        // Upload
-        const res = await fetch(
-          `${AGENT_URL}/diagnostics/${sessionIdRef.current}/input`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              type: "photo",
-              content: base64,
-              filename: file.name,
-              contentType: file.type || "image/jpeg",
-            }),
-          },
-        );
-
-        if (res.ok) {
-          sendMessage(
-            "[Photo attached] Analyze this image for vehicle diagnostics.",
-            { imageUrl: dataUrl },
-          );
-        } else {
-          sendMessage("[Photo upload failed — please try again]");
-        }
-      };
-      reader.readAsDataURL(file);
-    },
-    [session?.access_token, sendMessage],
   );
 
   const handleObdSubmit = useCallback(

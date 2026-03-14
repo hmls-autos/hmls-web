@@ -3,6 +3,7 @@
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
+import { AGENT_URL } from "@/lib/config";
 
 function PricingCard({
   name,
@@ -82,7 +83,7 @@ export default function PricingPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_AGENT_URL || "http://localhost:8001"}/billing/checkout`,
+        `${AGENT_URL}/billing/checkout`,
         {
           method: "POST",
           headers: {

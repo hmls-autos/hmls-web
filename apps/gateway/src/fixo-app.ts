@@ -12,15 +12,15 @@ import { vehicleRoutes } from "./routes/fixo/vehicles.ts";
 
 const DEV_MODE = Deno.env.get("DEV_MODE") === "true";
 
-export function createDiagnosticApp() {
+export function createFixoApp() {
   const app = new Hono<{ Variables: { auth: AuthContext } }>();
 
-  // CORS — diagnostic origins only
+  // CORS — fixo origins only
   app.use(
     "*",
     cors({
       origin: [
-        "https://diag.hmls.autos",
+        "https://fixo.hmls.autos",
         "http://localhost:3001",
       ],
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -32,13 +32,13 @@ export function createDiagnosticApp() {
   // Global error handler
   app.onError((err, c) => {
     if (err instanceof AppError) {
-      console.error(`[diagnostic] ${err.code}: ${err.message}`);
+      console.error(`[fixo] ${err.code}: ${err.message}`);
       return c.json(
         err.toJSON(),
         err.status as 400 | 401 | 403 | 404 | 422 | 500 | 502,
       );
     }
-    console.error(`[diagnostic] Unhandled:`, err);
+    console.error(`[fixo] Unhandled:`, err);
     return c.json({
       error: { code: "INTERNAL_ERROR", message: "Internal server error" },
     }, 500);
@@ -56,7 +56,7 @@ export function createDiagnosticApp() {
   app.get("/health", (c) => {
     return c.json({
       status: "ok",
-      service: "diagnostic",
+      service: "fixo",
       timestamp: new Date().toISOString(),
     });
   });
@@ -69,7 +69,7 @@ export function createDiagnosticApp() {
     await next();
   };
 
-  app.use("/diagnostics/*", requireAuth);
+  app.use("/sessions/*", requireAuth);
   app.use("/billing/checkout", requireAuth);
   app.use("/billing/portal", requireAuth);
   app.use("/vehicles", requireAuth);
@@ -77,16 +77,16 @@ export function createDiagnosticApp() {
   // deno-lint-ignore require-await -- Hono middleware requires async signature
   app.use("/task", async (c, next) => {
     if (DEV_MODE) {
-      console.log("[diagnostic] DEV_MODE: skipping auth");
+      console.log("[fixo] DEV_MODE: skipping auth");
       return next();
     }
     return requireAuth(c, next);
   });
 
   // Mount routes
-  app.route("/diagnostics", sessions);
-  app.route("/diagnostics", input);
-  app.route("/diagnostics", reports);
+  app.route("/sessions", sessions);
+  app.route("/sessions", input);
+  app.route("/sessions", reports);
   app.route("/task", chat);
   app.route("/vehicles", vehicleRoutes);
   app.route("/billing", billing);

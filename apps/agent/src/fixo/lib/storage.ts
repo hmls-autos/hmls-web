@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-const BUCKET = "diagnostic-media";
+const BUCKET = "fixo-media";
 
 let _storageClient: ReturnType<typeof createClient> | null = null;
 

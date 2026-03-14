@@ -13,7 +13,7 @@ Backend apps use Deno's built-in toolchain for formatting, linting, and type che
 
 ## Formatting & Linting
 
-### Deno Apps (API, Diagnostic Agent)
+### Deno Apps (API, Fixo Agent)
 
 Configured in root `deno.json`:
 
@@ -29,7 +29,7 @@ deno fmt                    # Format
 deno fmt --check            # Check formatting
 deno lint                   # Lint
 deno task check:api         # Type check API
-deno task check:diagnostic  # Type check diagnostic
+deno task check:fixo        # Type check fixo
 ```
 
 ### Lint Pragmas
@@ -51,7 +51,7 @@ Located at `.githooks/pre-commit`, runs five checks sequentially:
 2. TypeScript check (`apps/web`)
 3. Next.js build (`apps/web`)
 4. `deno check` (API)
-5. `deno check` (diagnostic)
+5. `deno check` (fixo)
 
 Enable with: `git config core.hooksPath .githooks`
 
@@ -108,9 +108,9 @@ Applied to: DB client, Supabase client, Stripe client, R2 S3Client.
 
 Minimal test infrastructure currently exists:
 
-- **Diagnostic agent**: Integration tests in `apps/diagnostic-agent/src/test/integration.test.ts`
+- **Fixo agent**: Integration tests in `apps/agent/src/test/integration.test.ts`
   using `@std/assert`
-- Run with: `deno task --cwd apps/diagnostic-agent test`
+- Run with: `deno task --cwd apps/agent test`
 - **API app**: No test files
 
 ---

@@ -69,7 +69,7 @@ export async function processCredits(
   await deductCredits(
     stripeCustomerId,
     check.required,
-    `Diagnostic session ${sessionId}: ${inputType} analysis`,
+    `Fixo session ${sessionId}: ${inputType} analysis`,
   );
 
   return { charged: check.required };

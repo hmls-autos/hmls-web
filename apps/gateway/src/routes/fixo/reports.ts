@@ -9,7 +9,7 @@ type Variables = { auth: AuthContext };
 
 const reports = new Hono<{ Variables: Variables }>();
 
-// GET /diagnostics/:id/report - Generate diagnostic PDF report
+// GET /sessions/:id/report - Generate Fixo PDF report
 reports.get("/:id/report", async (c) => {
   const auth = c.get("auth");
   const sessionId = parseInt(c.req.param("id"));
@@ -21,8 +21,8 @@ reports.get("/:id/report", async (c) => {
   // Fetch session
   const [session] = await db
     .select()
-    .from(schema.diagnosticSessions)
-    .where(eq(schema.diagnosticSessions.id, sessionId))
+    .from(schema.fixoSessions)
+    .where(eq(schema.fixoSessions.id, sessionId))
     .limit(1);
 
   if (
@@ -34,7 +34,7 @@ reports.get("/:id/report", async (c) => {
 
   // Check session has a result
   if (!session.result) {
-    return c.json({ error: "Diagnostic session has no result yet" }, 400);
+    return c.json({ error: "Session has no result yet" }, 400);
   }
 
   // Fetch vehicle info if attached
@@ -58,8 +58,8 @@ reports.get("/:id/report", async (c) => {
   // Count media files
   const mediaFiles = await db
     .select()
-    .from(schema.diagnosticMedia)
-    .where(eq(schema.diagnosticMedia.sessionId, sessionId));
+    .from(schema.fixoMedia)
+    .where(eq(schema.fixoMedia.sessionId, sessionId));
 
   // Parse result (stored as JSONB)
   const result = session.result as {

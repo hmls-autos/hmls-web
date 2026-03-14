@@ -45,7 +45,7 @@ apps/
 │   ├── pdf/                    # React-PDF templates (.tsx)
 │   └── types/                  # Shared TypeScript interfaces
 │
-├── diagnostic-agent/src/       # Diagnostic AI agent
+├── agent/src/fixo/             # Fixo AI agent
 │   ├── main.ts                 # Hono app setup (same pattern as index.ts)
 │   ├── agent.ts
 │   ├── system-prompt.ts
@@ -104,7 +104,7 @@ A skill is a directory under `skills/` with these files: `index.ts`, `tools.ts`,
 | Files            | `camelCase.ts`                             | `askUserQuestion.ts`           |
 | Route files      | Domain noun, lowercase                     | `estimates.ts`, `customers.ts` |
 | Tool files       | Domain noun, lowercase                     | `stripe.ts`, `scheduling.ts`   |
-| Entrypoint       | `index.ts` (API) or `main.ts` (diagnostic) | —                              |
+| Entrypoint       | `index.ts` (API) or `main.ts` (fixo)       | —                              |
 | Middleware files | Feature name, lowercase                    | `auth.ts`, `credits.ts`        |
 
 ---
