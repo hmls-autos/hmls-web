@@ -11,8 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@ag-ui/client": "0.0.45",
-    "@ag-ui/core": "^0.0.45",
+    "ai": "^4.2.10",
     "@base-ui/react": "^1.2.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",

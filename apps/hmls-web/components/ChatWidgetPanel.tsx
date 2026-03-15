@@ -11,7 +11,10 @@ import {
   useState,
 } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { BookingConfirmation } from "@/components/BookingConfirmation";
 import { EstimateCard } from "@/components/EstimateCard";
+import { QuestionCard } from "@/components/QuestionCard";
+import { SlotPicker } from "@/components/SlotPicker";
 import { Markdown } from "@/components/ui/Markdown";
 import { useAgentChat } from "@/hooks/useAgentChat";
 import { toolDisplayNames } from "@/lib/agent-tools";
@@ -35,7 +38,11 @@ export default function ChatWidgetPanel({
     isLoading,
     error,
     currentTool,
+    pendingQuestion,
+    pendingSlotPicker,
     sendMessage,
+    answerQuestion,
+    selectSlot,
     clearMessages,
     clearError,
   } = useAgentChat({
@@ -145,6 +152,11 @@ export default function ChatWidgetPanel({
                 </div>
               );
             }
+            if (msg.role === "booking-confirmation" && msg.bookingData) {
+              return (
+                <BookingConfirmation key={msg.id} data={msg.bookingData} />
+              );
+            }
             return (
               <div
                 key={msg.id}
@@ -168,6 +180,24 @@ export default function ChatWidgetPanel({
               </div>
             );
           })}
+
+        {/* Question card */}
+        {isAuthenticated && pendingQuestion && (
+          <QuestionCard
+            data={pendingQuestion}
+            onSelect={answerQuestion}
+            disabled={isLoading}
+          />
+        )}
+
+        {/* Slot picker */}
+        {isAuthenticated && pendingSlotPicker && (
+          <SlotPicker
+            data={pendingSlotPicker}
+            onSelect={selectSlot}
+            disabled={isLoading}
+          />
+        )}
 
         {/* Tool indicator */}
         {isAuthenticated && currentTool && (

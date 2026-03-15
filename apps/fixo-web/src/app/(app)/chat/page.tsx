@@ -106,10 +106,10 @@ export default function ChatPage() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-surface/80 backdrop-blur-sm border-b border-border px-4 py-3 flex items-center justify-between">
         <h1 className="text-lg font-semibold">Fixo<span className="text-primary">.</span></h1>
-        {messages.length > 0 && !isLoading && (
+        {messages.length > 0 && !isLoading && sessionIdRef.current && (
           <button
             type="button"
-            onClick={() => handleDownloadReport(1)}
+            onClick={() => sessionIdRef.current && handleDownloadReport(sessionIdRef.current)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
             aria-label="Download report"
           >

@@ -1,9 +1,9 @@
-// MCP-compliant tool result helper for Zypher 0.9+
-// ToolResult type is CallToolResult | string, so returning JSON string is simplest
+// Tool result helper — returns raw data for AI SDK tool execution.
+// AI SDK handles serialization of tool results automatically.
 
 /**
- * Wrap any value as a JSON string for tool result
+ * Pass-through helper for tool results. Returns the data as-is.
  */
-export function toolResult(data: unknown): string {
-  return typeof data === "string" ? data : JSON.stringify(data);
+export function toolResult<T>(data: T): T {
+  return data;
 }

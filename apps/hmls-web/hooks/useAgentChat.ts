@@ -1,7 +1,14 @@
 "use client";
 
-import { type Message as AgentMessage, HttpAgent } from "@ag-ui/client";
-import { type RefObject, useCallback, useRef, useState } from "react";
+import { useChat } from "ai/react";
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { BookingConfirmationData } from "@/components/BookingConfirmation";
 import type { EstimateCardData } from "@/components/EstimateCard";
 import type { QuestionData } from "@/components/QuestionCard";
@@ -24,22 +31,15 @@ interface UseAgentChatOptions {
 
 export function useAgentChat(options: UseAgentChatOptions = {}) {
   const { scrollRef, inputRef, accessToken } = options;
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentTool, setCurrentTool] = useState<string | null>(null);
   const [pendingQuestion, setPendingQuestion] = useState<QuestionData | null>(
     null,
   );
   const [pendingSlotPicker, setPendingSlotPicker] =
     useState<SlotPickerData | null>(null);
-  // bookingConfirmations and estimateCards are now embedded in the messages array
-  const agentRef = useRef<HttpAgent | null>(null);
-  const agentTokenRef = useRef<string | null | undefined>(null);
-  const toolCallNamesRef = useRef<Map<string, string>>(new Map());
-  const messagesRef = useRef<Message[]>([]);
-  const tokenRef = useRef(accessToken);
-  tokenRef.current = accessToken;
+  const [currentTool, setCurrentTool] = useState<string | null>(null);
+
+  // Track which tool invocations we've already processed to avoid duplicates
+  const processedInvocationsRef = useRef<Set<string>>(new Set());
 
   const scrollToBottom = useCallback(() => {
     scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
@@ -49,192 +49,144 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     inputRef?.current?.focus();
   }, [inputRef]);
 
-  // Char-by-char streaming buffer
-  const bufferRef = useRef("");
-  const rafRef = useRef<number>(0);
-  const CHARS_PER_FRAME = 3;
+  const headers = useMemo(() => {
+    const h: Record<string, string> = {};
+    if (accessToken) {
+      h.Authorization = `Bearer ${accessToken}`;
+    }
+    return h;
+  }, [accessToken]);
 
-  const drainBuffer = useCallback(
-    (msgId: string) => {
-      if (bufferRef.current.length === 0) {
-        rafRef.current = 0;
-        return;
-      }
-      const chunk = bufferRef.current.slice(0, CHARS_PER_FRAME);
-      bufferRef.current = bufferRef.current.slice(CHARS_PER_FRAME);
-      setMessages((m) =>
-        m.map((msg) =>
-          msg.id === msgId ? { ...msg, content: msg.content + chunk } : msg,
-        ),
-      );
-      scrollToBottom();
-      rafRef.current = requestAnimationFrame(() => drainBuffer(msgId));
+  const {
+    messages: chatMessages,
+    isLoading,
+    error: chatError,
+    append,
+    setMessages: setChatMessages,
+  } = useChat({
+    api: `${AGENT_URL}/task`,
+    headers,
+    maxSteps: 10,
+    onFinish: () => {
+      setCurrentTool(null);
+      focusInput();
     },
-    [scrollToBottom],
-  );
+    onError: (err) => {
+      console.error("[agent] Chat error:", err);
+      setCurrentTool(null);
+    },
+  });
 
-  const flushBuffer = useCallback((msgId: string) => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = 0;
-    const remaining = bufferRef.current;
-    bufferRef.current = "";
-    if (remaining) {
-      setMessages((m) =>
-        m.map((msg) =>
-          msg.id === msgId ? { ...msg, content: msg.content + remaining } : msg,
-        ),
-      );
+  // Clear processed invocations when messages are reset externally
+  useEffect(() => {
+    if (chatMessages.length === 0) {
+      processedInvocationsRef.current.clear();
     }
-  }, []);
+  }, [chatMessages.length]);
 
-  const getAgent = useCallback(() => {
-    if (agentRef.current && agentTokenRef.current === tokenRef.current) {
-      return agentRef.current;
-    }
-    const headers: Record<string, string> = {};
-    if (tokenRef.current) {
-      headers.Authorization = `Bearer ${tokenRef.current}`;
-    }
-    const agent = new HttpAgent({ url: `${AGENT_URL}/task`, headers });
-    for (const msg of messagesRef.current) {
-      if (msg.role === "user" || msg.role === "assistant") {
-        agent.addMessage({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-        } as AgentMessage);
+  // Derive tool call state from streaming messages
+  useEffect(() => {
+    const processed = processedInvocationsRef.current;
+
+    for (const msg of chatMessages) {
+      if (msg.role !== "assistant" || !msg.toolInvocations) continue;
+
+      for (const inv of msg.toolInvocations) {
+        // Track active tool calls
+        if (inv.state === "call" || inv.state === "partial-call") {
+          setCurrentTool(inv.toolName);
+        }
+
+        // Detect ask_user_question tool calls
+        if (
+          inv.toolName === "ask_user_question" &&
+          (inv.state === "call" || inv.state === "result") &&
+          !processed.has(`question-${inv.toolCallId}`)
+        ) {
+          processed.add(`question-${inv.toolCallId}`);
+          setPendingQuestion(inv.args as QuestionData);
+        }
+
+        // Detect tool results
+        if (inv.state === "result" && !processed.has(inv.toolCallId)) {
+          processed.add(inv.toolCallId);
+          setCurrentTool(null);
+
+          if (inv.toolName === "get_availability" && inv.result) {
+            setPendingSlotPicker(inv.result as SlotPickerData);
+          }
+        }
       }
     }
-    agentRef.current = agent;
-    agentTokenRef.current = tokenRef.current;
-    return agent;
-  }, []);
+  }, [chatMessages]);
+
+  // Scroll on new messages
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatMessages, scrollToBottom]);
+
+  // Build messages array matching the existing Message interface.
+  // Injects estimate-card and booking-confirmation messages after
+  // assistant messages that contain matching tool results.
+  const messages: Message[] = useMemo(() => {
+    const result: Message[] = [];
+
+    for (const msg of chatMessages) {
+      if (msg.role === "user") {
+        result.push({ id: msg.id, role: "user", content: msg.content });
+      } else if (msg.role === "assistant") {
+        // Add the text content (may be empty during tool-only steps)
+        if (msg.content) {
+          result.push({ id: msg.id, role: "assistant", content: msg.content });
+        }
+
+        // Check tool invocations for card data
+        if (msg.toolInvocations) {
+          for (const inv of msg.toolInvocations) {
+            if (inv.state !== "result") continue;
+
+            if (
+              inv.toolName === "create_booking" &&
+              inv.result?.success !== undefined
+            ) {
+              result.push({
+                id: `${msg.id}-booking-${inv.toolCallId}`,
+                role: "booking-confirmation",
+                content: "",
+                bookingData: inv.result as BookingConfirmationData,
+              });
+            }
+
+            if (
+              inv.toolName === "create_estimate" &&
+              inv.result?.success &&
+              inv.result?.items
+            ) {
+              result.push({
+                id: `${msg.id}-estimate-${inv.toolCallId}`,
+                role: "estimate-card",
+                content: "",
+                estimateData: inv.result as EstimateCardData,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return result;
+  }, [chatMessages]);
+
+  const error = chatError?.message ?? null;
 
   const sendMessage = useCallback(
-    async (content: string) => {
-      const userMsg: Message = {
-        id: crypto.randomUUID(),
-        role: "user",
-        content,
-      };
-      setMessages((prev) => {
-        const next = [...prev, userMsg];
-        messagesRef.current = next;
-        return next;
-      });
-      setIsLoading(true);
-      setError(null);
-      setTimeout(scrollToBottom, 0);
-
-      const agent = getAgent();
-
-      agent.addMessage({
-        id: userMsg.id,
-        role: "user",
-        content,
-      } as AgentMessage);
-
-      let assistantId = "";
-
-      try {
-        await agent.runAgent(undefined, {
-          onTextMessageStartEvent: ({ event }) => {
-            assistantId = event.messageId;
-            setMessages((m) => [
-              ...m,
-              { id: assistantId, role: "assistant", content: "" },
-            ]);
-            setTimeout(scrollToBottom, 0);
-          },
-          onTextMessageContentEvent: ({ event }) => {
-            bufferRef.current += event.delta;
-            if (!rafRef.current) {
-              rafRef.current = requestAnimationFrame(() =>
-                drainBuffer(assistantId),
-              );
-            }
-          },
-          onToolCallStartEvent: ({ event }) => {
-            setCurrentTool(event.toolCallName);
-            toolCallNamesRef.current.set(event.toolCallId, event.toolCallName);
-            setTimeout(scrollToBottom, 0);
-          },
-          onToolCallEndEvent: ({ toolCallName, toolCallArgs }) => {
-            if (toolCallName === "ask_user_question") {
-              setPendingQuestion(toolCallArgs as QuestionData);
-            }
-            setCurrentTool(null);
-          },
-          onToolCallResultEvent: ({ event }) => {
-            const toolName = toolCallNamesRef.current.get(event.toolCallId);
-            if (!toolName || !event.content) return;
-
-            try {
-              const result = JSON.parse(event.content);
-              if (toolName === "get_availability") {
-                setPendingSlotPicker(result as SlotPickerData);
-              }
-              if (
-                toolName === "create_booking" &&
-                result.success !== undefined
-              ) {
-                setMessages((m) => [
-                  ...m,
-                  {
-                    id: crypto.randomUUID(),
-                    role: "booking-confirmation",
-                    content: "",
-                    bookingData: result as BookingConfirmationData,
-                  },
-                ]);
-              }
-              if (
-                toolName === "create_estimate" &&
-                result.success &&
-                result.items
-              ) {
-                setMessages((m) => [
-                  ...m,
-                  {
-                    id: crypto.randomUUID(),
-                    role: "estimate-card",
-                    content: "",
-                    estimateData: result as EstimateCardData,
-                  },
-                ]);
-              }
-            } catch {
-              // ignore parse errors
-            }
-            setTimeout(scrollToBottom, 0);
-          },
-          onRunFinishedEvent: () => {
-            flushBuffer(assistantId);
-            setIsLoading(false);
-            focusInput();
-          },
-          onRunErrorEvent: ({ event }) => {
-            flushBuffer(assistantId);
-            const msg =
-              (event as { message?: string }).message ||
-              "Agent encountered an error";
-            console.error("[agent] Run error:", msg);
-            setError(msg);
-            setIsLoading(false);
-            focusInput();
-          },
-        });
-      } catch (err) {
-        flushBuffer(assistantId);
-        const msg =
-          err instanceof Error ? err.message : "Failed to connect to agent";
-        console.error("[agent] Connection error:", msg);
-        setError(msg);
-        setIsLoading(false);
-        focusInput();
-      }
+    (content: string) => {
+      setPendingQuestion(null);
+      setPendingSlotPicker(null);
+      append({ role: "user", content });
     },
-    [scrollToBottom, focusInput, getAgent, drainBuffer, flushBuffer],
+    [append],
   );
 
   const answerQuestion = useCallback(
@@ -266,16 +218,15 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   );
 
   const clearMessages = useCallback(() => {
-    setMessages([]);
-    messagesRef.current = [];
+    setChatMessages([]);
     setPendingQuestion(null);
     setPendingSlotPicker(null);
-    agentRef.current = null;
-    agentTokenRef.current = null;
-  }, []);
+    processedInvocationsRef.current.clear();
+  }, [setChatMessages]);
 
   const clearError = useCallback(() => {
-    setError(null);
+    // useChat manages error state internally; clearing is a no-op
+    // but we keep the function for API compatibility
   }, []);
 
   return {

@@ -6,7 +6,6 @@
     "./db": "./src/db/client.ts"
   },
   "imports": {
-    "openai": "npm:openai@^6.9.1",
     "@react-pdf/renderer": "npm:@react-pdf/renderer@^4.3.2",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.95.0",
     "react": "npm:react@^19.2.3",

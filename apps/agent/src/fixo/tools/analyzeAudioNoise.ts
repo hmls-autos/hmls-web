@@ -95,7 +95,15 @@ Analyze the spectrogram and provide:
       }),
     });
 
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Vision API error (${response.status}): ${text}`);
+    }
+
     const result = await response.json();
+    if (!result.choices?.length) {
+      throw new Error("Vision API returned no choices");
+    }
     return result.choices[0].message.content;
   },
 };

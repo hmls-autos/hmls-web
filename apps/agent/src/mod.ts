@@ -1,6 +1,6 @@
 // Agent factories
-export { type AgentConfig, type CreateAgentOptions, createHmlsAgent } from "./hmls/agent.ts";
-export { createFixoAgent, type CreateFixoAgentOptions } from "./fixo/agent.ts";
+export { type AgentConfig, type RunAgentOptions, runHmlsAgent } from "./hmls/agent.ts";
+export { runFixoAgent, type RunFixoAgentOptions } from "./fixo/agent.ts";
 
 // Types
 export { formatUserContext, type UserContext } from "./types/user-context.ts";
@@ -27,7 +27,6 @@ export {
   uploadMedia,
   type UploadResult,
 } from "./fixo/lib/storage.ts";
-export { getAgent } from "./fixo/lib/agent-cache.ts";
 
 // Notifications
 export { notifyOrderStatusChange } from "./lib/notifications.ts";

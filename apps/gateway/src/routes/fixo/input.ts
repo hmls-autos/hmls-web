@@ -1,11 +1,9 @@
 import { Hono } from "hono";
-import { eachValueFrom } from "rxjs-for-await";
 import { db, schema } from "@hmls/agent/db";
 import { eq } from "drizzle-orm";
-import { getAgent, type InputType, uploadMedia } from "@hmls/agent";
+import { type InputType, runFixoAgent, uploadMedia } from "@hmls/agent";
 import { processCredits } from "../../middleware/fixo/credits.ts";
 import { checkFreeTierLimit } from "../../middleware/fixo/tier.ts";
-import { createAguiEventStream } from "@zypher/agui";
 import type { AuthContext } from "../../middleware/fixo/auth.ts";
 
 type Variables = { auth: AuthContext };
@@ -130,25 +128,12 @@ input.post("/:id/input", async (c) => {
     agentInput = content;
   }
 
-  // Use AG-UI stream but collect final response
-  const agentInstance = await getAgent();
-  const messageId = crypto.randomUUID();
-  const aguiStream = createAguiEventStream({
-    agent: agentInstance,
-    messages: [{ id: messageId, role: "user", content: agentInput }],
-    threadId: `session-${sessionId}`,
-    runId: crypto.randomUUID(),
+  // Run the fixo agent and collect the full text response
+  const result = runFixoAgent({
+    messages: [{ role: "user" as const, content: agentInput }],
   });
 
-  // Collect the final text response
-  let responseText = "";
-  for await (const event of eachValueFrom(aguiStream)) {
-    // Type assertion for events with delta property
-    const evt = event as { type: string; delta?: string };
-    if (evt.type === "TEXT_MESSAGE_CONTENT" && evt.delta) {
-      responseText += evt.delta;
-    }
-  }
+  const responseText = await result.text;
 
   return c.json({
     response: responseText,

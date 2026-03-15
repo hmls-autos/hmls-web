@@ -61,7 +61,15 @@ Provide a detailed analysis with severity ratings (low/medium/high) for any issu
       }),
     });
 
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Vision API error (${response.status}): ${text}`);
+    }
+
     const result = await response.json();
+    if (!result.choices?.length) {
+      throw new Error("Vision API returned no choices");
+    }
     return result.choices[0].message.content;
   },
 };

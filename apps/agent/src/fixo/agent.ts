@@ -1,5 +1,5 @@
-import { type Message as ZypherMessage, ZypherAgent, type ZypherContext } from "@corespeed/zypher";
-import { GeminiOpenAIProvider } from "../llm/gemini-openai-provider.ts";
+import { type CoreMessage, streamText, tool as aiTool } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { analyzeImageTool } from "./tools/analyzeImage.ts";
 import { analyzeAudioNoiseTool } from "./tools/analyzeAudioNoise.ts";
@@ -8,78 +8,61 @@ import { lookupObdCodeTool } from "./tools/lookupObdCode.ts";
 import { getMediaTool, saveMediaTool } from "./tools/storage.ts";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
-const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/";
 
-const allTools = [
-  analyzeImageTool,
-  analyzeAudioNoiseTool,
-  extractVideoFramesTool,
-  lookupObdCodeTool,
-  saveMediaTool,
-  getMediaTool,
-];
-
-export interface CreateFixoAgentOptions {
-  /** Previous conversation messages to restore context */
-  initialMessages?: ZypherMessage[];
+// deno-lint-ignore no-explicit-any
+interface LegacyTool<P = any> {
+  name: string;
+  description: string;
+  // deno-lint-ignore no-explicit-any
+  schema: any;
+  execute: (params: P, ctx?: unknown) => Promise<unknown>;
 }
 
-export async function createFixoAgent(options?: CreateFixoAgentOptions) {
+/** Convert existing tool arrays (name/schema/execute) to AI SDK tool records. */
+function convertTools(existingTools: LegacyTool[]): Record<string, ReturnType<typeof aiTool>> {
+  // deno-lint-ignore no-explicit-any
+  const result: Record<string, any> = {};
+  for (const t of existingTools) {
+    result[t.name] = aiTool({
+      description: t.description,
+      parameters: t.schema,
+      execute: (input) => t.execute(input, undefined),
+    });
+  }
+  return result;
+}
+
+export interface RunFixoAgentOptions {
+  messages: CoreMessage[];
+}
+
+export function runFixoAgent(options: RunFixoAgentOptions) {
   const apiKey = Deno.env.get("GOOGLE_API_KEY");
   if (!apiKey) {
     throw new Error("GOOGLE_API_KEY is required");
   }
 
   const modelId = Deno.env.get("AGENT_MODEL") || DEFAULT_MODEL;
-  console.log(`[fixo-agent] Creating agent with model: ${modelId}`);
+  console.log(`[fixo-agent] Running agent with model: ${modelId}`);
 
-  const isDenoDeploy = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
+  const google = createGoogleGenerativeAI({ apiKey });
 
-  const modelProvider = new GeminiOpenAIProvider({
-    model: modelId,
-    apiKey,
-    baseUrl: GEMINI_BASE_URL,
+  const allTools: LegacyTool[] = [
+    analyzeImageTool,
+    analyzeAudioNoiseTool,
+    extractVideoFramesTool,
+    lookupObdCodeTool,
+    saveMediaTool,
+    getMediaTool,
+  ];
+
+  const tools = convertTools(allTools);
+
+  return streamText({
+    model: google(modelId),
+    system: SYSTEM_PROMPT,
+    messages: options.messages,
+    tools,
+    maxSteps: 10,
   });
-
-  const context: ZypherContext = isDenoDeploy
-    ? {
-      workingDirectory: "/src",
-      zypherDir: "/tmp/.zypher-diag",
-      workspaceDataDir: "/tmp/.zypher-diag/data",
-      fileAttachmentCacheDir: "/tmp/.zypher-diag/cache",
-      skillsDir: "/tmp/.zypher-diag/skills",
-    }
-    : {
-      workingDirectory: Deno.cwd(),
-      zypherDir: `${Deno.cwd()}/.zypher`,
-      workspaceDataDir: `${Deno.cwd()}/.zypher/data`,
-      fileAttachmentCacheDir: `${Deno.cwd()}/.zypher/cache`,
-      skillsDir: `${Deno.cwd()}/.zypher/skills`,
-    };
-
-  const agent = new ZypherAgent(
-    context,
-    modelProvider,
-    {
-      tools: allTools,
-      initialMessages: options?.initialMessages,
-      overrides: {
-        // deno-lint-ignore require-await
-        systemPromptLoader: async () => SYSTEM_PROMPT,
-      },
-    },
-  );
-
-  // Discover and log skills
-  if (!isDenoDeploy) {
-    await agent.skills.discover();
-    const skillNames = Array.from(agent.skills.skills.values()).map(
-      (s) => s.metadata.name,
-    );
-    if (skillNames.length > 0) {
-      console.log(`[fixo-agent] Skills loaded: ${skillNames.join(", ")}`);
-    }
-  }
-
-  return agent;
 }

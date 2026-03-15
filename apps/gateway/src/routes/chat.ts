@@ -1,57 +1,10 @@
 import { Hono } from "hono";
-import { streamSSE } from "hono/streaming";
-import { eachValueFrom } from "rxjs-for-await";
-import { concatMap, from, pipe } from "rxjs";
+import { convertToCoreMessages } from "ai";
 import { eq } from "drizzle-orm";
-import { type AgentConfig, createHmlsAgent, type UserContext } from "@hmls/agent";
+import { type AgentConfig, runHmlsAgent, type UserContext } from "@hmls/agent";
 import { db, schema } from "@hmls/agent/db";
 import { Errors } from "@hmls/shared/errors";
-import {
-  convertAguiMessagesToZypher,
-  createAguiEventStream,
-  parseRunAgentInput,
-} from "@zypher/agui";
 import { optionalAuth, type OptionalAuthEnv } from "../middleware/auth.ts";
-
-/**
- * RxJS operator that ensures all TOOL_CALL_START events have matching
- * TOOL_CALL_END events before RUN_FINISHED is emitted.
- *
- * Works around a bug in @zypher/agui where the bridge's `complete` handler
- * doesn't close open tool calls, causing the AG-UI client verifier to reject
- * the RUN_FINISHED event.
- */
-function sanitizeToolCallEvents() {
-  // Mutable state scoped to the pipe instance
-  const openToolCalls = new Set<string>();
-
-  // deno-lint-ignore no-explicit-any
-  return pipe(concatMap((event: any) => {
-    // Track open tool calls
-    if (event.type === "TOOL_CALL_START") {
-      openToolCalls.add(event.toolCallId);
-    } else if (event.type === "TOOL_CALL_END") {
-      openToolCalls.delete(event.toolCallId);
-    }
-
-    // Before RUN_FINISHED, inject TOOL_CALL_END for any unclosed tool calls
-    if (event.type === "RUN_FINISHED" && openToolCalls.size > 0) {
-      // deno-lint-ignore no-explicit-any
-      const closingEvents: any[] = [];
-      for (const toolCallId of openToolCalls) {
-        closingEvents.push({
-          type: "TOOL_CALL_END",
-          toolCallId,
-          timestamp: Date.now(),
-        });
-      }
-      openToolCalls.clear();
-      return from([...closingEvents, event]);
-    }
-
-    return from([event]);
-  }));
-}
 
 let _config: AgentConfig;
 
@@ -101,7 +54,7 @@ async function resolveCustomer(
 
 const chat = new Hono<OptionalAuthEnv>();
 
-// AG-UI chat endpoint
+// AI SDK data stream endpoint
 chat.post("/", optionalAuth, async (c) => {
   let body;
   try {
@@ -113,11 +66,9 @@ chat.post("/", optionalAuth, async (c) => {
     );
   }
 
-  let input;
-  try {
-    input = parseRunAgentInput(body);
-  } catch (parseError) {
-    throw Errors.validation("Invalid AG-UI input", String(parseError));
+  const { messages } = body;
+  if (!messages || !Array.isArray(messages)) {
+    throw Errors.validation("Invalid request", "messages array is required");
   }
 
   // Resolve authenticated user -> customer record via JWT
@@ -127,30 +78,22 @@ chat.post("/", optionalAuth, async (c) => {
     userContext = await resolveCustomer({ email: authUser.email });
   }
 
-  const { threadId, runId, messages } = input;
   console.log(
-    `[agent] threadId=${threadId}, messages=${messages.length}, user=${
-      userContext?.id ?? "anonymous"
-    }`,
+    `[agent] messages=${messages.length}, user=${userContext?.id ?? "anonymous"}`,
   );
 
-  // Convert previous messages (all except last user message) to Zypher format
-  // so the agent has full conversation context on every request.
-  // This makes the endpoint stateless — no reliance on in-memory agent cache.
-  const historyMessages = messages.slice(0, -1);
-  const initialMessages = historyMessages.length > 0
-    ? convertAguiMessagesToZypher(historyMessages)
-    : undefined;
-
-  let agent;
   try {
-    agent = await createHmlsAgent({
+    const coreMessages = convertToCoreMessages(messages);
+
+    const result = runHmlsAgent({
+      messages: coreMessages,
       config: _config,
       userContext,
-      initialMessages,
     });
+
+    return result.toDataStreamResponse();
   } catch (error) {
-    console.error(`[agent] Agent init failed:`, error);
+    console.error(`[agent] Agent error:`, error);
     return c.json(
       {
         error: {
@@ -161,29 +104,6 @@ chat.post("/", optionalAuth, async (c) => {
       500,
     );
   }
-
-  const aguiStream = createAguiEventStream({
-    agent,
-    messages,
-    threadId,
-    runId,
-  }).pipe(sanitizeToolCallEvents());
-
-  return streamSSE(c, async (stream) => {
-    try {
-      for await (const event of eachValueFrom(aguiStream)) {
-        await stream.writeSSE({ data: JSON.stringify(event) });
-      }
-    } catch (error) {
-      console.error(`[agent] Stream error:`, error);
-      await stream.writeSSE({
-        data: JSON.stringify({
-          type: "RUN_ERROR",
-          message: error instanceof Error ? error.message : String(error),
-        }),
-      });
-    }
-  });
 });
 
 export { chat };
