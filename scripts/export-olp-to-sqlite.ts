@@ -6,8 +6,11 @@
  */
 
 const SUPABASE_URL = "https://ddkapmjkubklyzuciscd.supabase.co";
-const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRka2FwbWprdWJrbHl6dWNpc2NkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzcyMzQ4NiwiZXhwIjoyMDgzMjk5NDg2fQ.XoNxAvTyMoTtLrzEpZWLgMGnA_FRmU2cCWHWUIql3Ko";
+const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+if (!SUPABASE_KEY) {
+  console.error("SUPABASE_SERVICE_ROLE_KEY env var is required");
+  Deno.exit(1);
+}
 
 const DB_PATH = Deno.args[0] || "./olp-labor-times.db";
 const PAGE_SIZE = 1000;

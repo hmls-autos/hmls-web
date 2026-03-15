@@ -4,13 +4,27 @@ const OLP_DB_PATH = "/tmp/olp-labor-times.db";
 const R2_URL = Deno.env.get("OLP_SQLITE_URL") ?? "";
 
 let _db: Database | null = null;
+let _downloadPromise: Promise<Database> | null = null;
 
 /**
  * Get the OLP SQLite database, downloading from R2 on first access.
+ * Uses a promise lock to prevent concurrent downloads.
  */
 export async function getOlpDb(): Promise<Database> {
   if (_db) return _db;
+  if (_downloadPromise) return _downloadPromise;
 
+  _downloadPromise = _initDb();
+  try {
+    const db = await _downloadPromise;
+    return db;
+  } catch (e) {
+    _downloadPromise = null;
+    throw e;
+  }
+}
+
+async function _initDb(): Promise<Database> {
   // Check if already downloaded
   try {
     const stat = Deno.statSync(OLP_DB_PATH);
@@ -92,7 +106,7 @@ export function searchLaborTimes(
   category: string | undefined,
   matchAny = false,
 ): OlpLaborTime[] {
-  if (vehicleIds.length === 0) return [];
+  if (vehicleIds.length === 0 || serviceWords.length === 0) return [];
 
   const placeholders = vehicleIds.map(() => "?").join(",");
 
