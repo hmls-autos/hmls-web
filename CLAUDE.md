@@ -7,15 +7,15 @@ repository.
 
 ```bash
 # Dev servers
-cd apps/web && bun run dev       # Next.js on port 3000
+cd apps/hmls-web && bun run dev       # Next.js on port 3000
 deno task dev:api                # API + Fixo agent on port 8080
 # Main API: http://localhost:8080
 # Fixo API: http://fixo.localhost:8080
 
 # Build & quality
-cd apps/web && bun run build     # Build Next.js
-cd apps/web && bun run lint      # Lint with Biome
-cd apps/web && bun run typecheck # TypeScript type checking
+cd apps/hmls-web && bun run build     # Build Next.js
+cd apps/hmls-web && bun run lint      # Lint with Biome
+cd apps/hmls-web && bun run typecheck # TypeScript type checking
 deno task check                  # Deno check gateway + agent
 deno task lint                   # Deno lint (excludes web)
 deno task fmt:check              # Deno format check (excludes web)
@@ -30,7 +30,7 @@ deno task --cwd apps/agent db:studio    # Drizzle Studio GUI
 ## Setup
 
 ```bash
-cd apps/web && bun install       # Install web dependencies
+cd apps/hmls-web && bun install       # Install web dependencies
 git config core.hooksPath .githooks  # Enable pre-commit hook
 # Set DATABASE_URL in .env.local to your Supabase connection string
 ```
@@ -44,7 +44,7 @@ shared deps go there, app-specific deps in each app's `deno.json`.
 
 ```
 apps/
-├── web/                # Next.js 16 frontend (React 19, Tailwind CSS 4) → Deno Deploy
+├── hmls-web/           # Next.js 16 frontend (React 19, Tailwind CSS 4) → Deno Deploy
 ├── gateway/            # HTTP server (Hono, routing, auth, CORS) → Deno Deploy
 └── agent/              # AI agents + domain logic (library package)
     ├── llm/            #   GeminiOpenAIProvider (shared)
@@ -122,9 +122,9 @@ domains.
 **Always run the full CI suite locally before pushing:**
 
 ```bash
-cd apps/web && bun run lint        # Biome lint
-cd apps/web && bun run typecheck   # TypeScript check
-cd apps/web && bun run build       # Next.js build
+cd apps/hmls-web && bun run lint        # Biome lint
+cd apps/hmls-web && bun run typecheck   # TypeScript check
+cd apps/hmls-web && bun run build       # Next.js build
 deno task check                    # Deno check gateway + agent
 ```
 
@@ -144,7 +144,7 @@ Do not push if any of these fail.
 deno install
 
 # Web app
-cd apps/web && bunx npm-check-updates -u && bun install
+cd apps/hmls-web && bunx npm-check-updates -u && bun install
 ```
 
 ## Environment Variables

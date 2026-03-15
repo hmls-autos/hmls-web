@@ -6,7 +6,7 @@ Mobile mechanic service platform — AI-powered estimates, Stripe payments, prov
 
 | App                 | Stack       | Deploy      |
 | ------------------- | ----------- | ----------- |
-| `apps/web`          | Next.js     | Vercel      |
+| `apps/hmls-web`     | Next.js     | Vercel      |
 | `apps/api`          | Deno + Hono | Deno Deploy |
 | `apps/fixo-web`     | Next.js     | Vercel      |
 | `apps/agent` (fixo) | Deno + Hono | Deno Deploy |
@@ -105,7 +105,7 @@ erDiagram
 
 ```bash
 # Web app
-cd apps/web && pnpm dev
+cd apps/hmls-web && pnpm dev
 
 # API agent
 cd apps/api && deno task dev

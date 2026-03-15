@@ -25,3 +25,5 @@ build
 .vercel
 .env*.local
 apps/fixo-web/.env.vercel
+olp-labor-times.db*
+.env.production

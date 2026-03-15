@@ -6,15 +6,15 @@ export PATH="$HOME/.bun/bin:$HOME/.deno/bin:$PATH"
 echo "Running pre-commit checks..."
 
 echo ">> Biome lint (web)"
-cd apps/web && bun run lint
+cd apps/hmls-web && bun run lint
 cd - > /dev/null
 
 echo ">> TypeScript check (web)"
-cd apps/web && bun run typecheck
+cd apps/hmls-web && bun run typecheck
 cd - > /dev/null
 
 echo ">> Next.js build (web)"
-cd apps/web && bun run build
+cd apps/hmls-web && bun run build
 cd - > /dev/null
 
 echo ">> Deno check (gateway + agent)"
