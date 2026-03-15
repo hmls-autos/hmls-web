@@ -1,4 +1,4 @@
-import { Database } from "jsr:@db/sqlite@0.12";
+import { Database } from "@db/sqlite";
 
 const OLP_DB_PATH = "/tmp/olp-labor-times.db";
 const R2_URL = Deno.env.get("OLP_SQLITE_URL") ?? "";

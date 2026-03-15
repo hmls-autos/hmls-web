@@ -13,7 +13,7 @@ const DB_PATH = Deno.args[0] || "./olp-labor-times.db";
 const PAGE_SIZE = 1000;
 const MAX_RETRIES = 3;
 
-const { Database } = await import("jsr:@db/sqlite@0.12");
+import { Database } from "@db/sqlite";
 
 async function supabaseGet(
   table: string,
