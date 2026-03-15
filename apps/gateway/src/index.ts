@@ -30,7 +30,7 @@ const mainApp = createHmlsApp({ googleApiKey: GOOGLE_API_KEY });
 const fixoApp = createFixoApp();
 
 // ── Subdomain dispatch ──
-const FIXO_HOSTS = ["api.fixo.hmls.autos", "fixo.localhost"];
+const FIXO_HOSTS = ["api.fixo.hmls.autos", "api.fixo.ink", "fixo.localhost"];
 
 function handler(request: Request): Response | Promise<Response> {
   const host = (request.headers.get("host") ?? "").split(":")[0];

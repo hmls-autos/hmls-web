@@ -21,6 +21,7 @@ export function createFixoApp() {
     cors({
       origin: [
         "https://fixo.hmls.autos",
+        "https://fixo.ink",
         "http://localhost:3001",
       ],
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
