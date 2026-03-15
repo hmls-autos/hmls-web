@@ -74,13 +74,11 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   }, []);
 
   const getAgent = useCallback(() => {
-    if (!agentRef.current) {
-      const headers: Record<string, string> = {};
-      if (tokenRef.current) {
-        headers.Authorization = `Bearer ${tokenRef.current}`;
-      }
-      agentRef.current = new HttpAgent({ url: `${AGENT_URL}/task`, headers });
+    const headers: Record<string, string> = {};
+    if (tokenRef.current) {
+      headers.Authorization = `Bearer ${tokenRef.current}`;
     }
+    agentRef.current = new HttpAgent({ url: `${AGENT_URL}/task`, headers });
     return agentRef.current;
   }, []);
 
