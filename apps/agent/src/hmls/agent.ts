@@ -4,12 +4,13 @@ import { getLogger } from "@logtape/logtape";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { schedulingTools } from "./tools/scheduling.ts";
 import { createStripeTools } from "./tools/stripe.ts";
-import { estimateTools } from "./skills/estimate/tools.ts";
-import { askUserQuestionTools } from "./tools/ask-user-question.ts";
-import { laborLookupTools } from "./tools/labor-lookup.ts";
-import { partsLookupTools } from "./tools/parts-lookup.ts";
 import { orderOpsTools } from "./tools/order-ops.ts";
 import { formatUserContext, type UserContext } from "../types/user-context.ts";
+import { convertTools, type LegacyTool } from "../common/convert-tools.ts";
+import { askUserQuestionTools } from "../common/tools/ask-user-question.ts";
+import { laborLookupTools } from "../common/tools/labor-lookup.ts";
+import { partsLookupTools } from "../common/tools/parts-lookup.ts";
+import { estimateTools } from "../common/tools/estimate.ts";
 
 const logger = getLogger(["hmls", "agent", "hmls"]);
 
@@ -25,30 +26,6 @@ export interface RunAgentOptions {
   messages: ModelMessage[];
   config: AgentConfig;
   userContext?: UserContext;
-}
-
-// deno-lint-ignore no-explicit-any
-interface LegacyTool<P = any> {
-  name: string;
-  description: string;
-  // deno-lint-ignore no-explicit-any
-  schema: any;
-  execute: (params: P, ctx: unknown) => Promise<unknown>;
-}
-
-/** Convert existing tool arrays (name/schema/execute) to AI SDK tool records. */
-// deno-lint-ignore no-explicit-any
-function convertTools(existingTools: LegacyTool[]): Record<string, any> {
-  // deno-lint-ignore no-explicit-any
-  const result: Record<string, any> = {};
-  for (const t of existingTools) {
-    result[t.name] = {
-      description: t.description,
-      inputSchema: t.schema,
-      execute: (input: unknown) => t.execute(input, undefined),
-    };
-  }
-  return result;
 }
 
 export function runHmlsAgent(options: RunAgentOptions) {
