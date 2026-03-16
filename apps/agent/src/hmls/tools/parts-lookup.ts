@@ -33,9 +33,9 @@ let sessionUserAgent = USER_AGENTS[0];
 // Lock to prevent concurrent session initialization races in Deno Deploy
 let sessionInitLock: Promise<string> | null = null;
 
-async function ensureSession(): Promise<string> {
+function ensureSession(): Promise<string> {
   if (sessionToken && Date.now() - sessionTokenAt < SESSION_TTL) {
-    return sessionToken;
+    return Promise.resolve(sessionToken);
   }
 
   // Coalesce concurrent callers onto a single refresh
