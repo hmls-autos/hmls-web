@@ -3,7 +3,8 @@
 import { useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
-  type DynamicToolUIPart,
+  getToolOrDynamicToolName,
+  isToolOrDynamicToolUIPart,
   lastAssistantMessageIsCompleteWithToolCalls,
   type UIMessage,
 } from "ai";
@@ -16,6 +17,24 @@ import {
   useState,
 } from "react";
 import { AGENT_URL } from "@/lib/config";
+
+export interface FixoEstimateData {
+  success: true;
+  estimateId?: number;
+  vehicle: string;
+  shareToken?: string;
+  items: Array<{
+    name: string;
+    description: string;
+    unitPrice: number;
+    quantity: number;
+    category: string;
+  }>;
+  subtotal: number;
+  priceRange: string;
+  expiresAt?: string;
+  note?: string;
+}
 
 export interface Message {
   id: string;
@@ -38,16 +57,16 @@ function getTextContent(msg: UIMessage): string {
     .join("");
 }
 
-/** Extract dynamic tool parts from a UIMessage. */
-function getToolParts(msg: UIMessage): DynamicToolUIPart[] {
-  return msg.parts.filter(
-    (p): p is DynamicToolUIPart => p.type === "dynamic-tool",
-  );
+/** Extract all tool parts (static and dynamic) from a UIMessage. */
+function getToolParts(msg: UIMessage) {
+  return msg.parts.filter(isToolOrDynamicToolUIPart);
 }
 
 export function useAgentChat(options: UseAgentChatOptions = {}) {
   const { scrollRef, inputRef, accessToken } = options;
   const [currentTool, setCurrentTool] = useState<string | null>(null);
+  const [pendingEstimate, setPendingEstimate] =
+    useState<FixoEstimateData | null>(null);
   const imageUrlMapRef = useRef<Map<string, string>>(new Map());
   // Tracks imageUrls by message index for new messages whose IDs aren't
   // known until after AI SDK v6 assigns them internally.
@@ -104,21 +123,32 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
 
   const isLoading = status === "submitted" || status === "streaming";
 
-  // Track active tool calls from streaming messages
+  // Track active tool calls and detect create_fixo_estimate output
   useEffect(() => {
+    let latestEstimate: FixoEstimateData | null = null;
+
     for (const msg of chatMessages) {
       if (msg.role !== "assistant") continue;
       for (const part of getToolParts(msg)) {
+        const toolName = getToolOrDynamicToolName(part);
         if (
           part.state === "input-available" ||
           part.state === "input-streaming"
         ) {
-          setCurrentTool(part.toolName);
+          setCurrentTool(toolName);
         } else if (part.state === "output-available") {
           setCurrentTool(null);
+          if (
+            toolName === "create_fixo_estimate" &&
+            (part.output as Record<string, unknown>)?.success === true
+          ) {
+            latestEstimate = part.output as FixoEstimateData;
+          }
         }
       }
     }
+
+    setPendingEstimate(latestEstimate);
   }, [chatMessages]);
 
   // Scroll on new messages
@@ -184,6 +214,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     isLoading,
     error,
     currentTool,
+    pendingEstimate,
     sendMessage,
     clearMessages,
     clearError,

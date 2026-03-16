@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { FixoEstimateCard } from "@/components/chat/FixoEstimateCard";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ToolIndicator } from "@/components/chat/ToolIndicator";
 import { AudioRecorder } from "@/components/media/AudioRecorder";
@@ -42,12 +43,19 @@ export default function ChatPage() {
   const [showObdInput, setShowObdInput] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
 
-  const { messages, isLoading, sendMessage, currentTool, error, clearError } =
-    useAgentChat({
-      scrollRef,
-      inputRef,
-      accessToken: session?.access_token,
-    });
+  const {
+    messages,
+    isLoading,
+    sendMessage,
+    currentTool,
+    pendingEstimate,
+    error,
+    clearError,
+  } = useAgentChat({
+    scrollRef,
+    inputRef,
+    accessToken: session?.access_token,
+  });
 
   const { handleAudioSend, handlePhotoCapture, handleFilePick } =
     useMediaUpload({
@@ -134,6 +142,11 @@ export default function ChatPage() {
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
+        {pendingEstimate && (
+          <div className="px-1">
+            <FixoEstimateCard data={pendingEstimate} />
+          </div>
+        )}
         {currentTool && <ToolIndicator tool={currentTool} />}
         {error && !isUpgradeError && (
           <div className="text-center text-sm text-red-500 py-2">{error}</div>
