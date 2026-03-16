@@ -1,13 +1,11 @@
 "use client";
 
 import {
-  Calendar,
-  FileText,
+  ClipboardList,
   LayoutDashboard,
   LogIn,
   LogOut,
   Menu,
-  Receipt,
   User,
   Users,
   X,
@@ -29,18 +27,14 @@ const adminLink = { href: "/admin", label: "Admin" };
 
 const portalSubNav = [
   { href: "/portal", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/portal/bookings", label: "Bookings", icon: Calendar },
-  { href: "/portal/estimates", label: "Estimates", icon: FileText },
-  { href: "/portal/quotes", label: "Quotes", icon: Receipt },
+  { href: "/portal/orders", label: "My Orders", icon: ClipboardList },
   { href: "/portal/profile", label: "Profile", icon: User },
 ];
 
 const adminSubNav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/orders", label: "Orders", icon: ClipboardList },
   { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/bookings", label: "Bookings", icon: Calendar },
-  { href: "/admin/estimates", label: "Estimates", icon: FileText },
-  { href: "/admin/quotes", label: "Quotes", icon: Receipt },
 ];
 
 export default function MobileNav({
