@@ -1,14 +1,16 @@
-import Link from "next/link";
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { AnimateInView } from "@/components/ui/animate-in-view";
+import { Button } from "@/components/ui/button";
 
 export function PricingSection() {
   return (
     <section className="py-20 bg-muted/30 border-y border-border/40">
       <div className="max-w-3xl mx-auto px-6">
         <AnimateInView className="text-center mb-12">
-          <p className="text-sm font-mono text-primary mb-2 tracking-wide">PRICING</p>
+          <p className="text-sm font-mono text-primary mb-2 tracking-wide">
+            PRICING
+          </p>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
             One shop visit or a year of Plus.
           </h2>
@@ -22,12 +24,17 @@ export function PricingSection() {
               <span className="text-4xl font-bold">$0</span>
             </div>
             <ul className="space-y-2 mb-7">
-              {["3 text diagnoses/month", "1 vehicle", "Basic AI analysis"].map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <Check className="size-3.5 text-primary mt-0.5 shrink-0" />
-                  <span>{f}</span>
-                </li>
-              ))}
+              {["3 text diagnoses/month", "1 vehicle", "Basic AI analysis"].map(
+                (f) => (
+                  <li
+                    key={f}
+                    className="flex items-start gap-2 text-sm text-muted-foreground"
+                  >
+                    <Check className="size-3.5 text-primary mt-0.5 shrink-0" />
+                    <span>{f}</span>
+                  </li>
+                ),
+              )}
             </ul>
             <Link href="/login">
               <Button variant="outline" className="w-full">
@@ -56,7 +63,10 @@ export function PricingSection() {
                 "Unlimited vehicles",
                 "Full history",
               ].map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
+                <li
+                  key={f}
+                  className="flex items-start gap-2 text-sm text-muted-foreground"
+                >
                   <Check className="size-3.5 text-primary mt-0.5 shrink-0" />
                   <span>{f}</span>
                 </li>

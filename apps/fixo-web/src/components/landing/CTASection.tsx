@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { AnimateInView } from "@/components/ui/animate-in-view";
+import { Button } from "@/components/ui/button";
 
 export function CTASection() {
   return (
@@ -11,9 +11,7 @@ export function CTASection() {
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
             Your car is talking.
           </h2>
-          <p className="text-muted-foreground text-lg mb-8">
-            Fixo translates.
-          </p>
+          <p className="text-muted-foreground text-lg mb-8">Fixo translates.</p>
           <Link href="/login">
             <Button size="lg" className="h-12 px-8 text-[15px]">
               Start your first diagnosis

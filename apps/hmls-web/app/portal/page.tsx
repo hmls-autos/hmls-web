@@ -161,11 +161,11 @@ export default function PortalDashboard() {
         </div>
       ) : (
         <div className="bg-surface border border-border rounded-xl divide-y divide-border">
-          {activity.map((item, i) => {
+          {activity.map((item) => {
             const Icon = typeIcons[item.type];
             return (
               <Link
-                key={`${item.type}-${i}`}
+                key={item.href}
                 href={item.href}
                 className="flex items-center gap-4 px-4 py-3 hover:bg-surface-alt transition-colors first:rounded-t-xl last:rounded-b-xl"
               >

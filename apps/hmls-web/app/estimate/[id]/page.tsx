@@ -213,8 +213,8 @@ export default function EstimateReviewPage() {
           </div>
         </div>
         <div className="divide-y divide-border">
-          {items.map((item, i) => (
-            <div key={`${item.name}-${i}`} className="px-4 py-3">
+          {items.map((item) => (
+            <div key={item.name} className="px-4 py-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-text">{item.name}</p>

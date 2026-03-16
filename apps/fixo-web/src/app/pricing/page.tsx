@@ -82,20 +82,17 @@ export default function PricingPage() {
     }
 
     try {
-      const res = await fetch(
-        `${AGENT_URL}/billing/checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            successUrl: `${window.location.origin}/chat?upgraded=true`,
-            cancelUrl: `${window.location.origin}/pricing`,
-          }),
+      const res = await fetch(`${AGENT_URL}/billing/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
-      );
+        body: JSON.stringify({
+          successUrl: `${window.location.origin}/chat?upgraded=true`,
+          cancelUrl: `${window.location.origin}/pricing`,
+        }),
+      });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
@@ -109,7 +106,9 @@ export default function PricingPage() {
     <div className="min-h-dvh bg-background p-6">
       <div className="max-w-2xl mx-auto pt-12">
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-400 fill-mode-both">
-          <h1 className="text-3xl font-bold text-center mb-2">Simple Pricing</h1>
+          <h1 className="text-3xl font-bold text-center mb-2">
+            Simple Pricing
+          </h1>
           <p className="text-text-secondary text-center mb-8">
             Try free, upgrade when you need more
           </p>

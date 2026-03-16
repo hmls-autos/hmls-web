@@ -1,6 +1,12 @@
 "use client";
 
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
+import {
+  DefaultChatTransport,
+  type DynamicToolUIPart,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  type UIMessage,
+} from "ai";
 import {
   type RefObject,
   useCallback,
@@ -29,6 +35,21 @@ interface UseAgentChatOptions {
   accessToken?: string | null;
 }
 
+/** Extract concatenated text from a UIMessage's parts. */
+function getTextContent(msg: UIMessage): string {
+  return msg.parts
+    .filter((p): p is { type: "text"; text: string } => p.type === "text")
+    .map((p) => p.text)
+    .join("");
+}
+
+/** Extract dynamic tool parts from a UIMessage. */
+function getToolParts(msg: UIMessage): DynamicToolUIPart[] {
+  return msg.parts.filter(
+    (p): p is DynamicToolUIPart => p.type === "dynamic-tool",
+  );
+}
+
 export function useAgentChat(options: UseAgentChatOptions = {}) {
   const { scrollRef, inputRef, accessToken } = options;
   const [pendingQuestion, setPendingQuestion] = useState<QuestionData | null>(
@@ -49,24 +70,34 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     inputRef?.current?.focus();
   }, [inputRef]);
 
-  const headers = useMemo(() => {
+  // Keep headers ref in sync so transport always has fresh token
+  const headersRef = useRef<Record<string, string>>({});
+  useEffect(() => {
     const h: Record<string, string> = {};
     if (accessToken) {
       h.Authorization = `Bearer ${accessToken}`;
     }
-    return h;
+    headersRef.current = h;
   }, [accessToken]);
+
+  // Create transport once, using a ref-based header resolver
+  const transportRef = useRef<DefaultChatTransport<UIMessage> | null>(null);
+  if (!transportRef.current) {
+    transportRef.current = new DefaultChatTransport<UIMessage>({
+      api: `${AGENT_URL}/task`,
+      headers: () => headersRef.current,
+    });
+  }
 
   const {
     messages: chatMessages,
-    isLoading,
+    status,
     error: chatError,
-    append,
+    sendMessage: chatSendMessage,
     setMessages: setChatMessages,
   } = useChat({
-    api: `${AGENT_URL}/task`,
-    headers,
-    maxSteps: 10,
+    transport: transportRef.current,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onFinish: () => {
       setCurrentTool(null);
       focusInput();
@@ -76,6 +107,8 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       setCurrentTool(null);
     },
   });
+
+  const isLoading = status === "submitted" || status === "streaming";
 
   // Clear processed invocations when messages are reset externally
   useEffect(() => {
@@ -89,31 +122,39 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     const processed = processedInvocationsRef.current;
 
     for (const msg of chatMessages) {
-      if (msg.role !== "assistant" || !msg.toolInvocations) continue;
+      if (msg.role !== "assistant") continue;
+      const toolParts = getToolParts(msg);
 
-      for (const inv of msg.toolInvocations) {
+      for (const part of toolParts) {
         // Track active tool calls
-        if (inv.state === "call" || inv.state === "partial-call") {
-          setCurrentTool(inv.toolName);
+        if (
+          part.state === "input-available" ||
+          part.state === "input-streaming"
+        ) {
+          setCurrentTool(part.toolName);
         }
 
         // Detect ask_user_question tool calls
         if (
-          inv.toolName === "ask_user_question" &&
-          (inv.state === "call" || inv.state === "result") &&
-          !processed.has(`question-${inv.toolCallId}`)
+          part.toolName === "ask_user_question" &&
+          (part.state === "input-available" ||
+            part.state === "output-available") &&
+          !processed.has(`question-${part.toolCallId}`)
         ) {
-          processed.add(`question-${inv.toolCallId}`);
-          setPendingQuestion(inv.args as QuestionData);
+          processed.add(`question-${part.toolCallId}`);
+          setPendingQuestion(part.input as QuestionData);
         }
 
         // Detect tool results
-        if (inv.state === "result" && !processed.has(inv.toolCallId)) {
-          processed.add(inv.toolCallId);
+        if (
+          part.state === "output-available" &&
+          !processed.has(part.toolCallId)
+        ) {
+          processed.add(part.toolCallId);
           setCurrentTool(null);
 
-          if (inv.toolName === "get_availability" && inv.result) {
-            setPendingSlotPicker(inv.result as SlotPickerData);
+          if (part.toolName === "get_availability" && part.output) {
+            setPendingSlotPicker(part.output as SlotPickerData);
           }
         }
       }
@@ -134,42 +175,46 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
 
     for (const msg of chatMessages) {
       if (msg.role === "user") {
-        result.push({ id: msg.id, role: "user", content: msg.content });
+        result.push({
+          id: msg.id,
+          role: "user",
+          content: getTextContent(msg),
+        });
       } else if (msg.role === "assistant") {
         // Add the text content (may be empty during tool-only steps)
-        if (msg.content) {
-          result.push({ id: msg.id, role: "assistant", content: msg.content });
+        const text = getTextContent(msg);
+        if (text) {
+          result.push({ id: msg.id, role: "assistant", content: text });
         }
 
-        // Check tool invocations for card data
-        if (msg.toolInvocations) {
-          for (const inv of msg.toolInvocations) {
-            if (inv.state !== "result") continue;
+        // Check tool parts for card data
+        const toolParts = getToolParts(msg);
+        for (const part of toolParts) {
+          if (part.state !== "output-available") continue;
 
-            if (
-              inv.toolName === "create_booking" &&
-              inv.result?.success !== undefined
-            ) {
-              result.push({
-                id: `${msg.id}-booking-${inv.toolCallId}`,
-                role: "booking-confirmation",
-                content: "",
-                bookingData: inv.result as BookingConfirmationData,
-              });
-            }
+          if (
+            part.toolName === "create_booking" &&
+            (part.output as Record<string, unknown>)?.success !== undefined
+          ) {
+            result.push({
+              id: `${msg.id}-booking-${part.toolCallId}`,
+              role: "booking-confirmation",
+              content: "",
+              bookingData: part.output as BookingConfirmationData,
+            });
+          }
 
-            if (
-              inv.toolName === "create_estimate" &&
-              inv.result?.success &&
-              inv.result?.items
-            ) {
-              result.push({
-                id: `${msg.id}-estimate-${inv.toolCallId}`,
-                role: "estimate-card",
-                content: "",
-                estimateData: inv.result as EstimateCardData,
-              });
-            }
+          if (
+            part.toolName === "create_estimate" &&
+            (part.output as Record<string, unknown>)?.success &&
+            (part.output as Record<string, unknown>)?.items
+          ) {
+            result.push({
+              id: `${msg.id}-estimate-${part.toolCallId}`,
+              role: "estimate-card",
+              content: "",
+              estimateData: part.output as EstimateCardData,
+            });
           }
         }
       }
@@ -184,9 +229,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     (content: string) => {
       setPendingQuestion(null);
       setPendingSlotPicker(null);
-      append({ role: "user", content });
+      chatSendMessage({ text: content });
     },
-    [append],
+    [chatSendMessage],
   );
 
   const answerQuestion = useCallback(

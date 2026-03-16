@@ -46,11 +46,8 @@ export function EstimateCard({ data }: EstimateCardProps) {
 
       {/* Line items */}
       <div className="px-4 py-3 space-y-1.5">
-        {data.items.map((item, i) => (
-          <div
-            key={`${item.name}-${i}`}
-            className="flex justify-between text-sm"
-          >
+        {data.items.map((item) => (
+          <div key={item.name} className="flex justify-between text-sm">
             <div className="flex-1 min-w-0">
               <span className="text-text">{item.name}</span>
               {item.description && (

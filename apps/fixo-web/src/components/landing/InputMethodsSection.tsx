@@ -1,18 +1,18 @@
-import { Camera, Mic, Plug, MessageSquare } from "lucide-react";
+import { Camera, MessageSquare, Mic, Plug } from "lucide-react";
 import { AnimateInView } from "@/components/ui/animate-in-view";
 
 const inputMethods = [
   {
     icon: Camera,
     label: "Photo",
-    example: "\"What's this puddle under my car?\"",
+    example: '"What\'s this puddle under my car?"',
     color: "group-hover:text-blue-400",
     bg: "group-hover:bg-blue-500/10",
   },
   {
     icon: Mic,
     label: "Audio",
-    example: "\"It clicks when I turn right\"",
+    example: '"It clicks when I turn right"',
     color: "group-hover:text-violet-400",
     bg: "group-hover:bg-violet-500/10",
   },
@@ -26,7 +26,7 @@ const inputMethods = [
   {
     icon: MessageSquare,
     label: "Text",
-    example: "\"Shakes over 60mph, worse after rain\"",
+    example: '"Shakes over 60mph, worse after rain"',
     color: "group-hover:text-emerald-400",
     bg: "group-hover:bg-emerald-500/10",
   },
@@ -37,7 +37,9 @@ export function InputMethodsSection() {
     <section id="how" className="py-20 border-t border-border/40">
       <div className="max-w-5xl mx-auto px-6">
         <AnimateInView className="mb-12" margin="-80px">
-          <p className="text-sm font-mono text-primary mb-2 tracking-wide">INPUT</p>
+          <p className="text-sm font-mono text-primary mb-2 tracking-wide">
+            INPUT
+          </p>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
             Four ways to describe the problem.
           </h2>
@@ -51,8 +53,12 @@ export function InputMethodsSection() {
               delay={i * 80}
             >
               <div className="flex items-start gap-4">
-                <div className={`size-10 rounded-lg bg-muted flex items-center justify-center transition-colors ${method.bg}`}>
-                  <method.icon className={`size-5 text-muted-foreground transition-colors ${method.color}`} />
+                <div
+                  className={`size-10 rounded-lg bg-muted flex items-center justify-center transition-colors ${method.bg}`}
+                >
+                  <method.icon
+                    className={`size-5 text-muted-foreground transition-colors ${method.color}`}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-sm mb-1">{method.label}</h3>

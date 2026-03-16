@@ -1,13 +1,13 @@
 "use client";
 
-import { NavBar } from "@/components/landing/NavBar";
+import { AudienceSection } from "@/components/landing/AudienceSection";
+import { CTASection } from "@/components/landing/CTASection";
+import { DiagnosisSection } from "@/components/landing/DiagnosisSection";
+import { Footer } from "@/components/landing/Footer";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { InputMethodsSection } from "@/components/landing/InputMethodsSection";
-import { DiagnosisSection } from "@/components/landing/DiagnosisSection";
-import { AudienceSection } from "@/components/landing/AudienceSection";
+import { NavBar } from "@/components/landing/NavBar";
 import { PricingSection } from "@/components/landing/PricingSection";
-import { CTASection } from "@/components/landing/CTASection";
-import { Footer } from "@/components/landing/Footer";
 
 export default function LandingPage() {
   return (

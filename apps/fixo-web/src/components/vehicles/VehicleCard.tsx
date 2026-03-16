@@ -25,8 +25,7 @@ export function VehicleCard({ vehicle: v, onDelete }: VehicleCardProps) {
         </div>
         <div>
           <p className="font-medium">
-            {v.nickname ||
-              `${v.year ?? ""} ${v.make} ${v.model}`.trim()}
+            {v.nickname || `${v.year ?? ""} ${v.make} ${v.model}`.trim()}
           </p>
           {v.nickname && (
             <p className="text-sm text-text-secondary">

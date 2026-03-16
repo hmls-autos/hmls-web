@@ -1,7 +1,20 @@
 "use client";
 
-import { useChat } from "ai/react";
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import {
+  DefaultChatTransport,
+  type DynamicToolUIPart,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  type UIMessage,
+} from "ai";
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AGENT_URL } from "@/lib/config";
 
 export interface Message {
@@ -17,6 +30,21 @@ interface UseAgentChatOptions {
   accessToken?: string | null;
 }
 
+/** Extract concatenated text from a UIMessage's parts. */
+function getTextContent(msg: UIMessage): string {
+  return msg.parts
+    .filter((p): p is { type: "text"; text: string } => p.type === "text")
+    .map((p) => p.text)
+    .join("");
+}
+
+/** Extract dynamic tool parts from a UIMessage. */
+function getToolParts(msg: UIMessage): DynamicToolUIPart[] {
+  return msg.parts.filter(
+    (p): p is DynamicToolUIPart => p.type === "dynamic-tool",
+  );
+}
+
 export function useAgentChat(options: UseAgentChatOptions = {}) {
   const { scrollRef, inputRef, accessToken } = options;
   const [currentTool, setCurrentTool] = useState<string | null>(null);
@@ -30,24 +58,34 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     inputRef?.current?.focus();
   }, [inputRef]);
 
-  const headers = useMemo(() => {
+  // Keep headers ref in sync so transport always has fresh token
+  const headersRef = useRef<Record<string, string>>({});
+  useEffect(() => {
     const h: Record<string, string> = {};
     if (accessToken) {
       h.Authorization = `Bearer ${accessToken}`;
     }
-    return h;
+    headersRef.current = h;
   }, [accessToken]);
+
+  // Create transport once, using a ref-based header resolver
+  const transportRef = useRef<DefaultChatTransport<UIMessage> | null>(null);
+  if (!transportRef.current) {
+    transportRef.current = new DefaultChatTransport<UIMessage>({
+      api: `${AGENT_URL}/task`,
+      headers: () => headersRef.current,
+    });
+  }
 
   const {
     messages: chatMessages,
-    isLoading,
+    status,
     error: chatError,
-    append,
+    sendMessage: chatSendMessage,
     setMessages: setChatMessages,
   } = useChat({
-    api: `${AGENT_URL}/task`,
-    headers,
-    maxSteps: 10,
+    transport: transportRef.current,
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onFinish: () => {
       setCurrentTool(null);
       focusInput();
@@ -58,14 +96,19 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     },
   });
 
+  const isLoading = status === "submitted" || status === "streaming";
+
   // Track active tool calls from streaming messages
   useEffect(() => {
     for (const msg of chatMessages) {
-      if (msg.role !== "assistant" || !msg.toolInvocations) continue;
-      for (const inv of msg.toolInvocations) {
-        if (inv.state === "call" || inv.state === "partial-call") {
-          setCurrentTool(inv.toolName);
-        } else if (inv.state === "result") {
+      if (msg.role !== "assistant") continue;
+      for (const part of getToolParts(msg)) {
+        if (
+          part.state === "input-available" ||
+          part.state === "input-streaming"
+        ) {
+          setCurrentTool(part.toolName);
+        } else if (part.state === "output-available") {
           setCurrentTool(null);
         }
       }
@@ -81,11 +124,11 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const messages: Message[] = useMemo(() => {
     return chatMessages
       .filter((msg) => msg.role === "user" || msg.role === "assistant")
-      .filter((msg) => msg.content) // skip empty tool-only steps
+      .filter((msg) => getTextContent(msg)) // skip empty tool-only steps
       .map((msg) => ({
         id: msg.id,
         role: msg.role as "user" | "assistant",
-        content: msg.content,
+        content: getTextContent(msg),
         imageUrl: imageUrlMapRef.current.get(msg.id),
       }));
   }, [chatMessages]);
@@ -98,9 +141,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       if (options?.imageUrl) {
         imageUrlMapRef.current.set(id, options.imageUrl);
       }
-      append({ role: "user", content, id });
+      chatSendMessage({ text: content, messageId: id });
     },
-    [append],
+    [chatSendMessage],
   );
 
   const clearMessages = useCallback(() => {

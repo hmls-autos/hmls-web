@@ -1,4 +1,4 @@
-import { useCallback, type MutableRefObject } from "react";
+import { type MutableRefObject, useCallback } from "react";
 
 import { AGENT_URL } from "@/lib/config";
 

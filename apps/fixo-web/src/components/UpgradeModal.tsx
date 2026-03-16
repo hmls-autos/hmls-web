@@ -16,20 +16,17 @@ export function UpgradeModal({ message, onClose }: UpgradeModalProps) {
     if (!session) return;
 
     try {
-      const res = await fetch(
-        `${AGENT_URL}/billing/checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            successUrl: `${window.location.origin}/chat?upgraded=true`,
-            cancelUrl: `${window.location.origin}/chat`,
-          }),
+      const res = await fetch(`${AGENT_URL}/billing/checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
         },
-      );
+        body: JSON.stringify({
+          successUrl: `${window.location.origin}/chat?upgraded=true`,
+          cancelUrl: `${window.location.origin}/chat`,
+        }),
+      });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;

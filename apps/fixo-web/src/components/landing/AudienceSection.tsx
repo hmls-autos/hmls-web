@@ -1,4 +1,4 @@
-import { Car, Wrench, Check } from "lucide-react";
+import { Car, Check, Wrench } from "lucide-react";
 import { AnimateInView } from "@/components/ui/animate-in-view";
 
 export function AudienceSection() {
@@ -17,7 +17,9 @@ export function AudienceSection() {
               </div>
               <div>
                 <h3 className="font-bold">Car Owners</h3>
-                <p className="text-xs text-muted-foreground">Stop overpaying for answers</p>
+                <p className="text-xs text-muted-foreground">
+                  Stop overpaying for answers
+                </p>
               </div>
             </div>
             <ul className="space-y-2.5">
@@ -46,7 +48,9 @@ export function AudienceSection() {
               </div>
               <div>
                 <h3 className="font-bold">Mechanics & Shops</h3>
-                <p className="text-xs text-muted-foreground">A second opinion that&apos;s instant</p>
+                <p className="text-xs text-muted-foreground">
+                  A second opinion that&apos;s instant
+                </p>
               </div>
             </div>
             <ul className="space-y-2.5">

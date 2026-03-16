@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Wrench } from "lucide-react";
+import Link from "next/link";
 
 export function Footer() {
   return (
@@ -12,14 +12,23 @@ export function Footer() {
           Fixo<span className="text-primary">.</span>
         </div>
         <div className="flex gap-6">
-          <Link href="/pricing" className="hover:text-foreground transition-colors">
+          <Link
+            href="/pricing"
+            className="hover:text-foreground transition-colors"
+          >
             Pricing
           </Link>
-          <Link href="/login" className="hover:text-foreground transition-colors">
+          <Link
+            href="/login"
+            className="hover:text-foreground transition-colors"
+          >
             Sign In
           </Link>
         </div>
-        <p>&copy; {new Date().getFullYear()} Fixo<span className="text-primary">.</span></p>
+        <p>
+          &copy; {new Date().getFullYear()} Fixo
+          <span className="text-primary">.</span>
+        </p>
       </div>
     </footer>
   );

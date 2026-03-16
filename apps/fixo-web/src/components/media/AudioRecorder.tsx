@@ -44,8 +44,14 @@ function Waveform({ data }: { data: Uint8Array | null }) {
 }
 
 export function AudioRecorder({ onSend, onClose }: AudioRecorderProps) {
-  const { isRecording, isProcessing, duration, analyserData, startRecording, stopRecording } =
-    useAudioRecorder();
+  const {
+    isRecording,
+    isProcessing,
+    duration,
+    analyserData,
+    startRecording,
+    stopRecording,
+  } = useAudioRecorder();
   const [recording, setRecording] = useState<AudioRecording | null>(null);
   const [error, setError] = useState<string | null>(null);
 

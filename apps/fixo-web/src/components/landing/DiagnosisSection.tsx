@@ -1,9 +1,15 @@
-import { AlertTriangle, Wrench, Car } from "lucide-react";
+import { AlertTriangle, Car, Wrench } from "lucide-react";
 import { AnimateInView } from "@/components/ui/animate-in-view";
 
 /* ── Animated severity gauge ── */
 function SeverityGauge({ level }: { level: number }) {
-  const colors = ["bg-emerald-500", "bg-emerald-500", "bg-yellow-500", "bg-amber-500", "bg-red-500"];
+  const colors = [
+    "bg-emerald-500",
+    "bg-emerald-500",
+    "bg-yellow-500",
+    "bg-amber-500",
+    "bg-red-500",
+  ];
   return (
     <div className="flex gap-1 items-end h-5">
       {[0, 1, 2, 3, 4].map((i) => (
@@ -52,12 +58,15 @@ export function DiagnosisSection() {
     <section className="py-20 bg-muted/30 border-y border-border/40">
       <div className="max-w-5xl mx-auto px-6">
         <AnimateInView className="mb-12" margin="-80px">
-          <p className="text-sm font-mono text-primary mb-2 tracking-wide">OUTPUT</p>
+          <p className="text-sm font-mono text-primary mb-2 tracking-wide">
+            OUTPUT
+          </p>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
             Not a guess. A diagnosis.
           </h2>
           <p className="text-muted-foreground max-w-lg">
-            Severity rating, cost estimate, and what to tell your mechanic — in seconds.
+            Severity rating, cost estimate, and what to tell your mechanic — in
+            seconds.
           </p>
         </AnimateInView>
 

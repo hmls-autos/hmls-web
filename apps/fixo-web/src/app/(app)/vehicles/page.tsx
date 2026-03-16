@@ -45,7 +45,12 @@ export default function VehiclesPage() {
     fetchVehicles();
   }, [fetchVehicles]);
 
-  const handleAdd = async (formData: { year: string; make: string; model: string; nickname: string }) => {
+  const handleAdd = async (formData: {
+    year: string;
+    make: string;
+    model: string;
+    nickname: string;
+  }) => {
     if (!session?.access_token || !formData.make || !formData.model) return;
     setError(null);
 

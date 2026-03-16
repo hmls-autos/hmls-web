@@ -6,10 +6,19 @@ import { useState } from "react";
 interface AddVehicleModalProps {
   error: string | null;
   onClose: () => void;
-  onAdd: (data: { year: string; make: string; model: string; nickname: string }) => void;
+  onAdd: (data: {
+    year: string;
+    make: string;
+    model: string;
+    nickname: string;
+  }) => void;
 }
 
-export function AddVehicleModal({ error, onClose, onAdd }: AddVehicleModalProps) {
+export function AddVehicleModal({
+  error,
+  onClose,
+  onAdd,
+}: AddVehicleModalProps) {
   const [formData, setFormData] = useState({
     year: "",
     make: "",
@@ -39,18 +48,14 @@ export function AddVehicleModal({ error, onClose, onAdd }: AddVehicleModalProps)
             type="number"
             placeholder="Year (optional)"
             value={formData.year}
-            onChange={(e) =>
-              setFormData({ ...formData, year: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, year: e.target.value })}
             className="w-full bg-surface-alt border border-border rounded-xl px-4 py-2.5 text-sm text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
           <input
             type="text"
             placeholder="Make (e.g. Toyota)"
             value={formData.make}
-            onChange={(e) =>
-              setFormData({ ...formData, make: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, make: e.target.value })}
             className="w-full bg-surface-alt border border-border rounded-xl px-4 py-2.5 text-sm text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
           <input

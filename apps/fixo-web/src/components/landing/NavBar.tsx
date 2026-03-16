@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { Wrench } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export function NavBar() {
@@ -12,7 +12,9 @@ export function NavBar() {
           <div className="size-7 rounded-lg bg-primary flex items-center justify-center">
             <Wrench className="size-3.5 text-primary-foreground" />
           </div>
-          <span className="text-base font-bold tracking-tight">Fixo<span className="text-primary">.</span></span>
+          <span className="text-base font-bold tracking-tight">
+            Fixo<span className="text-primary">.</span>
+          </span>
         </Link>
         <div className="flex items-center gap-1">
           <Link href="/pricing">
@@ -26,9 +28,7 @@ export function NavBar() {
             </Button>
           </Link>
           <Link href="/login">
-            <Button size="sm">
-              Get Started
-            </Button>
+            <Button size="sm">Get Started</Button>
           </Link>
         </div>
       </div>

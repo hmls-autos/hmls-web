@@ -1,18 +1,31 @@
 "use client";
 
+import { ArrowRight, Wrench } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /* ── Animated OBD code rain ── */
 function CodeRain() {
   const codes = [
-    "P0420", "P0171", "P0300", "P0442", "P0128", "B1234",
-    "C0035", "U0100", "P0455", "P0401", "P0116", "P0340",
+    "P0420",
+    "P0171",
+    "P0300",
+    "P0442",
+    "P0128",
+    "B1234",
+    "C0035",
+    "U0100",
+    "P0455",
+    "P0401",
+    "P0116",
+    "P0340",
   ];
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden>
+    <div
+      className="absolute inset-0 overflow-hidden pointer-events-none select-none"
+      aria-hidden
+    >
       {codes.map((code, i) => (
         <span
           key={code}
@@ -32,13 +45,55 @@ function CodeRain() {
 
 /* ── Inspection Sheet (mechanic inspection report) ── */
 const inspectionItems = [
-  { system: "Brakes", item: "Front Brake Pads", status: "fail" as const, note: "Worn past minimum — 1mm remaining", cost: "$150 – $300" },
-  { system: "Brakes", item: "Rear Brake Pads", status: "warn" as const, note: "~30% life remaining", cost: null },
-  { system: "Brakes", item: "Rotors", status: "warn" as const, note: "Light scoring, monitor", cost: null },
-  { system: "Engine", item: "Oil Level & Condition", status: "pass" as const, note: null, cost: null },
-  { system: "Engine", item: "Coolant System", status: "pass" as const, note: null, cost: null },
-  { system: "Suspension", item: "Front Struts", status: "warn" as const, note: "Minor leak detected on driver side", cost: "$400 – $700" },
-  { system: "Tires", item: "Tread Depth", status: "pass" as const, note: "6/32\" — good", cost: null },
+  {
+    system: "Brakes",
+    item: "Front Brake Pads",
+    status: "fail" as const,
+    note: "Worn past minimum — 1mm remaining",
+    cost: "$150 – $300",
+  },
+  {
+    system: "Brakes",
+    item: "Rear Brake Pads",
+    status: "warn" as const,
+    note: "~30% life remaining",
+    cost: null,
+  },
+  {
+    system: "Brakes",
+    item: "Rotors",
+    status: "warn" as const,
+    note: "Light scoring, monitor",
+    cost: null,
+  },
+  {
+    system: "Engine",
+    item: "Oil Level & Condition",
+    status: "pass" as const,
+    note: null,
+    cost: null,
+  },
+  {
+    system: "Engine",
+    item: "Coolant System",
+    status: "pass" as const,
+    note: null,
+    cost: null,
+  },
+  {
+    system: "Suspension",
+    item: "Front Struts",
+    status: "warn" as const,
+    note: "Minor leak detected on driver side",
+    cost: "$400 – $700",
+  },
+  {
+    system: "Tires",
+    item: "Tread Depth",
+    status: "pass" as const,
+    note: '6/32" — good',
+    cost: null,
+  },
 ];
 
 function InspectionSheet() {
@@ -75,7 +130,9 @@ function InspectionSheet() {
               <div className="size-6 rounded bg-primary flex items-center justify-center">
                 <Wrench className="size-3 text-primary-foreground" />
               </div>
-              <span className="text-sm font-bold">Fixo<span className="text-primary">.</span> Inspection Report</span>
+              <span className="text-sm font-bold">
+                Fixo<span className="text-primary">.</span> Inspection Report
+              </span>
             </div>
             <span className="text-[11px] font-mono text-muted-foreground">
               #FX-2026-0847
@@ -106,11 +163,15 @@ function InspectionSheet() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{item.item}</span>
                   {item.cost && (
-                    <span className="text-[11px] font-mono text-muted-foreground">{item.cost}</span>
+                    <span className="text-[11px] font-mono text-muted-foreground">
+                      {item.cost}
+                    </span>
                   )}
                 </div>
                 {item.note && (
-                  <p className="text-[12px] text-muted-foreground mt-0.5">{item.note}</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">
+                    {item.note}
+                  </p>
                 )}
               </div>
             </div>
@@ -126,7 +187,9 @@ function InspectionSheet() {
             <span className="text-amber-500">{warnCount} WARN</span>
             <span className="text-emerald-500">{passCount} PASS</span>
           </div>
-          <span className="text-[11px] font-mono text-primary">Est. Total: $550 – $1,000</span>
+          <span className="text-[11px] font-mono text-primary">
+            Est. Total: $550 – $1,000
+          </span>
         </div>
       </div>
     </div>
@@ -162,7 +225,11 @@ export function HeroSection() {
               </Button>
             </Link>
             <Link href="#how">
-              <Button variant="outline" size="lg" className="h-12 px-6 text-[15px]">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 px-6 text-[15px]"
+              >
                 How it works
               </Button>
             </Link>

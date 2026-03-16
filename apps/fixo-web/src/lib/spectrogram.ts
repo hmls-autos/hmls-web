@@ -77,7 +77,11 @@ function heatmapColor(v: number): [number, number, number] {
   }
   if (v < 0.5) {
     const t = (v - 0.25) / 0.25;
-    return [Math.round(t * 255), Math.round(128 + t * 127), Math.round(255 - t * 55)];
+    return [
+      Math.round(t * 255),
+      Math.round(128 + t * 127),
+      Math.round(255 - t * 55),
+    ];
   }
   if (v < 0.75) {
     const t = (v - 0.5) / 0.25;
@@ -114,7 +118,10 @@ export async function generateSpectrogram(
   const numBins = maxBin - minBin;
 
   // Compute spectrogram frames
-  const numFrames = Math.max(1, Math.floor((samples.length - fftSize) / hopSize) + 1);
+  const numFrames = Math.max(
+    1,
+    Math.floor((samples.length - fftSize) / hopSize) + 1,
+  );
   const magnitudes: Float64Array[] = [];
 
   let globalMax = 0;
@@ -124,7 +131,8 @@ export async function generateSpectrogram(
     const im = new Float64Array(fftSize);
 
     for (let i = 0; i < fftSize; i++) {
-      re[i] = (offset + i < samples.length ? samples[offset + i] : 0) * window[i];
+      re[i] =
+        (offset + i < samples.length ? samples[offset + i] : 0) * window[i];
     }
 
     fft(re, im, fftSize);
@@ -144,7 +152,10 @@ export async function generateSpectrogram(
   const globalMin = globalMax - 80; // 80 dB dynamic range
   for (const mag of magnitudes) {
     for (let b = 0; b < numBins; b++) {
-      mag[b] = Math.max(0, Math.min(1, (mag[b] - globalMin) / (globalMax - globalMin)));
+      mag[b] = Math.max(
+        0,
+        Math.min(1, (mag[b] - globalMin) / (globalMax - globalMin)),
+      );
     }
   }
 
@@ -174,7 +185,10 @@ export async function generateSpectrogram(
     const mag = magnitudes[frame];
     for (let y = 0; y < spectHeight; y++) {
       // Flip Y: low freq at bottom
-      const bin = Math.min(Math.floor(((spectHeight - 1 - y) / spectHeight) * numBins), numBins - 1);
+      const bin = Math.min(
+        Math.floor(((spectHeight - 1 - y) / spectHeight) * numBins),
+        numBins - 1,
+      );
       const val = mag[bin];
       const [r, g, b] = heatmapColor(val);
       const idx = (y * spectWidth + x) * 4;
@@ -197,7 +211,11 @@ export async function generateSpectrogram(
     if (freq < minFreq || freq > maxFreq) continue;
     const ratio = (freq - minFreq) / (maxFreq - minFreq);
     const y = 10 + spectHeight - Math.round(ratio * spectHeight);
-    ctx.fillText(`${freq >= 1000 ? `${freq / 1000}k` : freq} Hz`, labelLeft - 4, y + 4);
+    ctx.fillText(
+      `${freq >= 1000 ? `${freq / 1000}k` : freq} Hz`,
+      labelLeft - 4,
+      y + 4,
+    );
     // Grid line
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
     ctx.beginPath();

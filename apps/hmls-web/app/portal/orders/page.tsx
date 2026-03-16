@@ -80,9 +80,9 @@ function OrderCard({
             History
           </p>
           <div className="space-y-1">
-            {order.statusHistory.map((entry, i) => (
+            {order.statusHistory.map((entry) => (
               <div
-                key={`${entry.status}-${i}`}
+                key={`${entry.status}-${entry.timestamp}`}
                 className="flex items-center gap-2 text-xs text-text-secondary"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-text-secondary shrink-0" />
