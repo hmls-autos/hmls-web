@@ -10,7 +10,8 @@
     "drizzle-orm/postgres-js": "npm:drizzle-orm@^0.45.1/postgres-js",
     "drizzle-orm/pg-core": "npm:drizzle-orm@^0.45.1/pg-core",
     "postgres": "npm:postgres@^3.4.8",
-    "@db/sqlite": "jsr:@db/sqlite@^0.13.0"
+    "@db/sqlite": "jsr:@db/sqlite@^0.13.0",
+    "@logtape/logtape": "jsr:@logtape/logtape@^0.9"
   },
   "fmt": {
     "indentWidth": 2,

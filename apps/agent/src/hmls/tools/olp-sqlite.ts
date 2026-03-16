@@ -1,4 +1,7 @@
 import { Database } from "@db/sqlite";
+import { getLogger } from "@logtape/logtape";
+
+const logger = getLogger(["hmls", "agent", "olp-sqlite"]);
 
 const OLP_DB_PATH = "/tmp/olp-labor-times.db";
 const R2_URL = Deno.env.get("OLP_SQLITE_URL") ?? "";
@@ -47,8 +50,9 @@ async function _initDb(): Promise<Database> {
 
   let lastError: Error | undefined;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    const downloadStart = Date.now();
     try {
-      console.log(`Downloading OLP SQLite database from R2 (attempt ${attempt}/${MAX_RETRIES})...`);
+      logger.info("Downloading OLP SQLite database from R2", { attempt, maxRetries: MAX_RETRIES, url: R2_URL });
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
 
@@ -63,19 +67,26 @@ async function _initDb(): Promise<Database> {
 
       const data = new Uint8Array(await res.arrayBuffer());
       await Deno.writeFile(OLP_DB_PATH, data);
-      console.log(`OLP database downloaded (${(data.length / 1024 / 1024).toFixed(1)} MB)`);
+      const durationMs = Date.now() - downloadStart;
+      const sizeBytes = data.length;
+      logger.info("OLP database downloaded", { attempt, url: R2_URL, sizeBytes, durationMs });
 
       _db = new Database(OLP_DB_PATH, { readonly: true });
       return _db;
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e));
       const isTimeout = lastError.name === "AbortError";
-      console.error(
-        `OLP download attempt ${attempt} failed${isTimeout ? " (timeout)" : ""}: ${lastError.message}`,
-      );
+      const durationMs = Date.now() - downloadStart;
+      logger.error("OLP download attempt failed", {
+        attempt,
+        url: R2_URL,
+        durationMs,
+        timeout: isTimeout,
+        error: lastError.message,
+      });
       if (attempt < MAX_RETRIES) {
         const delay = 1000 * attempt;
-        console.log(`Retrying in ${delay}ms...`);
+        logger.info("Retrying OLP download", { attempt, delayMs: delay });
         await new Promise((r) => setTimeout(r, delay));
         // Remove partial file before retry
         try { await Deno.remove(OLP_DB_PATH); } catch { /* ignore */ }

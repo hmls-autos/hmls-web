@@ -1,5 +1,6 @@
 import { hasToolCall, type ModelMessage, stepCountIs, streamText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { getLogger } from "@logtape/logtape";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
 import { schedulingTools } from "./tools/scheduling.ts";
 import { createStripeTools } from "./tools/stripe.ts";
@@ -8,6 +9,8 @@ import { askUserQuestionTools } from "./tools/ask-user-question.ts";
 import { laborLookupTools } from "./tools/labor-lookup.ts";
 import { partsLookupTools } from "./tools/parts-lookup.ts";
 import { formatUserContext, type UserContext } from "../types/user-context.ts";
+
+const logger = getLogger(["hmls", "agent", "hmls"]);
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
@@ -50,7 +53,6 @@ function convertTools(existingTools: LegacyTool[]): Record<string, any> {
 export function runHmlsAgent(options: RunAgentOptions) {
   const { messages, config, userContext } = options;
   const modelId = config.agentModel || DEFAULT_MODEL;
-  console.log(`[agent] Running HMLS agent with model: ${modelId}`);
 
   const google = createGoogleGenerativeAI({ apiKey: config.googleApiKey });
 
@@ -68,6 +70,8 @@ export function runHmlsAgent(options: RunAgentOptions) {
   ];
 
   const tools = convertTools(allTools);
+  const toolCount = Object.keys(tools).length;
+  logger.info("Initializing HMLS agent", { model: modelId, toolCount });
 
   return streamText({
     model: google(modelId),
@@ -75,5 +79,20 @@ export function runHmlsAgent(options: RunAgentOptions) {
     messages,
     tools,
     stopWhen: [stepCountIs(10), hasToolCall("ask_user_question")],
+    onStepFinish: (step) => {
+      const toolCalls = step.toolCalls ?? [];
+      if (toolCalls.length > 0) {
+        logger.debug("Step tool calls", {
+          toolNames: toolCalls.map((t) => t.toolName),
+        });
+      }
+      if (step.finishReason && step.finishReason !== "tool-calls") {
+        logger.info("Agent step finished", {
+          finishReason: step.finishReason,
+          inputTokens: step.usage?.inputTokens,
+          outputTokens: step.usage?.outputTokens,
+        });
+      }
+    },
   });
 }

@@ -3,6 +3,9 @@ import { convertToModelMessages } from "ai";
 import { runFixoAgent } from "@hmls/agent";
 import { checkFreeTierLimit } from "../../middleware/fixo/tier.ts";
 import type { AuthContext } from "../../middleware/fixo/auth.ts";
+import { getGatewayLogger } from "../../logger.ts";
+
+const logger = getGatewayLogger("fixo-chat");
 
 type Variables = { auth: AuthContext };
 
@@ -14,7 +17,10 @@ chat.post("/", async (c) => {
 
   // Validate that the user has an active subscription/tier before running the agent
   const tierBlock = await checkFreeTierLimit(auth, "text");
-  if (tierBlock) return tierBlock;
+  if (tierBlock) {
+    logger.warn("Tier limit reached", { userId: auth.userId });
+    return tierBlock;
+  }
 
   let body;
   try {
@@ -34,16 +40,29 @@ chat.post("/", async (c) => {
     );
   }
 
-  console.log(`[fixo-agent] messages=${messages.length}`);
+  const startTime = Date.now();
+  const userId = auth.userId;
+  const messageCount = messages.length;
+  logger.info("Request received", { userId, messageCount });
 
   try {
     const modelMessages = await convertToModelMessages(messages);
 
     const result = runFixoAgent({ messages: modelMessages });
 
-    return result.toUIMessageStreamResponse();
+    const response = result.toUIMessageStreamResponse();
+    const duration = Date.now() - startTime;
+    logger.info("Request finished", { userId, messageCount, duration });
+    return response;
   } catch (error) {
-    console.error(`[fixo-agent] Agent error:`, error);
+    const duration = Date.now() - startTime;
+    logger.error("Agent failed", {
+      userId,
+      messageCount,
+      duration,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return c.json(
       {
         error: error instanceof Error ? error.message : String(error),

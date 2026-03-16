@@ -1,5 +1,9 @@
 import { createHmlsApp } from "./hmls-app.ts";
 import { createFixoApp } from "./fixo-app.ts";
+import { getGatewayLogger, setupLogging } from "./logger.ts";
+
+await setupLogging();
+const serverLogger = getGatewayLogger("server");
 
 // ── Fail fast on required env vars ──
 const DATABASE_URL = Deno.env.get("DATABASE_URL");
@@ -22,7 +26,7 @@ for (
   ]
 ) {
   if (!Deno.env.get(key)) {
-    console.warn(`[config] Optional env var ${key} is not set`);
+    serverLogger.warn(`Optional env var {key} is not set`, { key });
   }
 }
 
@@ -53,10 +57,10 @@ function handler(request: Request): Response | Promise<Response> {
 const isDenoDeploy = Deno.env.get("DENO_DEPLOYMENT_ID") !== undefined;
 if (isDenoDeploy) {
   Deno.serve(handler);
-  console.log(`[server] HMLS API running on Deno Deploy`);
+  serverLogger.info("HMLS API running on Deno Deploy");
 } else {
   const port = Number(Deno.env.get("HTTP_PORT")) || 8080;
   Deno.serve({ port }, handler);
-  console.log(`[server] HMLS API running on http://localhost:${port}`);
-  console.log(`[server] Fixo API available at http://fixo.localhost:${port}`);
+  serverLogger.info(`HMLS API running on http://localhost:{port}`, { port });
+  serverLogger.info(`Fixo API available at http://fixo.localhost:{port}`, { port });
 }

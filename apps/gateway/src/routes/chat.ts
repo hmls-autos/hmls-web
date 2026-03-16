@@ -5,6 +5,9 @@ import { type AgentConfig, runHmlsAgent, type UserContext } from "@hmls/agent";
 import { db, schema } from "@hmls/agent/db";
 import { Errors } from "@hmls/shared/errors";
 import { optionalAuth, type OptionalAuthEnv } from "../middleware/auth.ts";
+import { getGatewayLogger } from "../logger.ts";
+
+const logger = getGatewayLogger("chat");
 
 let _config: AgentConfig;
 
@@ -78,9 +81,10 @@ chat.post("/", optionalAuth, async (c) => {
     userContext = await resolveCustomer({ email: authUser.email });
   }
 
-  console.log(
-    `[agent] messages=${messages.length}, user=${userContext?.id ?? "anonymous"}`,
-  );
+  const startTime = Date.now();
+  const userId = userContext?.id ?? "anonymous";
+  const messageCount = messages.length;
+  logger.info("Request received", { userId, messageCount });
 
   try {
     const modelMessages = await convertToModelMessages(messages);
@@ -91,9 +95,19 @@ chat.post("/", optionalAuth, async (c) => {
       userContext,
     });
 
-    return result.toUIMessageStreamResponse();
+    const response = result.toUIMessageStreamResponse();
+    const duration = Date.now() - startTime;
+    logger.info("Request finished", { userId, messageCount, duration });
+    return response;
   } catch (error) {
-    console.error(`[agent] Agent error:`, error);
+    const duration = Date.now() - startTime;
+    logger.error("Agent failed", {
+      userId,
+      messageCount,
+      duration,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return c.json(
       {
         error: {
