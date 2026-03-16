@@ -85,9 +85,10 @@ const transitionOrderStatusTool = {
     if (!allowed.includes(params.newStatus)) {
       return toolResult({
         success: false,
-        error: `Cannot transition from '${order.status}' to '${params.newStatus}'. Allowed transitions: ${
-          allowed.join(", ") || "none (terminal state)"
-        }`,
+        error:
+          `Cannot transition from '${order.status}' to '${params.newStatus}'. Allowed transitions: ${
+            allowed.join(", ") || "none (terminal state)"
+          }`,
       });
     }
 
@@ -142,8 +143,7 @@ const transitionOrderStatusTool = {
 
 const addOrderNoteTool = {
   name: "add_order_note",
-  description:
-    "Add an internal note to an order's audit log. Use this to record context, " +
+  description: "Add an internal note to an order's audit log. Use this to record context, " +
     "customer communications, or follow-up actions that aren't status changes.",
   schema: z.object({
     orderId: z.string().describe("The order ID (numeric string or number)"),
@@ -196,8 +196,7 @@ const addOrderNoteTool = {
 
 const getOrderStatusTool = {
   name: "get_order_status",
-  description:
-    "Look up an order's current status, line item summary, and next expected step. " +
+  description: "Look up an order's current status, line item summary, and next expected step. " +
     "Can search by order ID, customer email, or customer phone number.",
   schema: z.object({
     orderId: z

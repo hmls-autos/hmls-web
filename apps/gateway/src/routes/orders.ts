@@ -457,7 +457,12 @@ orders.post("/:id/capture", async (c) => {
   const body = await c.req.json<{ finalAmountCents: number }>();
   if (!body.finalAmountCents || body.finalAmountCents <= 0) {
     return c.json(
-      { error: { code: "BAD_REQUEST", message: "finalAmountCents is required and must be positive" } },
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "finalAmountCents is required and must be positive",
+        },
+      },
       400,
     );
   }
