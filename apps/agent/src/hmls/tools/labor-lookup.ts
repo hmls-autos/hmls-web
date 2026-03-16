@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { toolResult } from "@hmls/shared/tool-result";
-import { findVehicles, getCategoryBreakdown, getOlpDb, searchLaborTimes } from "./olp-sqlite.ts";
+import { findVehicles, getCategoryBreakdown, searchLaborTimes } from "./olp-client.ts";
 
 /**
  * Lookup labor times from OLP (Open Labor Project) reference data.
@@ -40,14 +40,12 @@ export const lookupLaborTimeTool = {
     },
     _ctx: unknown,
   ) => {
-    const db = await getOlpDb();
-
     // 1. Find matching vehicles (make + model + year in range)
-    let vehicles = findVehicles(db, params.make, params.model, params.year);
+    let vehicles = await findVehicles(params.make, params.model, params.year);
 
     if (vehicles.length === 0) {
       // Try fuzzy make + model match
-      vehicles = findVehicles(db, params.make, params.model, params.year, true);
+      vehicles = await findVehicles(params.make, params.model, params.year, true);
 
       if (vehicles.length === 0) {
         return toolResult({
@@ -67,8 +65,7 @@ export const lookupLaborTimeTool = {
       .split(/\s+/)
       .filter((w) => w.length > 1);
 
-    let laborTimes = searchLaborTimes(
-      db,
+    let laborTimes = await searchLaborTimes(
       vehicleIds,
       serviceWords,
       params.category,
@@ -76,8 +73,7 @@ export const lookupLaborTimeTool = {
 
     if (laborTimes.length === 0 && serviceWords.length > 1) {
       // Fallback: try matching ANY word (OR instead of AND)
-      laborTimes = searchLaborTimes(
-        db,
+      laborTimes = await searchLaborTimes(
         vehicleIds,
         serviceWords,
         params.category,
@@ -152,13 +148,11 @@ export const listOlpCategoriesTool = {
     params: { year: number; make: string; model: string },
     _ctx: unknown,
   ) => {
-    const db = await getOlpDb();
-
     // Find matching vehicles
-    let vehicles = findVehicles(db, params.make, params.model, params.year);
+    let vehicles = await findVehicles(params.make, params.model, params.year);
 
     if (vehicles.length === 0) {
-      vehicles = findVehicles(db, params.make, params.model, params.year, true);
+      vehicles = await findVehicles(params.make, params.model, params.year, true);
 
       if (vehicles.length === 0) {
         return toolResult({
@@ -172,7 +166,7 @@ export const listOlpCategoriesTool = {
     const vehicleIds = vehicles.map((v) => v.id);
 
     // Get category breakdown
-    const categories = getCategoryBreakdown(db, vehicleIds);
+    const categories = await getCategoryBreakdown(vehicleIds);
 
     return toolResult({
       found: true,

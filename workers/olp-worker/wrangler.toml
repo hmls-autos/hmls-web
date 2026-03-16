@@ -1,0 +1,16 @@
+name = "olp-worker"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "OLP_DB"
+database_name = "olp-labor-times"
+database_id = "0c3d7692-69bc-497c-867b-bdb8ef86a021"
+
+[vars]
+WORKER_SECRET = ""
+
+[[routes]]
+pattern = "olp.data.hmls.autos/*"
+zone_name = "hmls.autos"
