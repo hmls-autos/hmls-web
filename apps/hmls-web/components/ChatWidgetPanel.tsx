@@ -182,7 +182,7 @@ export default function ChatWidgetPanel({
           })}
 
         {/* Question card */}
-        {isAuthenticated && pendingQuestion && (
+        {pendingQuestion && (
           <QuestionCard
             data={pendingQuestion}
             onSelect={answerQuestion}
@@ -191,7 +191,7 @@ export default function ChatWidgetPanel({
         )}
 
         {/* Slot picker */}
-        {isAuthenticated && pendingSlotPicker && (
+        {pendingSlotPicker && (
           <SlotPicker
             data={pendingSlotPicker}
             onSelect={selectSlot}
@@ -200,7 +200,7 @@ export default function ChatWidgetPanel({
         )}
 
         {/* Tool indicator */}
-        {isAuthenticated && currentTool && (
+        {currentTool && (
           <div className="flex justify-start">
             <div className="bg-surface border border-border px-3 py-2 rounded-xl flex items-center gap-2">
               <Loader2 className="w-4 h-4 text-red-primary animate-spin" />
