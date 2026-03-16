@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   description:
     "AI-powered vehicle diagnostics. Describe your car problem, snap a photo, or enter OBD codes for instant expert analysis.",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -52,6 +52,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("font-sans", geist.variable)}
     >
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#000000" />
+      </head>
       <body
         className={`${inter.variable} font-sans antialiased bg-background text-text min-h-dvh`}
       >
