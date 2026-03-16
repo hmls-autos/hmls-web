@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-export PATH="$HOME/.bun/bin:$HOME/.local/bin:$PATH"
+export PATH="$HOME/.deno/bin:$HOME/.bun/bin:$HOME/.local/bin:$PATH"
 
 STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
 

@@ -1,4 +1,4 @@
-import { type ModelMessage, stepCountIs, streamText } from "ai";
+import { hasToolCall, type ModelMessage, stepCountIs, streamText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { getLogger } from "@logtape/logtape";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
@@ -7,6 +7,10 @@ import { analyzeAudioNoiseTool } from "./tools/analyzeAudioNoise.ts";
 import { extractVideoFramesTool } from "./tools/extractVideoFrames.ts";
 import { lookupObdCodeTool } from "./tools/lookupObdCode.ts";
 import { getMediaTool, saveMediaTool } from "./tools/storage.ts";
+import { laborLookupTools } from "../hmls/tools/labor-lookup.ts";
+import { partsLookupTools } from "../hmls/tools/parts-lookup.ts";
+import { askUserQuestionTools } from "../hmls/tools/ask-user-question.ts";
+import { estimateTools } from "../hmls/skills/estimate/tools.ts";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
@@ -56,6 +60,10 @@ export function runFixoAgent(options: RunFixoAgentOptions) {
     lookupObdCodeTool,
     saveMediaTool,
     getMediaTool,
+    ...askUserQuestionTools,
+    ...laborLookupTools,
+    ...partsLookupTools,
+    ...estimateTools,
   ];
 
   const tools = convertTools(allTools);
@@ -67,7 +75,7 @@ export function runFixoAgent(options: RunFixoAgentOptions) {
     system: SYSTEM_PROMPT,
     messages: options.messages,
     tools,
-    stopWhen: stepCountIs(10),
+    stopWhen: [stepCountIs(10), hasToolCall("ask_user_question")],
     onStepFinish: (step) => {
       const toolCalls = step.toolCalls ?? [];
       if (toolCalls.length > 0) {
