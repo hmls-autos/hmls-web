@@ -8,6 +8,7 @@ import { estimateTools } from "./skills/estimate/tools.ts";
 import { askUserQuestionTools } from "./tools/ask-user-question.ts";
 import { laborLookupTools } from "./tools/labor-lookup.ts";
 import { partsLookupTools } from "./tools/parts-lookup.ts";
+import { orderOpsTools } from "./tools/order-ops.ts";
 import { formatUserContext, type UserContext } from "../types/user-context.ts";
 
 const logger = getLogger(["hmls", "agent", "hmls"]);
@@ -67,6 +68,7 @@ export function runHmlsAgent(options: RunAgentOptions) {
     ...schedulingTools,
     ...laborLookupTools,
     ...partsLookupTools,
+    ...orderOpsTools,
   ];
 
   const tools = convertTools(allTools);
