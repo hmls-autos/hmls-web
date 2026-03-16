@@ -3,7 +3,6 @@
 import { useChat } from "@ai-sdk/react";
 import {
   DefaultChatTransport,
-  type DynamicToolUIPart,
   getToolOrDynamicToolName,
   isToolOrDynamicToolUIPart,
   lastAssistantMessageIsCompleteWithToolCalls,
@@ -45,11 +44,9 @@ function getTextContent(msg: UIMessage): string {
     .join("");
 }
 
-/** Extract dynamic tool parts from a UIMessage. */
-function getToolParts(msg: UIMessage): DynamicToolUIPart[] {
-  return msg.parts.filter(
-    (p): p is DynamicToolUIPart => p.type === "dynamic-tool",
-  );
+/** Extract all tool parts (static and dynamic) from a UIMessage. */
+function getToolParts(msg: UIMessage) {
+  return msg.parts.filter(isToolOrDynamicToolUIPart);
 }
 
 /**
@@ -154,17 +151,19 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       const toolParts = getToolParts(msg);
 
       for (const part of toolParts) {
+        const toolName = getToolOrDynamicToolName(part);
+
         // Track active tool calls
         if (
           part.state === "input-available" ||
           part.state === "input-streaming"
         ) {
-          setCurrentTool(part.toolName);
+          setCurrentTool(toolName);
         }
 
         // Detect ask_user_question tool calls
         if (
-          part.toolName === "ask_user_question" &&
+          toolName === "ask_user_question" &&
           (part.state === "input-available" ||
             part.state === "output-available") &&
           !processed.has(`question-${part.toolCallId}`)
@@ -181,7 +180,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           processed.add(`result-${part.toolCallId}`);
           setCurrentTool(null);
 
-          if (part.toolName === "get_availability" && part.output) {
+          if (toolName === "get_availability" && part.output) {
             setPendingSlotPicker(part.output as SlotPickerData);
           }
         }
@@ -219,9 +218,10 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         const toolParts = getToolParts(msg);
         for (const part of toolParts) {
           if (part.state !== "output-available") continue;
+          const toolName = getToolOrDynamicToolName(part);
 
           if (
-            part.toolName === "create_booking" &&
+            toolName === "create_booking" &&
             (part.output as Record<string, unknown>)?.success !== undefined
           ) {
             result.push({
@@ -233,7 +233,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           }
 
           if (
-            part.toolName === "create_estimate" &&
+            toolName === "create_estimate" &&
             (part.output as Record<string, unknown>)?.success &&
             (part.output as Record<string, unknown>)?.items
           ) {
