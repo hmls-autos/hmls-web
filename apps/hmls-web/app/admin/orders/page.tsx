@@ -1,9 +1,12 @@
 "use client";
 
 import {
+  Calendar,
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  ExternalLink,
+  MapPin,
   Pencil,
   Plus,
   Save,
@@ -16,7 +19,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { type AdminOrder, useAdminOrders } from "@/hooks/useAdmin";
 import { authFetch } from "@/lib/fetcher";
-import { formatDateTime } from "@/lib/format";
+import { formatCents, formatDate, formatDateTime } from "@/lib/format";
 import {
   EDITABLE_STATUSES,
   ORDER_STATUS,
@@ -65,9 +68,15 @@ const TRANSITION_LABELS: Record<string, string> = {
 
 const DANGER_ACTIONS = new Set(["cancelled", "void", "declined"]);
 
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
+/* Status groupings for contextual panels */
+const ESTIMATE_STATUSES = new Set(["draft", "estimated", "revised"]);
+const QUOTE_STATUSES = new Set(["sent", "approved", "invoiced"]);
+const BOOKING_STATUSES = new Set([
+  "paid",
+  "scheduled",
+  "in_progress",
+  "completed",
+]);
 
 /* ── Customer Editor ────────────────────────────────────────────────── */
 
@@ -294,6 +303,125 @@ function ItemEditor({
   );
 }
 
+/* ── Estimate Panel ─────────────────────────────────────────────────── */
+
+function EstimatePanel({ order }: { order: AdminOrder }) {
+  const vehicle = order.vehicleInfo;
+  return (
+    <div className="rounded-lg border border-border bg-surface-alt p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-text uppercase tracking-wide">
+          Estimate
+        </span>
+        {order.shareToken && (
+          <a
+            href={`/api/orders/${order.id}/pdf?token=${order.shareToken}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-text-secondary hover:text-text"
+            title="View PDF"
+          >
+            <ExternalLink className="w-3 h-3" /> PDF
+          </a>
+        )}
+      </div>
+      {vehicle && (
+        <p className="text-xs text-text-secondary">
+          {[vehicle.year, vehicle.make, vehicle.model]
+            .filter(Boolean)
+            .join(" ")}
+        </p>
+      )}
+      {(order.priceRangeLowCents != null ||
+        order.priceRangeHighCents != null) && (
+        <p className="text-xs text-text">
+          Range:{" "}
+          <span className="font-medium">
+            {order.priceRangeLowCents != null
+              ? formatCents(order.priceRangeLowCents)
+              : "—"}
+            {" – "}
+            {order.priceRangeHighCents != null
+              ? formatCents(order.priceRangeHighCents)
+              : "—"}
+          </span>
+        </p>
+      )}
+      {order.expiresAt && (
+        <p className="text-xs text-text-secondary">
+          Expires {formatDate(order.expiresAt)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ── Quote Panel ────────────────────────────────────────────────────── */
+
+function QuotePanel({ order }: { order: AdminOrder }) {
+  return (
+    <div className="rounded-lg border border-border bg-surface-alt p-3 space-y-2">
+      <span className="text-xs font-semibold text-text uppercase tracking-wide block">
+        Quote
+      </span>
+      <p className="text-xs text-text">
+        Total:{" "}
+        <span className="font-semibold">
+          {formatCents(order.subtotalCents ?? 0)}
+        </span>
+      </p>
+      {order.stripeQuoteId && (
+        <p className="text-xs text-text-secondary">
+          Stripe Quote: <span className="font-mono">{order.stripeQuoteId}</span>
+        </p>
+      )}
+      {order.stripeInvoiceId && (
+        <p className="text-xs text-text-secondary">
+          Invoice: <span className="font-mono">{order.stripeInvoiceId}</span>
+        </p>
+      )}
+      {order.quoteId && (
+        <p className="text-xs text-text-secondary">
+          Quote ID: #{order.quoteId}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ── Booking Panel ──────────────────────────────────────────────────── */
+
+function BookingPanel({ order }: { order: AdminOrder }) {
+  const vehicle = order.vehicleInfo;
+  return (
+    <div className="rounded-lg border border-border bg-surface-alt p-3 space-y-2">
+      <span className="text-xs font-semibold text-text uppercase tracking-wide block">
+        Booking
+      </span>
+      {vehicle && (
+        <p className="flex items-center gap-1.5 text-xs text-text-secondary">
+          <MapPin className="w-3 h-3" />
+          {[vehicle.year, vehicle.make, vehicle.model]
+            .filter(Boolean)
+            .join(" ")}
+        </p>
+      )}
+      {order.bookingId && (
+        <p className="flex items-center gap-1.5 text-xs text-text-secondary">
+          <Calendar className="w-3 h-3" />
+          Booking #{order.bookingId}
+        </p>
+      )}
+      {order.adminNotes && (
+        <p className="text-xs text-text-secondary border-t border-border pt-2">
+          <span className="font-medium text-text">Admin notes:</span>{" "}
+          {order.adminNotes}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ── Order Card ─────────────────────────────────────────────────────── */
 
 function OrderCard({
@@ -326,6 +454,10 @@ function OrderCard({
   const vehicleStr = vehicle
     ? [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ")
     : null;
+
+  const showEstimatePanel = ESTIMATE_STATUSES.has(order.status);
+  const showQuotePanel = QUOTE_STATUSES.has(order.status);
+  const showBookingPanel = BOOKING_STATUSES.has(order.status);
 
   return (
     <div className="bg-surface border border-border rounded-xl p-4 hover:border-border-hover transition-colors">
@@ -401,6 +533,13 @@ function OrderCard({
               }}
             />
           )}
+
+          {/* Status-contextual panel */}
+          {showEstimatePanel && editMode !== "items" && (
+            <EstimatePanel order={order} />
+          )}
+          {showQuotePanel && <QuotePanel order={order} />}
+          {showBookingPanel && <BookingPanel order={order} />}
 
           {/* Items list */}
           {editMode !== "items" && items.length > 0 && (
