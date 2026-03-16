@@ -36,10 +36,6 @@ export const ORDER_STATUS: Record<string, StatusConfig> = {
     color:
       "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
   },
-  estimated: {
-    label: "Estimated",
-    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  },
   sent: {
     label: "Sent",
     color:
@@ -49,6 +45,11 @@ export const ORDER_STATUS: Record<string, StatusConfig> = {
     label: "Approved",
     color:
       "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  },
+  preauth: {
+    label: "Card on File",
+    color:
+      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
   },
   declined: {
     label: "Declined",
@@ -106,14 +107,15 @@ export const PORTAL_ORDER_STATUS: Record<string, StatusConfig> = {
     color:
       "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
   },
-  estimated: {
-    label: "Pending Review",
-    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  },
   sent: {
     label: "Review Required",
     color:
       "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+  },
+  preauth: {
+    label: "Card Authorized",
+    color:
+      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
   },
   revised: {
     label: "Updated Estimate",
@@ -169,19 +171,21 @@ export const QUOTE_STATUS: Record<string, StatusConfig> = {
 };
 
 export const ORDER_TRANSITIONS: Record<string, string[]> = {
-  draft: ["estimated", "cancelled"],
-  estimated: ["sent", "cancelled"],
+  draft: ["sent", "cancelled"],
   sent: ["approved", "declined", "cancelled"],
-  approved: ["invoiced", "cancelled"],
   declined: ["revised"],
   revised: ["sent", "cancelled"],
-  invoiced: ["paid", "void", "cancelled"],
-  paid: ["scheduled", "cancelled"],
+  approved: ["preauth", "cancelled"],
+  preauth: ["scheduled", "cancelled"],
   scheduled: ["in_progress", "cancelled"],
-  in_progress: ["completed", "cancelled"],
+  in_progress: ["invoiced", "cancelled"],
+  invoiced: ["paid", "void"],
+  paid: ["completed"],
   completed: ["archived"],
+  archived: [],
+  cancelled: [],
   void: [],
 };
 
 /** Statuses where order items and notes are editable by admin. */
-export const EDITABLE_STATUSES = ["draft", "estimated", "revised"];
+export const EDITABLE_STATUSES = ["draft", "revised"];

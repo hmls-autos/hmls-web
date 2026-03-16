@@ -52,6 +52,10 @@ export function createWebhookRoute(stripeSecretKey: string) {
           await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
           break;
 
+        case "payment_intent.succeeded":
+          await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+          break;
+
         default:
           console.log(`[webhook] Unhandled event type: ${event.type}`);
       }
@@ -254,6 +258,44 @@ export function createWebhookRoute(stripeSecretKey: string) {
           updatedAt: new Date(),
         })
         .where(eq(schema.orders.id, legacyOrder.id));
+    }
+  }
+
+  async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent) {
+    console.log(`[webhook] PaymentIntent succeeded: ${pi.id}`);
+
+    const [order] = await db
+      .select()
+      .from(schema.orders)
+      .where(eq(schema.orders.stripePaymentIntentId, pi.id))
+      .limit(1);
+
+    if (!order) {
+      console.warn(`[webhook] No order found for PaymentIntent ${pi.id}`);
+      return;
+    }
+
+    if (order.status === "invoiced") {
+      const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+      const [updated] = await db
+        .update(schema.orders)
+        .set({
+          status: "paid",
+          capturedAmountCents: pi.amount_received,
+          statusHistory: [
+            ...history,
+            { status: "paid", timestamp: new Date().toISOString(), actor: "stripe_webhook" },
+          ],
+          updatedAt: new Date(),
+        })
+        .where(and(eq(schema.orders.id, order.id), eq(schema.orders.status, "invoiced")))
+        .returning();
+
+      if (updated) {
+        await logWebhookEvent(order.id, "invoiced", "paid", pi.id);
+        notifyOrderStatusChange(order.id, "paid");
+        console.log(`[webhook] Order ${order.id} → paid (PI: ${pi.id})`);
+      }
     }
   }
 

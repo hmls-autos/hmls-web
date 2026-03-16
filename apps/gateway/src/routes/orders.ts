@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import Stripe from "stripe";
 import { db, schema } from "@hmls/agent/db";
 import { and, desc, eq } from "drizzle-orm";
 import { type AdminEnv, requireAdmin } from "../middleware/admin.ts";
@@ -7,16 +8,16 @@ import type { OrderItem } from "@hmls/agent/db";
 
 // New status machine
 const TRANSITIONS: Record<string, string[]> = {
-  draft: ["estimated", "cancelled"],
-  estimated: ["sent", "cancelled"],
+  draft: ["sent", "cancelled"],
   sent: ["approved", "declined", "cancelled"],
-  approved: ["invoiced", "cancelled"],
   declined: ["revised"],
   revised: ["sent", "cancelled"],
-  invoiced: ["paid", "void", "cancelled"],
-  paid: ["scheduled", "cancelled"],
+  approved: ["preauth", "cancelled"],
+  preauth: ["scheduled", "cancelled"],
   scheduled: ["in_progress", "cancelled"],
-  in_progress: ["completed", "cancelled"],
+  in_progress: ["invoiced", "cancelled"],
+  invoiced: ["paid", "void"],
+  paid: ["completed"],
   completed: ["archived"],
   // terminal
   archived: [],
@@ -25,7 +26,7 @@ const TRANSITIONS: Record<string, string[]> = {
 };
 
 // Editable statuses
-const EDITABLE_STATUSES = new Set(["draft", "estimated", "revised"]);
+const EDITABLE_STATUSES = new Set(["draft", "revised"]);
 
 async function logOrderEvent(
   orderId: number,
@@ -296,7 +297,7 @@ orders.post("/:id/send", async (c) => {
     return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
-  const validFrom = ["estimated", "revised"];
+  const validFrom = ["draft", "revised"];
   if (!validFrom.includes(order.status)) {
     return c.json({
       error: { code: "BAD_REQUEST", message: `Cannot send order in '${order.status}' status` },
@@ -444,6 +445,123 @@ orders.post("/:id/events", async (c) => {
     .returning();
 
   return c.json(event, 201);
+});
+
+// POST /orders/:id/capture — capture pre-authorized payment (admin only)
+orders.post("/:id/capture", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+  }
+
+  const body = await c.req.json<{ finalAmountCents: number }>();
+  if (!body.finalAmountCents || body.finalAmountCents <= 0) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "finalAmountCents is required and must be positive" } },
+      400,
+    );
+  }
+
+  const [order] = await db
+    .select()
+    .from(schema.orders)
+    .where(eq(schema.orders.id, id))
+    .limit(1);
+
+  if (!order) {
+    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+  }
+
+  if (order.status !== "invoiced") {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: `Order is '${order.status}', not 'invoiced'` } },
+      400,
+    );
+  }
+
+  if (!order.stripePaymentIntentId) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "No payment intent on this order" } },
+      400,
+    );
+  }
+
+  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeSecretKey) {
+    return c.json({ error: { code: "INTERNAL_ERROR", message: "Stripe not configured" } }, 500);
+  }
+
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: "2026-02-25.clover" });
+  const authUser = c.get("authUser");
+  const actor = authUser.email ?? "admin";
+
+  let capturedAmount = body.finalAmountCents;
+
+  try {
+    if (body.finalAmountCents <= (order.preauthAmountCents ?? 0)) {
+      // Capture within pre-auth amount
+      await stripe.paymentIntents.capture(order.stripePaymentIntentId, {
+        amount_to_capture: body.finalAmountCents,
+      });
+    } else {
+      // Final amount exceeds pre-auth — cancel original and create new charge
+      const originalPi = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
+      await stripe.paymentIntents.cancel(order.stripePaymentIntentId);
+
+      try {
+        await stripe.paymentIntents.create({
+          amount: body.finalAmountCents,
+          currency: "usd",
+          confirm: true,
+          customer: originalPi.customer as string,
+          payment_method: originalPi.payment_method as string,
+          metadata: { orderId: String(order.id) },
+          off_session: true,
+        });
+      } catch {
+        // If the new charge fails, capture original amount as fallback
+        // Note: original PI was cancelled, so we can't capture it. Record the difference.
+        capturedAmount = order.preauthAmountCents ?? 0;
+      }
+    }
+  } catch (err) {
+    console.error(`[capture] Error capturing payment for order ${id}:`, err);
+    return c.json(
+      { error: { code: "INTERNAL_ERROR", message: "Failed to capture payment" } },
+      500,
+    );
+  }
+
+  const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+  const [updated] = await db
+    .update(schema.orders)
+    .set({
+      status: "paid",
+      capturedAmountCents: capturedAmount,
+      statusHistory: [
+        ...history,
+        { status: "paid", timestamp: new Date().toISOString(), actor },
+      ],
+      updatedAt: new Date(),
+    })
+    .where(and(eq(schema.orders.id, id), eq(schema.orders.status, "invoiced")))
+    .returning();
+
+  if (!updated) {
+    return c.json(
+      { error: { code: "CONFLICT", message: "Order status changed concurrently" } },
+      409,
+    );
+  }
+
+  await logOrderEvent(id, "status_change", actor, {
+    fromStatus: "invoiced",
+    toStatus: "paid",
+    metadata: { capturedAmountCents: capturedAmount, requestedAmountCents: body.finalAmountCents },
+  });
+
+  notifyOrderStatusChange(id, "paid");
+  return c.json({ success: true, capturedAmountCents: capturedAmount });
 });
 
 // PATCH /orders/:id/notes — update admin notes

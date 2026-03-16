@@ -33,11 +33,11 @@ import type { OrderEvent, OrderItem } from "@/lib/types";
 /* ── Constants ────────────────────────────────────────────────────────── */
 
 const TRANSITION_LABELS: Record<string, string> = {
-  estimated: "Finalize",
   sent: "Send",
   approved: "Approve",
   declined: "Decline",
   revised: "Revise",
+  preauth: "Pre-Auth",
   invoiced: "Invoice",
   paid: "Mark Paid",
   void: "Void",
@@ -50,8 +50,8 @@ const TRANSITION_LABELS: Record<string, string> = {
 
 const DANGER_ACTIONS = new Set(["cancelled", "void", "declined"]);
 
-const ESTIMATE_STATUSES = new Set(["draft", "estimated", "revised"]);
-const QUOTE_STATUSES = new Set(["sent", "approved", "invoiced"]);
+const ESTIMATE_STATUSES = new Set(["draft", "revised"]);
+const QUOTE_STATUSES = new Set(["sent", "approved", "preauth", "invoiced"]);
 const BOOKING_STATUSES = new Set([
   "paid",
   "scheduled",
@@ -63,26 +63,24 @@ const BOOKING_STATUSES = new Set([
 
 const MAIN_STEPS = [
   "draft",
-  "estimated",
   "sent",
   "approved",
-  "invoiced",
-  "paid",
+  "preauth",
   "scheduled",
   "in_progress",
-  "completed",
+  "invoiced",
+  "paid",
 ] as const;
 
 const MAIN_STEP_LABELS: Record<string, string> = {
   draft: "Draft",
-  estimated: "Estimated",
   sent: "Sent",
   approved: "Approved",
-  invoiced: "Invoiced",
-  paid: "Paid",
+  preauth: "Card on File",
   scheduled: "Scheduled",
   in_progress: "In Progress",
-  completed: "Completed",
+  invoiced: "Invoiced",
+  paid: "Paid",
 };
 
 const TERMINAL_STATUSES = new Set(["cancelled", "void", "archived"]);
@@ -99,11 +97,10 @@ function getStepState(
 
   // If current status is a branch/terminal, figure out progress from statusHistory context
   if (currentIdx === -1) {
-    // declined sits between estimated and sent
+    // declined/revised sit between sent and approved
     if (currentStatus === "declined" || currentStatus === "revised") {
-      const effectiveIdx = MAIN_STEPS.indexOf("estimated");
-      if (stepIdx < effectiveIdx) return "completed";
-      if (stepIdx === effectiveIdx) return "completed";
+      const effectiveIdx = MAIN_STEPS.indexOf("sent");
+      if (stepIdx <= effectiveIdx) return "completed";
       return "pending";
     }
     // terminal: cancelled/void/archived — mark all up to last main step as completed

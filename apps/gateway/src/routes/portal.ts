@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import Stripe from "stripe";
 import { db, schema } from "@hmls/agent/db";
 import { and, desc, eq } from "drizzle-orm";
 import { Errors } from "@hmls/shared/errors";
@@ -241,6 +242,154 @@ portal.post("/me/orders/:id/decline", async (c) => {
 
   notifyOrderStatusChange(id, "declined");
   return c.json(updated);
+});
+
+// POST /me/orders/:id/preauth — customer authorizes payment (approved → preauth)
+portal.post("/me/orders/:id/preauth", async (c) => {
+  const customerId = c.get("customerId");
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+  }
+
+  const [order] = await db
+    .select()
+    .from(schema.orders)
+    .where(eq(schema.orders.id, id))
+    .limit(1);
+
+  if (!order || order.customerId !== customerId) {
+    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+  }
+
+  if (order.status !== "approved") {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: `Order is '${order.status}', not 'approved'` } },
+      400,
+    );
+  }
+
+  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeSecretKey) {
+    return c.json({ error: { code: "INTERNAL_ERROR", message: "Stripe not configured" } }, 500);
+  }
+
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: "2026-02-25.clover" });
+
+  // Ensure customer has a Stripe customer ID
+  const [customer] = await db
+    .select()
+    .from(schema.customers)
+    .where(eq(schema.customers.id, customerId))
+    .limit(1);
+
+  let stripeCustomerId = customer?.stripeCustomerId;
+  if (!stripeCustomerId) {
+    const stripeCustomer = await stripe.customers.create({
+      email: customer?.email ?? undefined,
+      name: customer?.name ?? undefined,
+      phone: customer?.phone ?? undefined,
+      metadata: { customerId: String(customerId) },
+    });
+    stripeCustomerId = stripeCustomer.id;
+    await db
+      .update(schema.customers)
+      .set({ stripeCustomerId: stripeCustomer.id })
+      .where(eq(schema.customers.id, customerId));
+  }
+
+  const preauthAmountCents = Math.ceil(order.subtotalCents * 1.15);
+
+  const pi = await stripe.paymentIntents.create({
+    amount: preauthAmountCents,
+    currency: "usd",
+    capture_method: "manual",
+    customer: stripeCustomerId,
+    metadata: { orderId: String(order.id) },
+  });
+
+  const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
+  const [updated] = await db
+    .update(schema.orders)
+    .set({
+      stripePaymentIntentId: pi.id,
+      preauthAmountCents,
+      status: "preauth",
+      statusHistory: [
+        ...history,
+        { status: "preauth", timestamp: new Date().toISOString(), actor: "customer" },
+      ],
+      updatedAt: new Date(),
+    })
+    .where(and(eq(schema.orders.id, id), eq(schema.orders.status, "approved")))
+    .returning();
+
+  if (!updated) {
+    return c.json(
+      { error: { code: "CONFLICT", message: "Order status changed concurrently" } },
+      409,
+    );
+  }
+
+  await db.insert(schema.orderEvents).values({
+    orderId: id,
+    eventType: "status_change",
+    fromStatus: "approved",
+    toStatus: "preauth",
+    actor: "customer",
+    metadata: {},
+  });
+
+  notifyOrderStatusChange(id, "preauth");
+  return c.json({ clientSecret: pi.client_secret, preauthAmountCents });
+});
+
+// POST /me/orders/:id/confirm-preauth — verify card was confirmed on frontend
+portal.post("/me/orders/:id/confirm-preauth", async (c) => {
+  const customerId = c.get("customerId");
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+  }
+
+  const [order] = await db
+    .select()
+    .from(schema.orders)
+    .where(eq(schema.orders.id, id))
+    .limit(1);
+
+  if (!order || order.customerId !== customerId) {
+    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+  }
+
+  if (!order.stripePaymentIntentId) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "No payment intent on this order" } },
+      400,
+    );
+  }
+
+  const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+  if (!stripeSecretKey) {
+    return c.json({ error: { code: "INTERNAL_ERROR", message: "Stripe not configured" } }, 500);
+  }
+
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: "2026-02-25.clover" });
+  const pi = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId);
+
+  if (pi.status !== "requires_capture") {
+    return c.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: `PaymentIntent status is '${pi.status}', expected 'requires_capture'`,
+        },
+      },
+      400,
+    );
+  }
+
+  return c.json({ success: true, status: "preauth" });
 });
 
 export { portal };

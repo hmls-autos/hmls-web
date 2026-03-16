@@ -101,6 +101,9 @@ export interface Order {
   revisionNumber: number;
   stripeQuoteId: string | null;
   stripeInvoiceId: string | null;
+  stripePaymentIntentId: string | null;
+  preauthAmountCents: number | null;
+  capturedAmountCents: number | null;
   // Per-order contact snapshot (prefer these over customer record for display)
   contactName: string | null;
   contactEmail: string | null;

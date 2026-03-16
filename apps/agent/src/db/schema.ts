@@ -193,6 +193,9 @@ export const orders = pgTable("orders", {
   revisionNumber: integer("revision_number").notNull().default(1),
   stripeQuoteId: varchar("stripe_quote_id", { length: 255 }),
   stripeInvoiceId: varchar("stripe_invoice_id", { length: 255 }),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
+  preauthAmountCents: integer("preauth_amount_cents"),
+  capturedAmountCents: integer("captured_amount_cents"),
   adminNotes: text("admin_notes"),
   cancellationReason: text("cancellation_reason"),
   // Per-order contact snapshot — edit these instead of mutating the customers record
