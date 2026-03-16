@@ -48,7 +48,7 @@ chat.post("/", async (c) => {
   try {
     const modelMessages = await convertToModelMessages(messages);
 
-    const result = runFixoAgent({ messages: modelMessages });
+    const result = runFixoAgent({ messages: modelMessages, userId });
 
     const response = result.toUIMessageStreamResponse();
     const duration = Date.now() - startTime;

@@ -372,6 +372,35 @@ export const obdCodes = pgTable(
   (table) => [index("idx_fixo_obd_codes_session").on(table.sessionId)],
 );
 
+export const fixoEstimates = pgTable(
+  "fixo_estimates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .references(() => userProfiles.id, { onDelete: "cascade" })
+      .notNull(),
+    sessionId: integer("session_id").references(() => fixoSessions.id, {
+      onDelete: "set null",
+    }),
+    vehicleInfo: jsonb("vehicle_info")
+      .$type<{ year: number; make: string; model: string }>()
+      .notNull(),
+    items: jsonb("items").$type<OrderItem[]>().notNull(),
+    subtotalCents: integer("subtotal_cents").notNull(),
+    priceRangeLowCents: integer("price_range_low_cents").notNull(),
+    priceRangeHighCents: integer("price_range_high_cents").notNull(),
+    shareToken: text("share_token").unique().notNull(),
+    validDays: integer("valid_days").notNull().default(14),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_fixo_estimates_user_id").on(table.userId),
+    index("idx_fixo_estimates_session_id").on(table.sessionId),
+  ],
+);
+
 // Fixo types
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type NewUserProfile = typeof userProfiles.$inferInsert;
@@ -383,3 +412,5 @@ export type FixoMedia = typeof fixoMedia.$inferSelect;
 export type NewFixoMedia = typeof fixoMedia.$inferInsert;
 export type ObdCode = typeof obdCodes.$inferSelect;
 export type NewObdCode = typeof obdCodes.$inferInsert;
+export type FixoEstimate = typeof fixoEstimates.$inferSelect;
+export type NewFixoEstimate = typeof fixoEstimates.$inferInsert;

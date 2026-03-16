@@ -11,7 +11,7 @@ import { convertTools, type LegacyTool } from "../common/convert-tools.ts";
 import { askUserQuestionTools } from "../common/tools/ask-user-question.ts";
 import { laborLookupTools } from "../common/tools/labor-lookup.ts";
 import { partsLookupTools } from "../common/tools/parts-lookup.ts";
-import { estimateTools } from "../common/tools/estimate.ts";
+import { createFixoEstimateTool } from "./tools/fixo-estimate.ts";
 
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
@@ -19,6 +19,7 @@ const logger = getLogger(["hmls", "agent", "fixo"]);
 
 export interface RunFixoAgentOptions {
   messages: ModelMessage[];
+  userId?: string;
 }
 
 export function runFixoAgent(options: RunFixoAgentOptions) {
@@ -40,10 +41,10 @@ export function runFixoAgent(options: RunFixoAgentOptions) {
     ...askUserQuestionTools,
     ...laborLookupTools,
     ...partsLookupTools,
-    ...estimateTools,
+    createFixoEstimateTool,
   ];
 
-  const tools = convertTools(allTools);
+  const tools = convertTools(allTools, { userId: options.userId });
   const toolCount = Object.keys(tools).length;
   logger.info("Initializing Fixo agent", { model: modelId, toolCount });
 
