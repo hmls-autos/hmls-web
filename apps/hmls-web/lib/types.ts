@@ -101,6 +101,11 @@ export interface Order {
   revisionNumber: number;
   stripeQuoteId: string | null;
   stripeInvoiceId: string | null;
+  // Per-order contact snapshot (prefer these over customer record for display)
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  contactAddress: string | null;
   createdAt: string;
   updatedAt: string;
 }

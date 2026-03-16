@@ -56,6 +56,7 @@ orders.get("/", async (c) => {
       customerName: schema.customers.name,
       customerEmail: schema.customers.email,
       customerPhone: schema.customers.phone,
+      customerAddress: schema.customers.address,
     })
     .from(schema.orders)
     .leftJoin(schema.customers, eq(schema.orders.customerId, schema.customers.id))
@@ -74,6 +75,7 @@ orders.get("/", async (c) => {
         name: r.customerName,
         email: r.customerEmail,
         phone: r.customerPhone,
+        address: r.customerAddress,
       },
     })),
   );
@@ -110,7 +112,7 @@ orders.get("/:id", async (c) => {
   return c.json({ order, customer, booking, events });
 });
 
-// PATCH /orders/:id — edit order items/notes (only in editable statuses)
+// PATCH /orders/:id — edit order items/notes (only in editable statuses) or contact snapshot (any status)
 orders.patch("/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
@@ -127,11 +129,37 @@ orders.patch("/:id", async (c) => {
     return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
-  if (!EDITABLE_STATUSES.has(order.status)) {
+  const body = await c.req.json<{
+    items?: OrderItem[];
+    notes?: string | null;
+    vehicleInfo?: Record<string, unknown> | null;
+    validDays?: number;
+    expiresAt?: string | null;
+    // Per-order contact snapshot fields (editable regardless of status)
+    contact_name?: string | null;
+    contact_email?: string | null;
+    contact_phone?: string | null;
+    contact_address?: string | null;
+  }>();
+
+  // Contact snapshot fields can be updated on any order status
+  const hasContactFields = body.contact_name !== undefined ||
+    body.contact_email !== undefined ||
+    body.contact_phone !== undefined ||
+    body.contact_address !== undefined;
+
+  const hasItemFields = body.items !== undefined ||
+    body.notes !== undefined ||
+    body.vehicleInfo !== undefined ||
+    body.validDays !== undefined ||
+    body.expiresAt !== undefined;
+
+  // Item/notes editing is restricted to editable statuses
+  if (hasItemFields && !EDITABLE_STATUSES.has(order.status)) {
     return c.json({
       error: {
         code: "BAD_REQUEST",
-        message: `Cannot edit order in '${order.status}' status. Editable statuses: ${
+        message: `Cannot edit order items in '${order.status}' status. Editable statuses: ${
           [...EDITABLE_STATUSES].join(", ")
         }`,
       },
@@ -139,15 +167,6 @@ orders.patch("/:id", async (c) => {
   }
 
   const currentStatus = order.status;
-
-  const body = await c.req.json<{
-    items?: OrderItem[];
-    notes?: string | null;
-    vehicleInfo?: Record<string, unknown> | null;
-    validDays?: number;
-    expiresAt?: string | null;
-  }>();
-
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
   if (body.items !== undefined) {
@@ -163,21 +182,43 @@ orders.patch("/:id", async (c) => {
   if (body.expiresAt !== undefined) {
     updates.expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
   }
+  if (body.contact_name !== undefined) updates.contactName = body.contact_name;
+  if (body.contact_email !== undefined) updates.contactEmail = body.contact_email;
+  if (body.contact_phone !== undefined) updates.contactPhone = body.contact_phone;
+  if (body.contact_address !== undefined) updates.contactAddress = body.contact_address;
 
-  const [updated] = await db
-    .update(schema.orders)
-    .set(updates)
-    .where(and(eq(schema.orders.id, id), eq(schema.orders.status, currentStatus)))
-    .returning();
+  // For item edits use optimistic concurrency; for contact-only edits skip it
+  let updated: typeof order | undefined;
+  if (hasItemFields) {
+    const [row] = await db
+      .update(schema.orders)
+      .set(updates)
+      .where(and(eq(schema.orders.id, id), eq(schema.orders.status, currentStatus)))
+      .returning();
+    updated = row;
 
-  if (!updated) {
-    return c.json({
-      error: { code: "CONFLICT", message: "Order status changed concurrently — refresh and retry" },
-    }, 409);
+    if (!updated) {
+      return c.json({
+        error: {
+          code: "CONFLICT",
+          message: "Order status changed concurrently — refresh and retry",
+        },
+      }, 409);
+    }
+  } else if (hasContactFields) {
+    const [row] = await db
+      .update(schema.orders)
+      .set(updates)
+      .where(eq(schema.orders.id, id))
+      .returning();
+    updated = row;
+  } else {
+    return c.json({ error: { code: "BAD_REQUEST", message: "No fields to update" } }, 400);
   }
 
   const authUser = c.get("authUser");
-  await logOrderEvent(id, "items_edited", authUser.email ?? "admin");
+  const eventType = hasItemFields ? "items_edited" : "contact_edited";
+  await logOrderEvent(id, eventType, authUser.email ?? "admin");
 
   return c.json(updated);
 });

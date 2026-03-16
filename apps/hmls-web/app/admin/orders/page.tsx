@@ -81,24 +81,38 @@ const BOOKING_STATUSES = new Set([
 /* ── Customer Editor ────────────────────────────────────────────────── */
 
 function CustomerEditor({
-  customer,
+  order,
   onSave,
   onCancel,
   saving,
 }: {
-  customer: AdminOrder["customer"] & { id?: number };
-  onSave: (data: { name: string; email: string; phone: string }) => void;
+  order: AdminOrder;
+  onSave: (data: {
+    contact_name: string;
+    contact_email: string;
+    contact_phone: string;
+    contact_address: string;
+  }) => void;
   onCancel: () => void;
   saving: boolean;
 }) {
-  const [name, setName] = useState(customer.name ?? "");
-  const [email, setEmail] = useState(customer.email ?? "");
-  const [phone, setPhone] = useState(customer.phone ?? "");
+  const [name, setName] = useState(
+    order.contactName ?? order.customer.name ?? "",
+  );
+  const [email, setEmail] = useState(
+    order.contactEmail ?? order.customer.email ?? "",
+  );
+  const [phone, setPhone] = useState(
+    order.contactPhone ?? order.customer.phone ?? "",
+  );
+  const [address, setAddress] = useState(
+    order.contactAddress ?? order.customer.address ?? "",
+  );
 
   return (
     <div className="mt-3 border border-border rounded-lg p-4 bg-surface-alt space-y-3">
       <h4 className="text-xs font-semibold text-text uppercase tracking-wide">
-        Edit Customer
+        Edit Contact (this order only)
       </h4>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <input
@@ -123,6 +137,13 @@ function CustomerEditor({
           className="text-xs bg-surface border border-border rounded px-2 py-1.5 text-text"
         />
       </div>
+      <textarea
+        placeholder="Address"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+        rows={2}
+        className="w-full text-xs bg-surface border border-border rounded px-2 py-1.5 text-text resize-y"
+      />
       <div className="flex justify-end gap-2">
         <button
           type="button"
@@ -134,7 +155,14 @@ function CustomerEditor({
         </button>
         <button
           type="button"
-          onClick={() => onSave({ name, email, phone })}
+          onClick={() =>
+            onSave({
+              contact_name: name,
+              contact_email: email,
+              contact_phone: phone,
+              contact_address: address,
+            })
+          }
           disabled={saving}
           className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg bg-red-primary text-white hover:bg-red-primary/90 transition-colors disabled:opacity-50"
         >
@@ -438,8 +466,12 @@ function OrderCard({
   onSaveItems: (orderId: number, items: OrderItem[], notes: string) => void;
   onSaveCustomer: (
     orderId: number,
-    customerId: number,
-    data: { name: string; email: string; phone: string },
+    data: {
+      contact_name: string;
+      contact_email: string;
+      contact_phone: string;
+      contact_address: string;
+    },
   ) => void;
   transitioning: number | null;
   savingItems: number | null;
@@ -481,7 +513,7 @@ function OrderCard({
             )}
           </div>
           <span className="text-xs text-text-secondary truncate">
-            {order.customer.name ?? "Unknown"}
+            {order.contactName ?? order.customer.name ?? "Unknown"}
             {vehicleStr && ` · ${vehicleStr}`}
           </span>
         </div>
@@ -502,12 +534,16 @@ function OrderCard({
       {/* Expanded details */}
       {expanded && (
         <div className="mt-3 space-y-3">
-          {/* Customer info row */}
+          {/* Customer info row — prefer per-order snapshot, fall back to customer record */}
           <div className="flex items-center justify-between text-xs text-text-secondary">
             <div className="flex items-center gap-3">
-              <span>{order.customer.name ?? "—"}</span>
-              {order.customer.email && <span>{order.customer.email}</span>}
-              {order.customer.phone && <span>{order.customer.phone}</span>}
+              <span>{order.contactName ?? order.customer.name ?? "—"}</span>
+              {(order.contactEmail ?? order.customer.email) && (
+                <span>{order.contactEmail ?? order.customer.email}</span>
+              )}
+              {(order.contactPhone ?? order.customer.phone) && (
+                <span>{order.contactPhone ?? order.customer.phone}</span>
+              )}
             </div>
             <button
               type="button"
@@ -524,11 +560,11 @@ function OrderCard({
           {/* Customer editor */}
           {editMode === "customer" && (
             <CustomerEditor
-              customer={order.customer}
+              order={order}
               saving={savingCustomer === order.id}
               onCancel={() => setEditMode(null)}
               onSave={(data) => {
-                onSaveCustomer(order.id, order.customerId, data);
+                onSaveCustomer(order.id, data);
                 setEditMode(null);
               }}
             />
@@ -723,18 +759,22 @@ export default function OrdersPage() {
 
   async function handleSaveCustomer(
     orderId: number,
-    customerId: number,
-    data: { name: string; email: string; phone: string },
+    data: {
+      contact_name: string;
+      contact_email: string;
+      contact_phone: string;
+      contact_address: string;
+    },
   ) {
     setSavingCustomer(orderId);
     try {
-      await authFetch(`/api/admin/customers/${customerId}`, {
+      await authFetch(`/api/admin/orders/${orderId}`, {
         method: "PATCH",
         body: JSON.stringify(data),
       });
       mutate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to save customer");
+      alert(e instanceof Error ? e.message : "Failed to save contact info");
     } finally {
       setSavingCustomer(null);
     }

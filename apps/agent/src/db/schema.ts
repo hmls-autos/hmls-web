@@ -179,6 +179,11 @@ export const orders = pgTable("orders", {
   stripeInvoiceId: varchar("stripe_invoice_id", { length: 255 }),
   adminNotes: text("admin_notes"),
   cancellationReason: text("cancellation_reason"),
+  // Per-order contact snapshot — edit these instead of mutating the customers record
+  contactName: varchar("contact_name", { length: 255 }),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 20 }),
+  contactAddress: text("contact_address"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({

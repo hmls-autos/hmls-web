@@ -42,7 +42,12 @@ export type AdminQuote = Quote & {
 };
 
 export type AdminOrder = Order & {
-  customer: { name: string | null; email: string | null; phone: string | null };
+  customer: {
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+  };
 };
 
 interface CustomerDetail {
