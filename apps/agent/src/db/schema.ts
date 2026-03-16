@@ -22,8 +22,22 @@ const tstzrange = customType<{ data: string; driverParam: string }>({
   },
 });
 
+// --- Shops (multi-tenancy foundation) ---
+
+export const shops = pgTable("shops", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).unique().notNull(),
+  timezone: varchar("timezone", { length: 100 }).default("America/Los_Angeles"),
+  laborRateCents: integer("labor_rate_cents").default(12000),
+  taxRatePercent: numeric("tax_rate_percent", { precision: 5, scale: 4 }).default("0.1000"),
+  stripeAccountId: varchar("stripe_account_id", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const customers = pgTable("customers", {
   id: serial("id").primaryKey(),
+  shopId: uuid("shop_id").references(() => shops.id),
   name: varchar("name", { length: 255 }),
   phone: varchar("phone", { length: 20 }),
   email: varchar("email", { length: 255 }),
@@ -109,6 +123,7 @@ export const estimates = pgTable("estimates", {
 // Column was not renamed to preserve backwards compatibility with existing data.
 export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
+  shopId: uuid("shop_id").references(() => shops.id),
   customerId: integer("customer_id").references(() => customers.id),
   providerId: integer("provider_id").references(() => providers.id),
   serviceType: varchar("service_type", { length: 100 }).notNull(),
@@ -158,6 +173,7 @@ export interface OrderItem {
 
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
+  shopId: uuid("shop_id").references(() => shops.id),
   customerId: integer("customer_id").references(() => customers.id).notNull(),
   estimateId: integer("estimate_id").references(() => estimates.id, { onDelete: "set null" }),
   quoteId: integer("quote_id").references(() => quotes.id),
