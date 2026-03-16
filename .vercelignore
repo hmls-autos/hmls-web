@@ -1,0 +1,11 @@
+node_modules
+apps/hmls-web/node_modules
+apps/fixo-web/node_modules
+apps/fixo-web/.next
+apps/hmls-web/.next
+.next
+dist
+*.db
+*.db-shm
+*.db-wal
+olp-labor-times*
