@@ -42,7 +42,12 @@ portal.put("/me", async (c) => {
 
   if (!parsed.success) {
     return c.json(
-      { error: { code: "BAD_REQUEST", message: parsed.error.issues.map((i) => i.message).join(", ") } },
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: parsed.error.issues.map((i) => i.message).join(", "),
+        },
+      },
       400,
     );
   }

@@ -2,8 +2,8 @@ import { getLogger } from "@logtape/logtape";
 
 const logger = getLogger(["hmls", "agent", "olp-client"]);
 
-const OLP_WORKER_URL =
-  Deno.env.get("OLP_WORKER_URL") ?? "https://olp-worker.spencerzhyp.workers.dev";
+const OLP_WORKER_URL = Deno.env.get("OLP_WORKER_URL") ??
+  "https://olp-worker.spencerzhyp.workers.dev";
 const OLP_WORKER_SECRET = Deno.env.get("OLP_WORKER_SECRET") ?? "";
 
 function authHeaders(): Record<string, string> {

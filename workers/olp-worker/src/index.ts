@@ -83,14 +83,17 @@ async function handleVehicles(env: Env, body: Record<string, unknown>): Promise<
     return json({ error: "make, model, and year are required" }, 400);
   }
 
-  const makePattern = fuzzy ? `%${make}%` : make;
-  const modelPattern = fuzzy ? `%${model}%` : model;
+  // Normalize: strip hyphens/spaces so "CRV" matches "CR-V", "F150" matches "F-150", etc.
+  const normMake = make.replace(/[-\s]/g, "");
+  const normModel = model.replace(/[-\s]/g, "");
+  const makePattern = fuzzy ? `%${normMake}%` : normMake;
+  const modelPattern = fuzzy ? `%${normModel}%` : normModel;
 
   const result = await env.OLP_DB.prepare(
     `SELECT id, make, model, year_range, year_start, year_end, engine, fuel_type
      FROM olp_vehicles
-     WHERE make LIKE ? COLLATE NOCASE
-       AND model LIKE ? COLLATE NOCASE
+     WHERE REPLACE(make, '-', '') LIKE ? COLLATE NOCASE
+       AND REPLACE(REPLACE(model, '-', ''), ' ', '') LIKE ? COLLATE NOCASE
        AND year_start <= ?
        AND year_end >= ?`,
   )
