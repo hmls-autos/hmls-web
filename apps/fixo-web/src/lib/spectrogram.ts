@@ -170,6 +170,7 @@ export async function generateSpectrogram(
   const canvas = document.createElement("canvas");
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
+  // biome-ignore lint/style/noNonNullAssertion: canvas always supports 2d context
   const ctx = canvas.getContext("2d")!;
 
   // Background
@@ -244,6 +245,7 @@ export async function generateSpectrogram(
   const pngBase64 = canvas.toDataURL("image/png").split(",")[1];
 
   const blob = await new Promise<Blob>((resolve) => {
+    // biome-ignore lint/style/noNonNullAssertion: toBlob always provides blob when type is valid
     canvas.toBlob((b) => resolve(b!), "image/png");
   });
 

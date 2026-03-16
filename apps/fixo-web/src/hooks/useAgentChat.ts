@@ -51,7 +51,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const imageUrlMapRef = useRef<Map<string, string>>(new Map());
   // Tracks imageUrls by message index for new messages whose IDs aren't
   // known until after AI SDK v6 assigns them internally.
-  const pendingImageUrlRef = useRef<{ index: number; url: string } | null>(null);
+  const pendingImageUrlRef = useRef<{ index: number; url: string } | null>(
+    null,
+  );
 
   const scrollToBottom = useCallback(() => {
     scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
@@ -120,6 +122,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   }, [chatMessages]);
 
   // Scroll on new messages
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scrollToBottom is stable, chatMessages triggers the scroll
   useEffect(() => {
     scrollToBottom();
   }, [chatMessages, scrollToBottom]);

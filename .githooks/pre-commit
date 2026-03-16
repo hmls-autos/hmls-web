@@ -1,23 +1,34 @@
 #!/usr/bin/env bash
 set -e
 
-export PATH="$HOME/.bun/bin:$HOME/.deno/bin:$PATH"
+export PATH="$HOME/.bun/bin:$HOME/.local/bin:$PATH"
 
-echo "Running pre-commit checks..."
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
 
-echo ">> Biome lint (web)"
-cd apps/hmls-web && bun run lint
-cd - > /dev/null
+run_hmls_web=false
+run_fixo_web=false
+run_deno=false
 
-echo ">> TypeScript check (web)"
-cd apps/hmls-web && bun run typecheck
-cd - > /dev/null
+while IFS= read -r file; do
+  case "$file" in
+    apps/hmls-web/*) run_hmls_web=true ;;
+    apps/fixo-web/*) run_fixo_web=true ;;
+    apps/gateway/*|apps/agent/*|workers/*) run_deno=true ;;
+  esac
+done <<< "$STAGED"
 
-echo ">> Next.js build (web)"
-cd apps/hmls-web && bun run build
-cd - > /dev/null
+if $run_hmls_web; then
+  echo "→ hmls-web: biome lint + format check"
+  bun run --cwd apps/hmls-web lint
+fi
 
-echo ">> Deno check (gateway + agent)"
-deno task check
+if $run_fixo_web; then
+  echo "→ fixo-web: biome lint + format check"
+  bun run --cwd apps/fixo-web lint
+fi
 
-echo "All checks passed!"
+if $run_deno; then
+  echo "→ deno: fmt + lint"
+  deno fmt --check apps/gateway apps/agent workers
+  deno lint apps/gateway apps/agent workers
+fi

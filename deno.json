@@ -30,7 +30,8 @@
     "check": "deno task check:gateway && deno task check:agent",
     "fmt": "deno fmt",
     "fmt:check": "deno fmt --check",
-    "lint": "deno lint"
+    "lint": "deno lint",
+    "hooks:install": "git config core.hooksPath .githooks"
   },
   "deploy": {
     "org": "spinsirr",

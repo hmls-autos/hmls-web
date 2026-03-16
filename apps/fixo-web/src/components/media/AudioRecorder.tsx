@@ -116,6 +116,7 @@ export function AudioRecorder({ onSend, onClose }: AudioRecorderProps) {
       {/* Preview audio + spectrogram */}
       {recording && (
         <div className="flex flex-col items-center gap-3 mb-4">
+          {/* biome-ignore lint/performance/noImgElement: data URL, next/image doesn't support base64 */}
           <img
             src={`data:image/png;base64,${recording.spectrogramBase64}`}
             alt="Sound spectrogram"
