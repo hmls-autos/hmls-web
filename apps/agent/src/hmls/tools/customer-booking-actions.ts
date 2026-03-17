@@ -2,6 +2,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db, schema } from "../../db/client.ts";
 import { toolResult } from "@hmls/shared/tool-result";
+import type { ToolContext } from "../../common/convert-tools.ts";
 
 // Only "requested" bookings can be cancelled by customers
 const CUSTOMER_CANCELLABLE_BOOKING_STATUSES = ["requested"];
@@ -19,7 +20,7 @@ const cancelBookingTool = {
     bookingId: z.string().describe("The booking ID to cancel"),
     reason: z.string().optional().describe("Optional reason for cancellation"),
   }),
-  execute: async (params: { bookingId: string; reason?: string }, _ctx: unknown) => {
+  execute: async (params: { bookingId: string; reason?: string }, ctx: ToolContext | undefined) => {
     const id = Number(params.bookingId);
     if (!Number.isInteger(id) || id <= 0) {
       return toolResult({ success: false, error: "Invalid booking ID" });
@@ -31,7 +32,7 @@ const cancelBookingTool = {
       .where(eq(schema.bookings.id, id))
       .limit(1);
 
-    if (!booking) {
+    if (!booking || (ctx?.customerId != null && booking.customerId !== ctx.customerId)) {
       return toolResult({ success: false, error: `Booking #${id} not found` });
     }
 
@@ -108,7 +109,7 @@ const requestRescheduleTool = {
   }),
   execute: async (
     params: { bookingId: string; preferredTime?: string; reason?: string },
-    _ctx: unknown,
+    ctx: ToolContext | undefined,
   ) => {
     const id = Number(params.bookingId);
     if (!Number.isInteger(id) || id <= 0) {
@@ -121,7 +122,7 @@ const requestRescheduleTool = {
       .where(eq(schema.bookings.id, id))
       .limit(1);
 
-    if (!booking) {
+    if (!booking || (ctx?.customerId != null && booking.customerId !== ctx.customerId)) {
       return toolResult({ success: false, error: `Booking #${id} not found` });
     }
 

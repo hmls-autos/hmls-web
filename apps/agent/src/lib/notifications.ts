@@ -161,7 +161,7 @@ function htmlWrapper(content: string): string {
 // --- Email templates ---
 
 const STATUS_EMAILS: Record<string, EmailTemplate> = {
-  sent: {
+  estimated: {
     subject: "Your HMLS Estimate is Ready",
     text: (ctx) =>
       `Hi ${ctx.customerName},\n\nYour estimate${

@@ -1,6 +1,13 @@
 "use client";
 
 import {
+  Elements,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import {
   ArrowLeft,
   Check,
   CreditCard,
@@ -9,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { usePortalOrder } from "@/hooks/usePortal";
@@ -17,6 +24,10 @@ import { authFetch } from "@/lib/fetcher";
 import { formatCents, formatDate, formatDateTime } from "@/lib/format";
 import { PORTAL_ORDER_STATUS } from "@/lib/status";
 import type { OrderEvent, OrderItem } from "@/lib/types";
+
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
+);
 
 /* ── Progress bar ─────────────────────────────────────────────────────── */
 
@@ -348,6 +359,83 @@ function PrintReceipt({
   );
 }
 
+/* ── Stripe payment form ──────────────────────────────────────────────── */
+
+function PreauthPaymentForm({
+  orderId,
+  onSuccess,
+  onCancel,
+}: {
+  orderId: number;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    const { error: confirmError } = await stripe.confirmPayment({
+      elements,
+      redirect: "if_required",
+    });
+
+    if (confirmError) {
+      setError(confirmError.message ?? "Payment authorization failed");
+      setSubmitting(false);
+      return;
+    }
+
+    // Verify the hold was placed
+    try {
+      await authFetch(`/api/portal/me/orders/${orderId}/confirm-preauth`, {
+        method: "POST",
+      });
+      onSuccess();
+    } catch {
+      setError(
+        "Card authorized but confirmation failed. Please contact support.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement />
+      {error && (
+        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={!stripe || submitting}
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium px-4 py-2.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors disabled:opacity-50"
+        >
+          <CreditCard className="w-3.5 h-3.5" />
+          {submitting ? "Authorizing..." : "Authorize Card"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={submitting}
+          className="text-xs font-medium px-4 py-2.5 rounded-lg border border-border text-text-secondary hover:text-text transition-colors disabled:opacity-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
 export default function PortalOrderDetailPage() {
@@ -355,6 +443,14 @@ export default function PortalOrderDetailPage() {
   const orderId = params.id as string;
   const { data, isLoading, isError, mutate } = usePortalOrder(orderId);
   const [actionLoading, setActionLoading] = useState(false);
+  const [preauthClientSecret, setPreauthClientSecret] = useState<string | null>(
+    null,
+  );
+
+  const handlePreauthSuccess = useCallback(() => {
+    setPreauthClientSecret(null);
+    mutate();
+  }, [mutate]);
 
   if (isLoading) {
     return (
@@ -415,10 +511,15 @@ export default function PortalOrderDetailPage() {
   async function handlePreauth() {
     setActionLoading(true);
     try {
-      await authFetch(`/api/portal/me/orders/${order.id}/preauth`, {
-        method: "POST",
-      });
-      mutate();
+      const data = await authFetch<{ clientSecret?: string }>(
+        `/api/portal/me/orders/${order.id}/preauth`,
+        { method: "POST" },
+      );
+      if (data.clientSecret) {
+        setPreauthClientSecret(data.clientSecret);
+      } else {
+        mutate();
+      }
     } catch (e) {
       alert(e instanceof Error ? e.message : "Failed to authorize card");
     } finally {
@@ -662,7 +763,7 @@ export default function PortalOrderDetailPage() {
               </div>
             )}
 
-            {canPreauth && (
+            {canPreauth && !preauthClientSecret && (
               <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
                 <h2 className="text-sm font-semibold text-text">
                   Authorize Payment
@@ -690,6 +791,34 @@ export default function PortalOrderDetailPage() {
                   <CreditCard className="w-3.5 h-3.5" />
                   {actionLoading ? "Processing..." : "Authorize Card"}
                 </button>
+              </div>
+            )}
+
+            {preauthClientSecret && (
+              <div className="bg-surface border border-purple-200 dark:border-purple-900/50 rounded-xl p-4 space-y-3">
+                <h2 className="text-sm font-semibold text-text">
+                  Enter Card Details
+                </h2>
+                <p className="text-xs text-text-secondary">
+                  A hold of{" "}
+                  <span className="font-semibold text-text">
+                    {formatCents(Math.ceil(order.subtotalCents * 1.15))}
+                  </span>{" "}
+                  will be placed. You will only be charged the final amount.
+                </p>
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret: preauthClientSecret,
+                    appearance: { theme: "stripe" },
+                  }}
+                >
+                  <PreauthPaymentForm
+                    orderId={order.id}
+                    onSuccess={handlePreauthSuccess}
+                    onCancel={() => setPreauthClientSecret(null)}
+                  />
+                </Elements>
               </div>
             )}
 

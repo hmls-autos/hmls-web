@@ -4,6 +4,7 @@ import { db, schema } from "../../db/client.ts";
 import type { OrderItem } from "../../db/schema.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 import { randomUUID } from "node:crypto";
+import type { ToolContext } from "../../common/convert-tools.ts";
 
 // Statuses a customer is allowed to cancel from (before any money changes hands)
 const CUSTOMER_CANCELLABLE_STATUSES = ["draft", "estimated"];
@@ -23,7 +24,7 @@ const approveOrderTool = {
   schema: z.object({
     orderId: z.string().describe("The order ID to approve"),
   }),
-  execute: async (params: { orderId: string }, _ctx: unknown) => {
+  execute: async (params: { orderId: string }, ctx: ToolContext | undefined) => {
     const id = Number(params.orderId);
     if (!Number.isInteger(id) || id <= 0) {
       return toolResult({ success: false, error: "Invalid order ID" });
@@ -35,7 +36,7 @@ const approveOrderTool = {
       .where(eq(schema.orders.id, id))
       .limit(1);
 
-    if (!order) {
+    if (!order || (ctx?.customerId != null && order.customerId !== ctx.customerId)) {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 
@@ -90,7 +91,10 @@ const declineOrderTool = {
     orderId: z.string().describe("The order ID to decline"),
     reason: z.string().optional().describe("Optional reason for declining"),
   }),
-  execute: async (params: { orderId: string; reason?: string }, _ctx: unknown) => {
+  execute: async (
+    params: { orderId: string; reason?: string },
+    ctx: ToolContext | undefined,
+  ) => {
     const id = Number(params.orderId);
     if (!Number.isInteger(id) || id <= 0) {
       return toolResult({ success: false, error: "Invalid order ID" });
@@ -102,7 +106,7 @@ const declineOrderTool = {
       .where(eq(schema.orders.id, id))
       .limit(1);
 
-    if (!order) {
+    if (!order || (ctx?.customerId != null && order.customerId !== ctx.customerId)) {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 
@@ -158,7 +162,10 @@ const cancelOrderTool = {
     orderId: z.string().describe("The order ID to cancel"),
     reason: z.string().optional().describe("Optional reason for cancellation"),
   }),
-  execute: async (params: { orderId: string; reason?: string }, _ctx: unknown) => {
+  execute: async (
+    params: { orderId: string; reason?: string },
+    ctx: ToolContext | undefined,
+  ) => {
     const id = Number(params.orderId);
     if (!Number.isInteger(id) || id <= 0) {
       return toolResult({ success: false, error: "Invalid order ID" });
@@ -170,7 +177,7 @@ const cancelOrderTool = {
       .where(eq(schema.orders.id, id))
       .limit(1);
 
-    if (!order) {
+    if (!order || (ctx?.customerId != null && order.customerId !== ctx.customerId)) {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 
@@ -233,7 +240,7 @@ const requestRescheduleTool = {
   }),
   execute: async (
     params: { orderId: string; requestedTime?: string; reason?: string },
-    _ctx: unknown,
+    ctx: ToolContext | undefined,
   ) => {
     const id = Number(params.orderId);
     if (!Number.isInteger(id) || id <= 0) {
@@ -241,12 +248,12 @@ const requestRescheduleTool = {
     }
 
     const [order] = await db
-      .select({ id: schema.orders.id, status: schema.orders.status })
+      .select({ id: schema.orders.id, status: schema.orders.status, customerId: schema.orders.customerId })
       .from(schema.orders)
       .where(eq(schema.orders.id, id))
       .limit(1);
 
-    if (!order) {
+    if (!order || (ctx?.customerId != null && order.customerId !== ctx.customerId)) {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 
@@ -304,7 +311,7 @@ const modifyOrderItemsTool = {
       addItems?: Array<{ name: string; description?: string }>;
       removeItemIds?: string[];
     },
-    _ctx: unknown,
+    ctx: ToolContext | undefined,
   ) => {
     const id = Number(params.orderId);
     if (!Number.isInteger(id) || id <= 0) {
@@ -317,7 +324,7 @@ const modifyOrderItemsTool = {
       .where(eq(schema.orders.id, id))
       .limit(1);
 
-    if (!order) {
+    if (!order || (ctx?.customerId != null && order.customerId !== ctx.customerId)) {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 

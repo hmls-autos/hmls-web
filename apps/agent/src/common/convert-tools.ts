@@ -1,14 +1,15 @@
+export interface ToolContext {
+  userId?: string;
+  customerId?: number;
+}
+
 // deno-lint-ignore no-explicit-any
 export interface LegacyTool<P = any> {
   name: string;
   description: string;
   // deno-lint-ignore no-explicit-any
   schema: any;
-  execute: (params: P, ctx?: unknown) => Promise<unknown>;
-}
-
-export interface ToolContext {
-  userId?: string;
+  execute: (params: P, ctx?: ToolContext) => Promise<unknown>;
 }
 
 /** Convert existing tool arrays (name/schema/execute) to AI SDK tool records. */

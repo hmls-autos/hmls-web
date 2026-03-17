@@ -59,7 +59,8 @@ export function runHmlsAgent(options: RunAgentOptions) {
     ...customerOrderTools,
   ];
 
-  const tools = convertTools(allTools);
+  const toolCtx = userContext ? { customerId: userContext.id } : undefined;
+  const tools = convertTools(allTools, toolCtx);
   const toolCount = Object.keys(tools).length;
   logger.info("Initializing HMLS agent", { model: modelId, toolCount });
 
