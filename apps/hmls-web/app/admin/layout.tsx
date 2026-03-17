@@ -6,6 +6,7 @@ import {
   MessageSquare,
   Users,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { DashboardLayout, type NavItem } from "@/components/DashboardLayout";
 
 const navItems: NavItem[] = [
@@ -20,6 +21,9 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const isChatPage = pathname.startsWith("/admin/chat");
+
   return (
     <DashboardLayout
       navItems={navItems}
@@ -27,6 +31,7 @@ export default function AdminLayout({
       maxWidth="max-w-6xl"
       adminCheck
       adminPanelLabel="Admin Panel"
+      fullHeight={isChatPage}
     >
       {children}
     </DashboardLayout>

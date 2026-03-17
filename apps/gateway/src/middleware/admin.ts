@@ -15,6 +15,13 @@ export type AdminEnv = Env & {
  * Returns 401 if missing/invalid token, 403 if not admin.
  */
 export const requireAdmin = createMiddleware<AdminEnv>(async (c, next) => {
+  // Dev bypass: SKIP_AUTH=true skips all auth checks locally
+  if (Deno.env.get("SKIP_AUTH") === "true") {
+    c.set("authUser", { id: "dev", email: "dev@localhost", role: "admin" });
+    await next();
+    return;
+  }
+
   const auth = c.req.header("Authorization");
   if (!auth?.startsWith("Bearer ")) {
     return c.json(

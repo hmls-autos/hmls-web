@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, X } from "lucide-react";
+import { BarChart3, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ComponentType } from "react";
@@ -153,38 +153,26 @@ export function DashboardLayout({
       <main
         className={`flex-1 min-w-0 ${fullHeight ? "flex flex-col min-h-0" : ""}`}
       >
+        {/* Mobile hamburger */}
+        <div className="flex md:hidden items-center gap-2 px-4 py-3 border-b border-border">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="p-1.5 rounded-lg hover:bg-surface-alt"
+            aria-label="Open menu"
+          >
+            <Menu className="w-5 h-5 text-text-secondary" />
+          </button>
+          <span className="text-sm font-medium text-text-secondary">
+            {title}
+          </span>
+        </div>
         {fullHeight ? (
-          <div className="flex flex-col flex-1 min-h-0 pb-16 md:pb-0">
-            {children}
-          </div>
+          <div className="flex flex-col flex-1 min-h-0">{children}</div>
         ) : (
-          <div className={`p-4 pb-20 md:pb-8 md:p-8 ${maxWidth} mx-auto`}>
-            {children}
-          </div>
+          <div className={`p-4 md:p-8 ${maxWidth} mx-auto`}>{children}</div>
         )}
       </main>
-
-      {/* Mobile bottom tab bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden bg-surface border-t border-border safe-area-inset-bottom">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive =
-            href === basePath
-              ? pathname === basePath
-              : pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex flex-col items-center gap-0.5 flex-1 py-2.5 text-xs font-medium transition-colors ${
-                isActive ? "text-red-primary" : "text-text-secondary"
-              }`}
-            >
-              <Icon className="w-5 h-5 shrink-0" />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
     </div>
   );
 }
