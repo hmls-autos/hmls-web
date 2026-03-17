@@ -50,12 +50,29 @@ admin.get("/dashboard", async (c) => {
       .limit(5),
   ]);
 
-  // Revenue: sum of paid orders in last 30 days
+  // Revenue: sum of actually paid/completed orders in last 30 days
   const [revenueResult] = await db
-    .select({ total: sql<number>`COALESCE(SUM(${schema.orders.subtotalCents}), 0)` })
+    .select({
+      total: sql<
+        number
+      >`COALESCE(SUM(COALESCE(${schema.orders.capturedAmountCents}, ${schema.orders.subtotalCents})), 0)`,
+    })
     .from(schema.orders)
     .where(
-      sql`${schema.orders.status} IN ('paid', 'scheduled', 'in_progress', 'completed', 'archived') AND ${schema.orders.createdAt} >= ${thirtyDaysAgo.toISOString()}`,
+      sql`${schema.orders.status} IN ('paid', 'completed', 'archived') AND ${schema.orders.createdAt} >= ${thirtyDaysAgo.toISOString()}`,
+    );
+
+  // Order-centric metrics
+  const [pendingApprovals] = await db
+    .select({ count: count() })
+    .from(schema.orders)
+    .where(eq(schema.orders.status, "estimated"));
+
+  const [activeJobs] = await db
+    .select({ count: count() })
+    .from(schema.orders)
+    .where(
+      sql`${schema.orders.status} IN ('scheduled', 'in_progress')`,
     );
 
   return c.json({
@@ -65,6 +82,8 @@ admin.get("/dashboard", async (c) => {
       estimates: estimateCount.count,
       quotes: quoteCount.count,
       orders: orderCount.count,
+      pendingApprovals: pendingApprovals.count,
+      activeJobs: activeJobs.count,
       revenue30d: revenueResult.total,
     },
     upcomingBookings,
