@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Loader2, Send, Wrench } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -20,6 +20,7 @@ const STAFF_SUGGESTIONS = [
 ];
 
 export default function AdminChatPage() {
+  const prefersReducedMotion = useReducedMotion();
   const { session } = useAuth();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -57,25 +58,39 @@ export default function AdminChatPage() {
 
   return (
     <div
-      className="flex flex-col flex-1 min-h-0 max-w-4xl mx-auto w-full px-4 pt-4 pb-4"
+      className="flex flex-col flex-1 min-h-0 max-w-4xl mx-auto w-full px-4 pt-6 pb-4"
       style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <motion.div
+        initial={prefersReducedMotion ? false : { opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.4 }}
+        className="flex items-center justify-between mb-4 px-1"
+      >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-red-light flex items-center justify-center">
-            <Wrench className="w-5 h-5 text-red-primary" />
-          </div>
+          <motion.div
+            initial={prefersReducedMotion ? false : { scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : { delay: 0.2, type: "spring", stiffness: 200 }
+            }
+            className="w-12 h-12 rounded-full bg-red-light flex items-center justify-center"
+          >
+            <Wrench className="w-6 h-6 text-red-primary" />
+          </motion.div>
           <div>
-            <h1 className="text-lg font-display font-bold text-text">
+            <h1 className="text-xl font-display font-bold text-text">
               Shop Assistant
             </h1>
-            <p className="text-xs text-text-secondary">
-              Create orders, look up labor times, manage shop
+            <p className="text-sm text-text-secondary">
+              Orders · Labor times · Customers
             </p>
           </div>
         </div>
-        <button
+        <motion.button
           type="button"
           onClick={() => {
             if (
@@ -85,45 +100,83 @@ export default function AdminChatPage() {
               clearMessages();
             }
           }}
-          className="text-sm text-text-secondary hover:text-text transition-colors px-3 py-1.5 rounded-lg hover:bg-surface-alt"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="text-sm text-text-secondary hover:text-text transition-colors px-4 py-2 rounded-lg hover:bg-surface-alt"
         >
           Clear
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto rounded-2xl border border-border bg-surface p-4 space-y-3 min-h-0">
+      <motion.div
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={
+          prefersReducedMotion ? { duration: 0 } : { duration: 0.4, delay: 0.1 }
+        }
+        className="flex-1 overflow-y-auto rounded-2xl border border-border bg-surface p-6 space-y-4 min-h-0"
+      >
         <AnimatePresence mode="wait">
           {messages.length === 0 && (
             <motion.div
               key="welcome"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center h-full text-center py-12"
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center justify-center h-full text-center"
             >
-              <div className="w-14 h-14 rounded-full bg-red-light flex items-center justify-center mb-4">
-                <Wrench className="w-7 h-7 text-red-primary" />
-              </div>
-              <h2 className="text-lg font-display font-bold text-text mb-1">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="w-16 h-16 rounded-full bg-red-light flex items-center justify-center mb-4"
+              >
+                <Wrench className="w-8 h-8 text-red-primary" />
+              </motion.div>
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-xl font-display font-bold text-text mb-2"
+              >
                 What do you need?
-              </h2>
-              <p className="text-sm text-text-secondary mb-6 max-w-sm">
+              </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-text-secondary max-w-sm"
+              >
                 Create orders, check labor times, look up customers, manage work
                 orders.
-              </p>
-              <div className="flex gap-2 overflow-x-auto pb-1 w-full max-w-sm px-1 -mx-1 snap-x">
-                {STAFF_SUGGESTIONS.map((suggestion) => (
-                  <button
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="flex flex-wrap gap-2 mt-6 justify-center"
+              >
+                {STAFF_SUGGESTIONS.map((suggestion, index) => (
+                  <motion.button
                     key={suggestion}
                     type="button"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 + index * 0.1 }}
+                    whileHover={{
+                      scale: 1.05,
+                      borderColor: "rgb(220 38 38 / 0.5)",
+                    }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => sendMessage(suggestion)}
-                    className="flex-none snap-start px-3 py-1.5 rounded-full bg-surface-alt border border-border text-xs text-text-secondary hover:border-red-primary/50 hover:text-red-primary transition-colors whitespace-nowrap"
+                    className="px-4 py-2 rounded-full bg-surface-alt border border-border text-sm text-text-secondary hover:border-red-primary/50 hover:text-red-primary transition-colors"
                   >
                     {suggestion}
-                  </button>
+                  </motion.button>
                 ))}
-              </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -133,11 +186,12 @@ export default function AdminChatPage() {
             return (
               <motion.div
                 key={msg.id}
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
                 className="flex justify-start"
               >
-                <div className="max-w-[85%]">
+                <div className="max-w-[80%]">
                   <EstimateCard data={msg.estimateData} />
                 </div>
               </motion.div>
@@ -146,25 +200,32 @@ export default function AdminChatPage() {
           return (
             <motion.div
               key={msg.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.2 }}
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              <div
-                className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm ${
+              <motion.div
+                initial={{ opacity: 0, x: msg.role === "user" ? 20 : -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.2, delay: 0.05 }}
+                className={`max-w-[80%] px-5 py-3 rounded-2xl ${
                   msg.role === "user"
                     ? "bg-red-primary text-white rounded-br-md"
                     : "bg-surface-alt border border-border text-text rounded-bl-md"
                 }`}
               >
                 {msg.role === "user" ? (
-                  <p className="whitespace-pre-wrap leading-relaxed">
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
                     {msg.content}
                   </p>
                 ) : (
-                  <Markdown content={msg.content} className="leading-relaxed" />
+                  <Markdown
+                    content={msg.content}
+                    className="text-sm leading-relaxed"
+                  />
                 )}
-              </div>
+              </motion.div>
             </motion.div>
           );
         })}
@@ -195,14 +256,14 @@ export default function AdminChatPage() {
         <AnimatePresence>
           {currentTool && currentTool !== "ask_user_question" && (
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 0, y: -10 }}
               className="flex justify-start"
             >
-              <div className="bg-surface-alt border border-border px-3 py-2 rounded-xl flex items-center gap-2">
-                <Loader2 className="w-3.5 h-3.5 text-red-primary animate-spin" />
-                <span className="text-xs text-text-secondary">
+              <div className="bg-surface-alt border border-border px-4 py-2 rounded-xl flex items-center gap-2">
+                <Loader2 className="w-4 h-4 text-red-primary animate-spin" />
+                <span className="text-sm text-text-secondary">
                   {toolDisplayNames[currentTool] || currentTool}...
                 </span>
               </div>
@@ -214,13 +275,13 @@ export default function AdminChatPage() {
         <AnimatePresence>
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 0, y: -10 }}
               className="flex justify-start"
             >
-              <div className="max-w-[85%] bg-red-50 border border-red-200 px-4 py-2.5 rounded-2xl rounded-bl-md">
-                <p className="text-xs font-medium text-red-600 mb-0.5">Error</p>
+              <div className="max-w-[80%] bg-red-50 border border-red-200 px-5 py-3 rounded-2xl rounded-bl-md">
+                <p className="text-xs font-medium text-red-600 mb-1">Error</p>
                 <p className="text-sm text-red-700">{error}</p>
                 <button
                   type="button"
@@ -240,16 +301,16 @@ export default function AdminChatPage() {
             !currentTool &&
             messages[messages.length - 1]?.role === "user" && (
               <motion.div
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 className="flex justify-start"
               >
-                <div className="bg-surface-alt border border-border px-4 py-2.5 rounded-2xl rounded-bl-md">
+                <div className="bg-surface-alt border border-border px-5 py-3 rounded-2xl rounded-bl-md">
                   <div className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-text-secondary/50 rounded-full animate-bounce" />
-                    <span className="w-1.5 h-1.5 bg-text-secondary/50 rounded-full animate-bounce [animation-delay:0.1s]" />
-                    <span className="w-1.5 h-1.5 bg-text-secondary/50 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-2 h-2 bg-text-secondary/50 rounded-full animate-bounce" />
+                    <span className="w-2 h-2 bg-text-secondary/50 rounded-full animate-bounce [animation-delay:0.1s]" />
+                    <span className="w-2 h-2 bg-text-secondary/50 rounded-full animate-bounce [animation-delay:0.2s]" />
                   </div>
                 </div>
               </motion.div>
@@ -257,11 +318,19 @@ export default function AdminChatPage() {
         </AnimatePresence>
 
         <div ref={messagesEndRef} />
-      </div>
+      </motion.div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="mt-3">
-        <div className="flex gap-2">
+      <motion.form
+        initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={
+          prefersReducedMotion ? { duration: 0 } : { duration: 0.4, delay: 0.2 }
+        }
+        onSubmit={handleSubmit}
+        className="mt-4"
+      >
+        <div className="flex gap-3">
           <label htmlFor="staff-chat-input" className="sr-only">
             Message
           </label>
@@ -276,18 +345,20 @@ export default function AdminChatPage() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Create an order, check labor times..."
             disabled={isLoading || !!pendingQuestion}
-            className="flex-1 bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary focus-visible:border-red-primary disabled:opacity-50 transition-colors"
+            className="flex-1 bg-surface border border-border rounded-xl px-5 py-4 text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary focus-visible:border-red-primary disabled:opacity-50 transition-colors"
           />
-          <button
+          <motion.button
             type="submit"
             aria-label="Send"
             disabled={isLoading || !input.trim() || !!pendingQuestion}
-            className="w-12 h-12 rounded-xl bg-red-primary text-white flex items-center justify-center hover:bg-red-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-14 h-14 rounded-xl bg-red-primary text-white flex items-center justify-center hover:bg-red-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Send size={18} />
-          </button>
+            <Send size={20} />
+          </motion.button>
         </div>
-      </form>
+      </motion.form>
     </div>
   );
 }
