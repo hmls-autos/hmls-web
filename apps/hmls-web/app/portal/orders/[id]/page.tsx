@@ -33,7 +33,7 @@ const PORTAL_STEPS = [
 
 const PORTAL_STEP_LABELS: Record<string, string> = {
   draft: "Preparing",
-  sent: "Review Required",
+  sent: "Estimate Ready",
   approved: "Approved",
   preauth: "Card Authorized",
   scheduled: "Scheduled",
