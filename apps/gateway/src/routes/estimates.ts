@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { renderToStream } from "@react-pdf/renderer";
 import { db, schema } from "@hmls/agent/db";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { EstimatePdf, notifyOrderStatusChange } from "@hmls/agent";
 import { Errors } from "@hmls/shared/errors";
 import { type AuthEnv, requireAuth } from "../middleware/auth.ts";
@@ -157,11 +157,14 @@ estimates.get("/:id/review", async (c) => {
     return c.json({ error: { code: "BAD_REQUEST", message: "Token required" } }, 400);
   }
 
-  // Try orders table first (new flow)
+  // Try orders table first (new flow) — match by estimateId or order ID
   const [order] = await db
     .select()
     .from(schema.orders)
-    .where(and(eq(schema.orders.estimateId, id), eq(schema.orders.shareToken, token)))
+    .where(and(
+      or(eq(schema.orders.estimateId, id), eq(schema.orders.id, id)),
+      eq(schema.orders.shareToken, token),
+    ))
     .limit(1);
 
   if (order) {
@@ -232,11 +235,14 @@ estimates.post("/:id/approve", async (c) => {
     return c.json({ error: { code: "BAD_REQUEST", message: "Token required" } }, 400);
   }
 
-  // Find order by share token
+  // Find order by share token — match by estimateId or order ID
   const [order] = await db
     .select()
     .from(schema.orders)
-    .where(and(eq(schema.orders.estimateId, id), eq(schema.orders.shareToken, token)))
+    .where(and(
+      or(eq(schema.orders.estimateId, id), eq(schema.orders.id, id)),
+      eq(schema.orders.shareToken, token),
+    ))
     .limit(1);
 
   if (!order) {
@@ -322,11 +328,14 @@ estimates.post("/:id/decline", async (c) => {
     return c.json({ error: { code: "BAD_REQUEST", message: "Token required" } }, 400);
   }
 
-  // Find order by share token
+  // Find order by share token — match by estimateId or order ID
   const [order] = await db
     .select()
     .from(schema.orders)
-    .where(and(eq(schema.orders.estimateId, id), eq(schema.orders.shareToken, token)))
+    .where(and(
+      or(eq(schema.orders.estimateId, id), eq(schema.orders.id, id)),
+      eq(schema.orders.shareToken, token),
+    ))
     .limit(1);
 
   if (!order) {
