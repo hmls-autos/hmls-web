@@ -6,7 +6,7 @@ import { estimates } from "./routes/estimates.ts";
 import { portal } from "./routes/portal.ts";
 import { admin } from "./routes/admin.ts";
 import { orders, ordersPdf } from "./routes/orders.ts";
-import { chat, initChat } from "./routes/chat.ts";
+import { chat, initChat, staffChat } from "./routes/chat.ts";
 import { createWebhookRoute } from "./routes/webhook.ts";
 
 interface HmlsAppOptions {
@@ -75,6 +75,7 @@ export function createHmlsApp(options: HmlsAppOptions) {
   app.route("/api/admin", admin);
   app.route("/api/admin/orders", orders);
   app.route("/task", chat);
+  app.route("/staff-task", staffChat);
 
   return app;
 }

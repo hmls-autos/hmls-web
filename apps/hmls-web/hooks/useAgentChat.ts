@@ -34,6 +34,7 @@ interface UseAgentChatOptions {
   scrollRef?: RefObject<HTMLElement | null>;
   inputRef?: RefObject<HTMLInputElement | null>;
   accessToken?: string | null;
+  endpoint?: string;
 }
 
 /** Extract concatenated text from a UIMessage's parts. */
@@ -75,7 +76,12 @@ function sendAutomaticallyWhenNotAskUser({
 }
 
 export function useAgentChat(options: UseAgentChatOptions = {}) {
-  const { scrollRef, inputRef, accessToken } = options;
+  const {
+    scrollRef,
+    inputRef,
+    accessToken,
+    endpoint = `${AGENT_URL}/task`,
+  } = options;
   const [pendingQuestion, setPendingQuestion] = useState<QuestionData | null>(
     null,
   );
@@ -108,7 +114,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const transportRef = useRef<DefaultChatTransport<UIMessage> | null>(null);
   if (!transportRef.current) {
     transportRef.current = new DefaultChatTransport<UIMessage>({
-      api: `${AGENT_URL}/task`,
+      api: endpoint,
       headers: () => headersRef.current,
     });
   }

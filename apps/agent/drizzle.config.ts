@@ -1,3 +1,4 @@
+import process from "node:process";
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
@@ -5,6 +6,6 @@ export default defineConfig({
   out: "./migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: Deno.env.get("DATABASE_URL")!,
+    url: (typeof Deno !== "undefined" ? Deno.env.get("DATABASE_URL") : process.env.DATABASE_URL)!,
   },
 });

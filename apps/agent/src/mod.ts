@@ -1,5 +1,6 @@
 // Agent factories
 export { type AgentConfig, type RunAgentOptions, runHmlsAgent } from "./hmls/agent.ts";
+export { runStaffAgent, type RunStaffAgentOptions } from "./hmls/staff-agent.ts";
 export { runFixoAgent, type RunFixoAgentOptions } from "./fixo/agent.ts";
 
 // Types
