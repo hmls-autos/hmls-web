@@ -1,9 +1,10 @@
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
-import type { Customer, Order, OrderDetail } from "@/lib/types";
+import type { Booking, Customer, Order, OrderDetail } from "@/lib/types";
 
 export type PortalCustomer = Customer;
 export type PortalOrder = Order;
+export type PortalBooking = Booking;
 
 export function usePortalCustomer() {
   const { data, error, isLoading, mutate } = useSWR<PortalCustomer>(
@@ -27,4 +28,12 @@ export function usePortalOrder(id: string | number | null) {
     fetcher,
   );
   return { data, isLoading, isError: !!error, mutate };
+}
+
+export function usePortalBookings() {
+  const { data, error, isLoading, mutate } = useSWR<PortalBooking[]>(
+    "/api/portal/me/bookings",
+    fetcher,
+  );
+  return { bookings: data ?? [], isLoading, isError: !!error, mutate };
 }

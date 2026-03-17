@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { db, schema } from "@hmls/agent/db";
 import { and, between, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { type AdminEnv, requireAdmin } from "../middleware/admin.ts";
+import { notifyBookingStatusChange } from "@hmls/agent";
 
 const admin = new Hono<AdminEnv>();
 
@@ -615,6 +616,7 @@ admin.post("/bookings/:id/confirm", async (c) => {
     .where(eq(schema.bookings.id, id))
     .returning();
 
+  notifyBookingStatusChange(id, "confirmed");
   return c.json(updated);
 });
 
@@ -649,6 +651,7 @@ admin.post("/bookings/:id/reject", async (c) => {
     .where(eq(schema.bookings.id, id))
     .returning();
 
+  notifyBookingStatusChange(id, "rejected");
   return c.json(updated);
 });
 

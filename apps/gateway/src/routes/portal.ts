@@ -419,4 +419,61 @@ portal.post("/me/orders/:id/confirm-preauth", async (c) => {
   return c.json({ success: true, status: "preauth" });
 });
 
+// POST /me/bookings/:id/cancel — customer cancels a requested booking
+portal.post("/me/bookings/:id/cancel", async (c) => {
+  const customerId = c.get("customerId");
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid booking ID" } }, 400);
+  }
+
+  const [booking] = await db
+    .select()
+    .from(schema.bookings)
+    .where(eq(schema.bookings.id, id))
+    .limit(1);
+
+  if (!booking || booking.customerId !== customerId) {
+    return c.json({ error: { code: "NOT_FOUND", message: "Booking not found" } }, 404);
+  }
+
+  if (booking.status !== "requested") {
+    return c.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message:
+            `Booking is '${booking.status}', only 'requested' bookings can be cancelled by customer`,
+        },
+      },
+      400,
+    );
+  }
+
+  const body = await c.req.json<{ reason?: string }>().catch(() => ({ reason: undefined }));
+
+  const [updated] = await db
+    .update(schema.bookings)
+    .set({
+      status: "cancelled",
+      customerNotes: body.reason
+        ? `${
+          booking.customerNotes ? booking.customerNotes + "\n" : ""
+        }Cancellation reason: ${body.reason}`
+        : booking.customerNotes,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(schema.bookings.id, id), eq(schema.bookings.status, "requested")))
+    .returning();
+
+  if (!updated) {
+    return c.json(
+      { error: { code: "CONFLICT", message: "Booking status changed concurrently" } },
+      409,
+    );
+  }
+
+  return c.json(updated);
+});
+
 export { portal };

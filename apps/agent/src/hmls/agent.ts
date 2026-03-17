@@ -6,6 +6,7 @@ import { schedulingTools } from "./tools/scheduling.ts";
 import { createStripeTools } from "./tools/stripe.ts";
 import { orderOpsTools } from "./tools/order-ops.ts";
 import { customerOrderActionTools } from "./tools/customer-order-actions.ts";
+import { customerBookingActionTools } from "./tools/customer-booking-actions.ts";
 import { formatUserContext, type UserContext } from "../types/user-context.ts";
 import { convertTools, type LegacyTool } from "../common/convert-tools.ts";
 import { askUserQuestionTools } from "../common/tools/ask-user-question.ts";
@@ -45,6 +46,7 @@ export function runHmlsAgent(options: RunAgentOptions) {
     orderOpsTools.find((t) => t.name === "get_order_status")!,
     orderOpsTools.find((t) => t.name === "add_order_note")!,
     ...customerOrderActionTools,
+    ...customerBookingActionTools,
   ];
 
   const allTools: LegacyTool[] = [
