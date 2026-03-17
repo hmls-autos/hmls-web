@@ -1,7 +1,14 @@
 "use client";
 
-import { CalendarDays, CheckCircle, Clock, XCircle } from "lucide-react";
-import { useState } from "react";
+import {
+  CalendarDays,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  XCircle,
+} from "lucide-react";
+import { useCallback, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -11,11 +18,11 @@ import { BOOKING_STATUS } from "@/lib/status";
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 
-function getWeekBounds() {
+function getWeekBounds(weekOffset = 0) {
   const now = new Date();
   const day = now.getDay(); // 0 = Sun
   const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - day);
+  startOfWeek.setDate(now.getDate() - day + weekOffset * 7);
   startOfWeek.setHours(0, 0, 0, 0);
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
@@ -198,7 +205,11 @@ function BookingCard({
 /* ── Page ────────────────────────────────────────────────────────────── */
 
 export default function SchedulePage() {
-  const { startOfWeek, endOfWeek } = getWeekBounds();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const { startOfWeek, endOfWeek } = getWeekBounds(weekOffset);
+  const goToPrevWeek = useCallback(() => setWeekOffset((o) => o - 1), []);
+  const goToNextWeek = useCallback(() => setWeekOffset((o) => o + 1), []);
+  const goToCurrentWeek = useCallback(() => setWeekOffset(0), []);
 
   // Pending bookings — no date filter, just status=requested
   const {
@@ -312,12 +323,39 @@ export default function SchedulePage() {
 
         {/* ── This Week's Schedule ── */}
         <section>
-          <div className="flex items-center gap-2 mb-4">
-            <CalendarDays className="w-4 h-4 text-blue-500" />
-            <h2 className="text-base font-semibold text-text">
-              This Week&rsquo;s Schedule
-            </h2>
-            <span className="text-xs text-text-secondary">{weekLabel}</span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-blue-500" />
+              <h2 className="text-base font-semibold text-text">
+                {weekOffset === 0 ? "This Week" : "Schedule"}
+              </h2>
+              <span className="text-xs text-text-secondary">{weekLabel}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={goToPrevWeek}
+                className="p-1.5 rounded-lg text-text-secondary hover:text-text hover:bg-surface-alt transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {weekOffset !== 0 && (
+                <button
+                  type="button"
+                  onClick={goToCurrentWeek}
+                  className="text-xs font-medium px-2 py-1 rounded-lg text-red-primary hover:bg-surface-alt transition-colors"
+                >
+                  Today
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={goToNextWeek}
+                className="p-1.5 rounded-lg text-text-secondary hover:text-text hover:bg-surface-alt transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {weekBookings.length === 0 ? (
