@@ -36,7 +36,10 @@ const approveOrderTool = {
       .where(eq(schema.orders.id, id))
       .limit(1);
 
-    if (!order || (ctx?.customerId != null && order.customerId !== ctx.customerId)) {
+    if (!ctx?.customerId) {
+      return toolResult({ success: false, error: "Authentication required" });
+    }
+    if (!order || order.customerId !== ctx.customerId) {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 
@@ -100,13 +103,17 @@ const declineOrderTool = {
       return toolResult({ success: false, error: "Invalid order ID" });
     }
 
+    if (!ctx?.customerId) {
+      return toolResult({ success: false, error: "Authentication required" });
+    }
+
     const [order] = await db
       .select()
       .from(schema.orders)
       .where(eq(schema.orders.id, id))
       .limit(1);
 
-    if (!order || (ctx?.customerId != null && order.customerId !== ctx.customerId)) {
+    if (!order || order.customerId !== ctx.customerId) {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 
@@ -171,13 +178,17 @@ const cancelOrderTool = {
       return toolResult({ success: false, error: "Invalid order ID" });
     }
 
+    if (!ctx?.customerId) {
+      return toolResult({ success: false, error: "Authentication required" });
+    }
+
     const [order] = await db
       .select()
       .from(schema.orders)
       .where(eq(schema.orders.id, id))
       .limit(1);
 
-    if (!order || (ctx?.customerId != null && order.customerId !== ctx.customerId)) {
+    if (!order || order.customerId !== ctx.customerId) {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 
@@ -247,13 +258,21 @@ const requestRescheduleTool = {
       return toolResult({ success: false, error: "Invalid order ID" });
     }
 
+    if (!ctx?.customerId) {
+      return toolResult({ success: false, error: "Authentication required" });
+    }
+
     const [order] = await db
-      .select({ id: schema.orders.id, status: schema.orders.status, customerId: schema.orders.customerId })
+      .select({
+        id: schema.orders.id,
+        status: schema.orders.status,
+        customerId: schema.orders.customerId,
+      })
       .from(schema.orders)
       .where(eq(schema.orders.id, id))
       .limit(1);
 
-    if (!order || (ctx?.customerId != null && order.customerId !== ctx.customerId)) {
+    if (!order || order.customerId !== ctx.customerId) {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 
@@ -318,13 +337,17 @@ const modifyOrderItemsTool = {
       return toolResult({ success: false, error: "Invalid order ID" });
     }
 
+    if (!ctx?.customerId) {
+      return toolResult({ success: false, error: "Authentication required" });
+    }
+
     const [order] = await db
       .select()
       .from(schema.orders)
       .where(eq(schema.orders.id, id))
       .limit(1);
 
-    if (!order || (ctx?.customerId != null && order.customerId !== ctx.customerId)) {
+    if (!order || order.customerId !== ctx.customerId) {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 

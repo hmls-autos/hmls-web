@@ -26,13 +26,17 @@ const cancelBookingTool = {
       return toolResult({ success: false, error: "Invalid booking ID" });
     }
 
+    if (!ctx?.customerId) {
+      return toolResult({ success: false, error: "Authentication required" });
+    }
+
     const [booking] = await db
       .select()
       .from(schema.bookings)
       .where(eq(schema.bookings.id, id))
       .limit(1);
 
-    if (!booking || (ctx?.customerId != null && booking.customerId !== ctx.customerId)) {
+    if (!booking || booking.customerId !== ctx.customerId) {
       return toolResult({ success: false, error: `Booking #${id} not found` });
     }
 
@@ -116,13 +120,17 @@ const requestRescheduleTool = {
       return toolResult({ success: false, error: "Invalid booking ID" });
     }
 
+    if (!ctx?.customerId) {
+      return toolResult({ success: false, error: "Authentication required" });
+    }
+
     const [booking] = await db
       .select()
       .from(schema.bookings)
       .where(eq(schema.bookings.id, id))
       .limit(1);
 
-    if (!booking || (ctx?.customerId != null && booking.customerId !== ctx.customerId)) {
+    if (!booking || booking.customerId !== ctx.customerId) {
       return toolResult({ success: false, error: `Booking #${id} not found` });
     }
 
