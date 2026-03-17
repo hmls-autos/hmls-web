@@ -2,8 +2,7 @@
 export const AGENT_URL =
   process.env.NEXT_PUBLIC_AGENT_URL ?? "https://api.hmls.autos";
 
-// Chat endpoint: same-origin proxy in production to fix iOS Safari SSE streaming.
-// Local dev: set NEXT_PUBLIC_AGENT_URL=http://localhost:8080 to hit the gateway directly.
-export const CHAT_ENDPOINT = process.env.NEXT_PUBLIC_AGENT_URL
-  ? `${process.env.NEXT_PUBLIC_AGENT_URL}/task`
-  : "/api/chat";
+// Always route chat through the same-origin proxy to fix iOS Safari SSE streaming.
+// The proxy (app/api/chat/route.ts) forwards to GATEWAY_URL server-side.
+// Local dev: set GATEWAY_URL=http://localhost:8080 in .env.local (server-side only).
+export const CHAT_ENDPOINT = "/api/chat";
