@@ -94,7 +94,7 @@ export default function AdminDashboard() {
               Upcoming Bookings
             </h2>
             <Link
-              href="/admin/bookings"
+              href="/admin/orders?status=scheduled"
               className="text-xs text-red-primary hover:text-red-dark font-medium"
             >
               View all
@@ -165,7 +165,7 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-text">Pending Quotes</h2>
             <Link
-              href="/admin/quotes"
+              href="/admin/orders?status=sent"
               className="text-xs text-red-primary hover:text-red-dark font-medium"
             >
               View all
