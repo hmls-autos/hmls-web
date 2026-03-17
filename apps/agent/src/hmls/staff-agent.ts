@@ -4,6 +4,7 @@ import { getLogger } from "@logtape/logtape";
 import { STAFF_SYSTEM_PROMPT } from "./staff-system-prompt.ts";
 import { schedulingTools } from "./tools/scheduling.ts";
 import { orderOpsTools } from "./tools/order-ops.ts";
+import { adminOrderTools } from "./tools/admin-order-tools.ts";
 import { convertTools, type LegacyTool } from "../common/convert-tools.ts";
 import { askUserQuestionTools } from "../common/tools/ask-user-question.ts";
 import { laborLookupTools } from "../common/tools/labor-lookup.ts";
@@ -33,6 +34,7 @@ export function runStaffAgent(options: RunStaffAgentOptions) {
     ...laborLookupTools,
     ...partsLookupTools,
     ...orderOpsTools,
+    ...adminOrderTools,
   ];
 
   const tools = convertTools(allTools);

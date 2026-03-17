@@ -66,6 +66,92 @@ orders.get("/", async (c) => {
   return c.json(rows);
 });
 
+// POST /orders — create a new draft order
+orders.post("/", async (c) => {
+  const body = await c.req.json<{
+    customer_id: number;
+    vehicle_year?: number;
+    vehicle_make?: string;
+    vehicle_model?: string;
+    description?: string;
+    items?: Array<{ description: string; labor_hours?: number; parts_cost?: number }>;
+  }>();
+
+  if (!body.customer_id) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "customer_id is required" } }, 400);
+  }
+
+  const customerId = Number(body.customer_id);
+  if (!Number.isInteger(customerId) || customerId <= 0) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid customer_id" } }, 400);
+  }
+
+  const [customer] = await db
+    .select()
+    .from(schema.customers)
+    .where(eq(schema.customers.id, customerId))
+    .limit(1);
+
+  if (!customer) {
+    return c.json({ error: { code: "NOT_FOUND", message: "Customer not found" } }, 404);
+  }
+
+  const vehicleInfo = body.vehicle_year || body.vehicle_make || body.vehicle_model
+    ? {
+      year: body.vehicle_year ? String(body.vehicle_year) : undefined,
+      make: body.vehicle_make ?? undefined,
+      model: body.vehicle_model ?? undefined,
+    }
+    : null;
+
+  const orderItems: OrderItem[] = (body.items ?? []).map((item) => {
+    const laborCents = Math.round((item.labor_hours ?? 0) * 120 * 100);
+    const partsCents = Math.round((item.parts_cost ?? 0) * 100);
+    const totalCents = laborCents + partsCents;
+    return {
+      id: crypto.randomUUID(),
+      category: "labor" as const,
+      name: item.description,
+      quantity: 1,
+      unitPriceCents: totalCents,
+      totalCents,
+      taxable: true,
+      ...(item.labor_hours ? { laborHours: item.labor_hours } : {}),
+    };
+  });
+
+  const subtotalCents = orderItems.reduce((sum, i) => sum + i.totalCents, 0);
+
+  const authUser = c.get("authUser");
+  const actor = authUser.email ?? "admin";
+
+  const [order] = await db
+    .insert(schema.orders)
+    .values({
+      customerId,
+      status: "draft",
+      statusHistory: [{ status: "draft", timestamp: new Date().toISOString(), actor }],
+      items: orderItems,
+      notes: body.description ?? null,
+      subtotalCents,
+      priceRangeLowCents: Math.round(subtotalCents * 0.9),
+      priceRangeHighCents: Math.round(subtotalCents * 1.1),
+      vehicleInfo: vehicleInfo ?? undefined,
+      contactName: customer.name ?? null,
+      contactEmail: customer.email ?? null,
+      contactPhone: customer.phone ?? null,
+      contactAddress: customer.address ?? null,
+    })
+    .returning();
+
+  await logOrderEvent(order.id, "status_change", actor, {
+    toStatus: "draft",
+    metadata: { itemCount: orderItems.length },
+  });
+
+  return c.json(order, 201);
+});
+
 // GET /orders/:id — single order with related entities + events
 orders.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
