@@ -3,7 +3,6 @@ import { Barlow, Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
-import { ChatWidget } from "@/components/ChatWidget";
 import { JsonLd } from "@/components/JsonLd";
 import Navbar from "@/components/Navbar";
 
@@ -91,7 +90,6 @@ export default function RootLayout({
             <Navbar />
             <div id="main-content" className="flex-1 flex flex-col">
               {children}
-              <ChatWidget />
             </div>
           </AuthProvider>
         </ThemeProvider>

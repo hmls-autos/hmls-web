@@ -20,7 +20,7 @@ import type { BookingConfirmationData } from "@/components/BookingConfirmation";
 import type { EstimateCardData } from "@/components/EstimateCard";
 import type { QuestionData } from "@/components/QuestionCard";
 import type { SlotPickerData } from "@/components/SlotPicker";
-import { AGENT_URL } from "@/lib/config";
+import { CHAT_ENDPOINT } from "@/lib/config";
 
 export interface Message {
   id: string;
@@ -80,7 +80,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     scrollRef,
     inputRef,
     accessToken,
-    endpoint = `${AGENT_URL}/task`,
+    endpoint = CHAT_ENDPOINT,
   } = options;
   const [pendingQuestion, setPendingQuestion] = useState<QuestionData | null>(
     null,
