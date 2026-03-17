@@ -31,15 +31,24 @@ function OrderCard({
       <div className="flex items-start justify-between gap-4 mb-3">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-text">
+            <Link
+              href={`/portal/orders/${order.id}`}
+              className="text-sm font-semibold text-text hover:text-red-primary transition-colors"
+            >
               Order #{order.id}
-            </h3>
+            </Link>
             <StatusBadge status={order.status} config={PORTAL_ORDER_STATUS} />
           </div>
           <p className="text-xs text-text-secondary mt-0.5">
             {formatDateTime(order.createdAt)}
           </p>
         </div>
+        <Link
+          href={`/portal/orders/${order.id}`}
+          className="text-xs text-text-secondary hover:text-text transition-colors shrink-0"
+        >
+          View →
+        </Link>
       </div>
 
       {/* Linked entities */}

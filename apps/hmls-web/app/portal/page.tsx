@@ -1,15 +1,11 @@
 "use client";
 
-import { Calendar, FileText, Receipt } from "lucide-react";
+import { CheckCircle, ClipboardList, Loader } from "lucide-react";
 import Link from "next/link";
 import { Spinner } from "@/components/ui/Spinner";
-import {
-  usePortalBookings,
-  usePortalCustomer,
-  usePortalEstimates,
-  usePortalQuotes,
-} from "@/hooks/usePortal";
-import { formatCents, formatDate } from "@/lib/format";
+import { usePortalCustomer, usePortalOrders } from "@/hooks/usePortal";
+import { formatCents, formatDateTime } from "@/lib/format";
+import { PORTAL_ORDER_STATUS } from "@/lib/status";
 
 function SummaryCard({
   label,
@@ -40,22 +36,11 @@ function SummaryCard({
   );
 }
 
-type ActivityItem = {
-  type: "booking" | "estimate" | "quote";
-  label: string;
-  detail: string;
-  date: string;
-  href: string;
-};
-
 export default function PortalDashboard() {
   const { customer, isLoading: customerLoading } = usePortalCustomer();
-  const { bookings, isLoading: bookingsLoading } = usePortalBookings();
-  const { estimates, isLoading: estimatesLoading } = usePortalEstimates();
-  const { quotes, isLoading: quotesLoading } = usePortalQuotes();
+  const { orders, isLoading: ordersLoading } = usePortalOrders();
 
-  const isLoading =
-    customerLoading || bookingsLoading || estimatesLoading || quotesLoading;
+  const isLoading = customerLoading || ordersLoading;
 
   if (isLoading) {
     return (
@@ -65,51 +50,24 @@ export default function PortalDashboard() {
     );
   }
 
-  const upcomingBookings = bookings.filter(
-    (b) =>
-      b.status !== "completed" &&
-      b.status !== "cancelled" &&
-      new Date(b.scheduledAt) >= new Date(),
-  );
-  const activeEstimates = estimates.filter(
-    (e) => new Date(e.expiresAt) >= new Date(),
-  );
-  const pendingQuotes = quotes.filter(
-    (q) => q.status === "draft" || q.status === "sent",
-  );
+  const pendingAction = orders.filter(
+    (o) => o.status === "sent" || o.status === "approved",
+  ).length;
 
-  // Build recent activity from all sources
-  const activity: ActivityItem[] = [
-    ...bookings.slice(0, 5).map((b) => ({
-      type: "booking" as const,
-      label: b.serviceType,
-      detail: b.status,
-      date: b.createdAt,
-      href: "/portal/bookings",
-    })),
-    ...estimates.slice(0, 5).map((e) => ({
-      type: "estimate" as const,
-      label: `${e.items.length} item${e.items.length !== 1 ? "s" : ""}`,
-      detail: `${formatCents(e.priceRangeLow)} – ${formatCents(e.priceRangeHigh)}`,
-      date: e.createdAt,
-      href: "/portal/estimates",
-    })),
-    ...quotes.slice(0, 5).map((q) => ({
-      type: "quote" as const,
-      label: formatCents(q.totalAmount),
-      detail: q.status,
-      date: q.createdAt,
-      href: "/portal/quotes",
-    })),
-  ]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  const activeOrders = orders.filter((o) =>
+    ["preauth", "scheduled", "in_progress"].includes(o.status),
+  ).length;
+
+  const completed = orders.filter((o) =>
+    ["paid", "completed"].includes(o.status),
+  ).length;
+
+  const recentOrders = [...orders]
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+    )
     .slice(0, 8);
-
-  const typeIcons = {
-    booking: Calendar,
-    estimate: FileText,
-    quote: Receipt,
-  };
 
   return (
     <div>
@@ -123,35 +81,35 @@ export default function PortalDashboard() {
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
         <SummaryCard
-          label="Upcoming Bookings"
-          count={upcomingBookings.length}
-          icon={Calendar}
-          href="/portal/bookings"
-          color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-        />
-        <SummaryCard
-          label="Active Estimates"
-          count={activeEstimates.length}
-          icon={FileText}
-          href="/portal/estimates"
+          label="Pending Action"
+          count={pendingAction}
+          icon={ClipboardList}
+          href="/portal/orders"
           color="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
         />
         <SummaryCard
-          label="Pending Quotes"
-          count={pendingQuotes.length}
-          icon={Receipt}
-          href="/portal/quotes"
+          label="Active Orders"
+          count={activeOrders}
+          icon={Loader}
+          href="/portal/orders"
+          color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+        />
+        <SummaryCard
+          label="Completed"
+          count={completed}
+          icon={CheckCircle}
+          href="/portal/orders"
           color="bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
         />
       </div>
 
-      {/* Recent activity */}
+      {/* Recent orders */}
       <h2 className="text-lg font-display font-semibold text-text mb-4">
-        Recent Activity
+        Recent Orders
       </h2>
-      {activity.length === 0 ? (
+      {recentOrders.length === 0 ? (
         <div className="bg-surface border border-border rounded-xl p-8 text-center">
-          <p className="text-text-secondary text-sm">No activity yet.</p>
+          <p className="text-text-secondary text-sm">No orders yet.</p>
           <Link
             href="/chat"
             className="inline-block mt-3 text-sm text-red-primary hover:text-red-dark font-medium"
@@ -161,23 +119,28 @@ export default function PortalDashboard() {
         </div>
       ) : (
         <div className="bg-surface border border-border rounded-xl divide-y divide-border">
-          {activity.map((item) => {
-            const Icon = typeIcons[item.type];
+          {recentOrders.map((order) => {
+            const statusConfig = PORTAL_ORDER_STATUS[order.status];
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={order.id}
+                href={`/portal/orders/${order.id}`}
                 className="flex items-center gap-4 px-4 py-3 hover:bg-surface-alt transition-colors first:rounded-t-xl last:rounded-b-xl"
               >
-                <Icon className="w-4 h-4 text-text-secondary shrink-0" />
+                <ClipboardList className="w-4 h-4 text-text-secondary shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-text truncate">{item.label}</p>
+                  <p className="text-sm text-text truncate">
+                    Order #{order.id}
+                  </p>
                   <p className="text-xs text-text-secondary capitalize">
-                    {item.detail}
+                    {statusConfig?.label ?? order.status}
+                    {order.subtotalCents > 0
+                      ? ` · ${formatCents(order.subtotalCents)}`
+                      : ""}
                   </p>
                 </div>
                 <span className="text-xs text-text-secondary shrink-0">
-                  {formatDate(item.date)}
+                  {formatDateTime(order.updatedAt)}
                 </span>
               </Link>
             );

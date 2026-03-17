@@ -100,6 +100,33 @@ portal.get("/me/orders", async (c) => {
   return c.json(rows);
 });
 
+// GET /me/orders/:id — single order detail with events (customer-scoped)
+portal.get("/me/orders/:id", async (c) => {
+  const customerId = c.get("customerId");
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+  }
+
+  const [order] = await db
+    .select()
+    .from(schema.orders)
+    .where(eq(schema.orders.id, id))
+    .limit(1);
+
+  if (!order || order.customerId !== customerId) {
+    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+  }
+
+  const events = await db
+    .select()
+    .from(schema.orderEvents)
+    .where(eq(schema.orderEvents.orderId, id))
+    .orderBy(desc(schema.orderEvents.createdAt));
+
+  return c.json({ order, events });
+});
+
 // GET /me/estimates — backward compat redirect to orders
 portal.get("/me/estimates", async (c) => {
   const customerId = c.get("customerId");

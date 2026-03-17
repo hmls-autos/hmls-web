@@ -1,6 +1,6 @@
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
-import type { Booking, Customer, Estimate, Order, Quote } from "@/lib/types";
+import type { Customer, Order, OrderDetail } from "@/lib/types";
 
 export type PortalCustomer = Customer;
 export type PortalOrder = Order;
@@ -13,22 +13,6 @@ export function usePortalCustomer() {
   return { customer: data, isLoading, isError: !!error, mutate };
 }
 
-export function usePortalBookings() {
-  const { data, error, isLoading } = useSWR<Booking[]>(
-    "/api/portal/me/bookings",
-    fetcher,
-  );
-  return { bookings: data ?? [], isLoading, isError: !!error };
-}
-
-export function usePortalEstimates() {
-  const { data, error, isLoading } = useSWR<Estimate[]>(
-    "/api/portal/me/estimates",
-    fetcher,
-  );
-  return { estimates: data ?? [], isLoading, isError: !!error };
-}
-
 export function usePortalOrders() {
   const { data, error, isLoading, mutate } = useSWR<PortalOrder[]>(
     "/api/portal/me/orders",
@@ -37,10 +21,10 @@ export function usePortalOrders() {
   return { orders: data ?? [], isLoading, isError: !!error, mutate };
 }
 
-export function usePortalQuotes() {
-  const { data, error, isLoading } = useSWR<Quote[]>(
-    "/api/portal/me/quotes",
+export function usePortalOrder(id: string | number | null) {
+  const { data, error, isLoading, mutate } = useSWR<OrderDetail>(
+    id ? `/api/portal/me/orders/${id}` : null,
     fetcher,
   );
-  return { quotes: data ?? [], isLoading, isError: !!error };
+  return { data, isLoading, isError: !!error, mutate };
 }
