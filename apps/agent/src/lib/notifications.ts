@@ -2,99 +2,371 @@ import { db } from "../db/client.ts";
 import * as schema from "../db/schema.ts";
 import { eq } from "drizzle-orm";
 
-// --- Status → customer-facing email config ---
+// --- Types ---
 
-interface EmailTemplate {
-  subject: string;
-  body: (ctx: NotificationContext) => string;
+interface OrderItem {
+  name: string;
+  description?: string;
+  price: number; // cents
 }
 
 interface NotificationContext {
   customerName: string;
   orderId: number;
-  estimateTotal?: string; // formatted dollar amount
+  estimateTotal?: string;
   quoteTotal?: string;
+  baseUrl: string;
   portalUrl: string;
-  reviewUrl?: string; // one-click estimate review link
+  reviewUrl?: string;
+  vehicleInfo?: { year?: string; make?: string; model?: string } | null;
+  items?: OrderItem[];
+  priceRangeLow?: number; // cents
+  priceRangeHigh?: number; // cents
+  subtotal?: number; // cents
+  expiresAt?: string;
 }
 
-/** Base portal URL — works for both hmls.autos and fixo.hmls.autos */
-const PORTAL_URL = Deno.env.get("PORTAL_URL") || "https://hmls.autos/portal";
+interface EmailTemplate {
+  subject: string;
+  text: (ctx: NotificationContext) => string;
+  html?: (ctx: NotificationContext) => string;
+}
+
+// --- Config ---
+
+const BASE_URL = Deno.env.get("BASE_URL") || "https://hmls.autos";
+const PORTAL_URL = Deno.env.get("PORTAL_URL") || `${BASE_URL}/portal`;
+
+// --- HTML helpers ---
+
+function fmtCents(cents: number): string {
+  return "$" +
+    (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function vehicleBlock(ctx: NotificationContext): string {
+  const v = ctx.vehicleInfo;
+  if (!v || (!v.year && !v.make && !v.model)) return "";
+  const label = [v.year, v.make, v.model].filter(Boolean).join(" ");
+  return `
+    <div style="margin:0 24px 16px;padding:12px 16px;background:#f4f4f5;border-radius:8px;border:1px solid #e4e4e7;">
+      <span style="font-size:13px;color:#52525b;">&#128663; ${label}</span>
+    </div>`;
+}
+
+function itemsBlock(ctx: NotificationContext): string {
+  const items = ctx.items;
+  if (!items || items.length === 0) return "";
+  const rows = items.map((item) => `
+    <tr>
+      <td style="padding:12px 24px;border-bottom:1px solid #f4f4f5;vertical-align:top;">
+        <div style="font-size:14px;font-weight:600;color:#18181b;">${item.name}</div>
+        ${
+    item.description
+      ? `<div style="font-size:12px;color:#71717a;margin-top:2px;">${item.description}</div>`
+      : ""
+  }
+      </td>
+      <td style="padding:12px 24px;border-bottom:1px solid #f4f4f5;text-align:right;white-space:nowrap;vertical-align:top;">
+        <span style="font-size:14px;font-weight:600;color:#18181b;">${fmtCents(item.price)}</span>
+      </td>
+    </tr>`).join("");
+  return `
+    <div style="border-top:1px solid #e4e4e7;border-bottom:1px solid #e4e4e7;">
+      <div style="padding:10px 24px;background:#f9f9fb;">
+        <span style="font-size:11px;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:0.5px;">Services</span>
+      </div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">${rows}</table>
+    </div>`;
+}
+
+function pricingBlock(ctx: NotificationContext): string {
+  const hasRange = ctx.priceRangeLow && ctx.priceRangeHigh;
+  const hasSubtotal = ctx.subtotal && ctx.subtotal > 0;
+  if (!hasRange && !hasSubtotal) return "";
+  return `
+    <div style="padding:16px 24px;">
+      ${
+    hasSubtotal
+      ? `
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="font-size:13px;color:#71717a;padding-bottom:8px;">Subtotal</td>
+            <td style="font-size:13px;color:#18181b;text-align:right;padding-bottom:8px;">${
+        fmtCents(ctx.subtotal!)
+      }</td>
+          </tr>
+        </table>`
+      : ""
+  }
+      ${
+    hasRange
+      ? `
+        <div style="border-top:1px solid #e4e4e7;padding-top:10px;margin-top:${
+        hasSubtotal ? "0" : "0"
+      }">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="font-size:15px;font-weight:700;color:#18181b;">Estimated Range</td>
+              <td style="font-size:15px;font-weight:700;color:#18181b;text-align:right;">${
+        fmtCents(ctx.priceRangeLow!)
+      } &ndash; ${fmtCents(ctx.priceRangeHigh!)}</td>
+            </tr>
+          </table>
+          <p style="margin:6px 0 0;font-size:11px;color:#a1a1aa;">Final pricing confirmed in your official quote.</p>
+        </div>`
+      : ""
+  }
+    </div>`;
+}
+
+function htmlWrapper(content: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light">
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f5;">
+<tr><td align="center" style="padding:0;">
+  <!-- Header -->
+  <div style="background:#18181b;padding:20px 32px;">
+    <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">HMLS</span>
+  </div>
+  <!-- Card -->
+  <div style="max-width:560px;margin:0 auto;padding:20px 16px;">
+    <div style="background:#ffffff;border-radius:12px;border:1px solid #e4e4e7;overflow:hidden;">
+      ${content}
+    </div>
+    <p style="text-align:center;font-size:11px;color:#a1a1aa;margin:16px 0;">HMLS &middot; <a href="${BASE_URL}" style="color:#a1a1aa;">${
+    BASE_URL.replace("https://", "")
+  }</a></p>
+  </div>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+// --- Email templates ---
 
 const STATUS_EMAILS: Record<string, EmailTemplate> = {
   sent: {
     subject: "Your HMLS Estimate is Ready",
-    body: (ctx) =>
+    text: (ctx) =>
       `Hi ${ctx.customerName},\n\nYour estimate${
-        ctx.estimateTotal ? ` (~${ctx.estimateTotal})` : ""
-      } is ready for review.\n\nView details and approve or decline with one tap:\n${
+        ctx.estimateTotal ? ` (${ctx.estimateTotal})` : ""
+      } is ready for review.\n\nView and approve:\n${
         ctx.reviewUrl ?? `${ctx.portalUrl}/orders`
       }\n\nThanks,\nHMLS Team`,
+    html: (ctx) =>
+      htmlWrapper(`
+      <div style="padding:24px 24px 16px;">
+        <h1 style="margin:0 0 6px;font-size:20px;font-weight:700;color:#18181b;line-height:1.3;">Your Estimate is Ready</h1>
+        <p style="margin:0;color:#71717a;font-size:14px;line-height:1.5;">
+          Hi ${ctx.customerName}, here&apos;s your service estimate. Review and approve when you&apos;re ready.
+        </p>
+      </div>
+      ${vehicleBlock(ctx)}
+      ${itemsBlock(ctx)}
+      ${pricingBlock(ctx)}
+      <div style="padding:20px 24px 24px;background:#f9f9fb;border-top:1px solid #e4e4e7;text-align:center;">
+        <a href="${
+        ctx.reviewUrl ?? ctx.portalUrl
+      }" style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 36px;border-radius:8px;letter-spacing:-0.2px;">Approve Estimate</a>
+        <br>
+        <a href="${
+        ctx.reviewUrl ?? ctx.portalUrl
+      }" style="display:inline-block;margin-top:12px;color:#71717a;font-size:13px;text-decoration:none;">View &amp; Decline</a>
+        ${
+        ctx.expiresAt
+          ? `<p style="margin:14px 0 0;font-size:11px;color:#a1a1aa;">This estimate expires on ${
+            fmtDate(ctx.expiresAt)
+          }.</p>`
+          : ""
+      }
+      </div>`),
   },
+
   approved: {
     subject: "Estimate Approved — We'll Prepare Your Invoice",
-    body: (ctx) =>
+    text: (ctx) =>
       `Hi ${ctx.customerName},\n\nThanks for approving your estimate! We're now preparing your invoice with the final pricing.\n\nWe'll notify you as soon as it's ready.\n\nThanks,\nHMLS Team`,
+    html: (ctx) =>
+      htmlWrapper(`
+      <div style="padding:32px 24px;text-align:center;">
+        <div style="width:56px;height:56px;background:#dcfce7;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:24px;">&#10003;</span>
+        </div>
+        <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#18181b;">Estimate Approved</h1>
+        <p style="margin:0;color:#71717a;font-size:14px;line-height:1.6;">
+          Hi ${ctx.customerName}, thanks for approving! We&apos;re preparing your invoice with final pricing and will email you as soon as it&apos;s ready.
+        </p>
+      </div>`),
   },
+
   declined: {
     subject: "Estimate Declined",
-    body: (ctx) =>
-      `Hi ${ctx.customerName},\n\nWe received your decision to decline the estimate for order #${ctx.orderId}. If you change your mind or have questions, feel free to reach out.\n\nThanks,\nHMLS Team`,
+    text: (ctx) =>
+      `Hi ${ctx.customerName},\n\nWe received your decision to decline estimate #${ctx.orderId}. If you change your mind or have questions, feel free to reach out.\n\nThanks,\nHMLS Team`,
+    html: (ctx) =>
+      htmlWrapper(`
+      <div style="padding:32px 24px;text-align:center;">
+        <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#18181b;">Estimate Declined</h1>
+        <p style="margin:0;color:#71717a;font-size:14px;line-height:1.6;">
+          Hi ${ctx.customerName}, no problem. If you change your mind or need a revised estimate, just reply to this email or give us a call.
+        </p>
+      </div>`),
   },
+
   revised: {
     subject: "Your Revised HMLS Estimate is Ready",
-    body: (ctx) =>
+    text: (ctx) =>
       `Hi ${ctx.customerName},\n\nA revised estimate${
-        ctx.estimateTotal ? ` (~${ctx.estimateTotal})` : ""
-      } is available for your review.\n\nView the updated details:\n${
+        ctx.estimateTotal ? ` (${ctx.estimateTotal})` : ""
+      } is ready for your review.\n\n${
         ctx.reviewUrl ?? `${ctx.portalUrl}/orders`
       }\n\nThanks,\nHMLS Team`,
+    html: (ctx) =>
+      htmlWrapper(`
+      <div style="padding:24px 24px 16px;">
+        <h1 style="margin:0 0 6px;font-size:20px;font-weight:700;color:#18181b;">Revised Estimate Ready</h1>
+        <p style="margin:0;color:#71717a;font-size:14px;line-height:1.5;">
+          Hi ${ctx.customerName}, we&apos;ve updated your estimate based on your feedback.
+        </p>
+      </div>
+      ${vehicleBlock(ctx)}
+      ${itemsBlock(ctx)}
+      ${pricingBlock(ctx)}
+      <div style="padding:20px 24px 24px;background:#f9f9fb;border-top:1px solid #e4e4e7;text-align:center;">
+        <a href="${
+        ctx.reviewUrl ?? ctx.portalUrl
+      }" style="display:inline-block;background:#16a34a;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 36px;border-radius:8px;">Review Revised Estimate</a>
+      </div>`),
   },
+
   invoiced: {
     subject: "Your HMLS Invoice is Ready",
-    body: (ctx) =>
+    text: (ctx) =>
       `Hi ${ctx.customerName},\n\nYour invoice${
         ctx.quoteTotal ? ` ($${ctx.quoteTotal})` : ""
-      } is ready. You can review and pay directly through the secure payment link in your portal.\n\n${ctx.portalUrl}/orders\n\nThanks,\nHMLS Team`,
+      } is ready. Pay securely:\n${ctx.portalUrl}/orders\n\nThanks,\nHMLS Team`,
+    html: (ctx) =>
+      htmlWrapper(`
+      <div style="padding:32px 24px;text-align:center;">
+        <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#18181b;">Your Invoice is Ready</h1>
+        <p style="margin:0 0 20px;color:#71717a;font-size:14px;line-height:1.6;">
+          Hi ${ctx.customerName}, your invoice${
+        ctx.quoteTotal ? ` ($${ctx.quoteTotal})` : ""
+      } is ready. Pay securely through your portal.
+        </p>
+        <a href="${ctx.portalUrl}/orders" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 36px;border-radius:8px;">View Invoice &amp; Pay</a>
+      </div>`),
   },
+
   paid: {
     subject: "Payment Received — Let's Schedule Your Service",
-    body: (ctx) =>
-      `Hi ${ctx.customerName},\n\nPayment received! The next step is scheduling your service appointment.\n\nVisit your portal to pick a time:\n${ctx.portalUrl}/orders\n\nThanks,\nHMLS Team`,
+    text: (ctx) =>
+      `Hi ${ctx.customerName},\n\nPayment received! Next step is scheduling your service.\n\n${ctx.portalUrl}/orders\n\nThanks,\nHMLS Team`,
+    html: (ctx) =>
+      htmlWrapper(`
+      <div style="padding:32px 24px;text-align:center;">
+        <div style="width:56px;height:56px;background:#dcfce7;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:24px;">&#10003;</span>
+        </div>
+        <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#18181b;">Payment Received</h1>
+        <p style="margin:0 0 20px;color:#71717a;font-size:14px;line-height:1.6;">
+          Hi ${ctx.customerName}, all paid! The next step is scheduling your service appointment.
+        </p>
+        <a href="${ctx.portalUrl}/orders" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 36px;border-radius:8px;">Schedule Appointment</a>
+      </div>`),
   },
+
   scheduled: {
     subject: "Your HMLS Service is Scheduled",
-    body: (ctx) =>
-      `Hi ${ctx.customerName},\n\nYour service appointment is confirmed. You can view the details in your portal:\n${ctx.portalUrl}/orders\n\nWe'll see you soon!\n\nThanks,\nHMLS Team`,
+    text: (ctx) =>
+      `Hi ${ctx.customerName},\n\nYour service appointment is confirmed. View details:\n${ctx.portalUrl}/orders\n\nSee you soon!\n\nThanks,\nHMLS Team`,
+    html: (ctx) =>
+      htmlWrapper(`
+      <div style="padding:32px 24px;text-align:center;">
+        <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#18181b;">Service Scheduled</h1>
+        <p style="margin:0 0 20px;color:#71717a;font-size:14px;line-height:1.6;">
+          Hi ${ctx.customerName}, your appointment is confirmed. View the details in your portal.
+        </p>
+        <a href="${ctx.portalUrl}/orders" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 36px;border-radius:8px;">View Details</a>
+      </div>`),
   },
+
   in_progress: {
     subject: "Your Service is In Progress",
-    body: (ctx) =>
+    text: (ctx) =>
       `Hi ${ctx.customerName},\n\nOur technician has started working on your vehicle. We'll update you when the work is complete.\n\nThanks,\nHMLS Team`,
+    html: (ctx) =>
+      htmlWrapper(`
+      <div style="padding:32px 24px;text-align:center;">
+        <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#18181b;">Work in Progress</h1>
+        <p style="margin:0;color:#71717a;font-size:14px;line-height:1.6;">
+          Hi ${ctx.customerName}, our technician has started on your vehicle. We&apos;ll email you as soon as it&apos;s done.
+        </p>
+      </div>`),
   },
+
   completed: {
     subject: "Your HMLS Service is Complete",
-    body: (ctx) =>
-      `Hi ${ctx.customerName},\n\nGood news — your service is complete! You can view the details and receipt in your portal:\n${ctx.portalUrl}/orders\n\nThank you for choosing HMLS!\n\nThanks,\nHMLS Team`,
+    text: (ctx) =>
+      `Hi ${ctx.customerName},\n\nYour service is complete! View your receipt:\n${ctx.portalUrl}/orders\n\nThank you for choosing HMLS!\n\nThanks,\nHMLS Team`,
+    html: (ctx) =>
+      htmlWrapper(`
+      <div style="padding:32px 24px;text-align:center;">
+        <div style="width:56px;height:56px;background:#dcfce7;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:24px;">&#10003;</span>
+        </div>
+        <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#18181b;">Service Complete</h1>
+        <p style="margin:0 0 20px;color:#71717a;font-size:14px;line-height:1.6;">
+          Hi ${ctx.customerName}, your vehicle is ready for pickup! View your receipt and service summary in your portal.
+        </p>
+        <a href="${ctx.portalUrl}/orders" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 36px;border-radius:8px;">View Receipt</a>
+        <p style="margin:16px 0 0;font-size:13px;color:#71717a;">Thank you for choosing HMLS!</p>
+      </div>`),
   },
+
   cancelled: {
     subject: "Your HMLS Order Has Been Cancelled",
-    body: (ctx) =>
-      `Hi ${ctx.customerName},\n\nYour order #${ctx.orderId} has been cancelled. If you have questions, please reach out to us.\n\nThanks,\nHMLS Team`,
+    text: (ctx) =>
+      `Hi ${ctx.customerName},\n\nOrder #${ctx.orderId} has been cancelled. If you have questions, please reach out.\n\nThanks,\nHMLS Team`,
+    html: (ctx) =>
+      htmlWrapper(`
+      <div style="padding:32px 24px;text-align:center;">
+        <h1 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#18181b;">Order Cancelled</h1>
+        <p style="margin:0;color:#71717a;font-size:14px;line-height:1.6;">
+          Hi ${ctx.customerName}, order #${ctx.orderId} has been cancelled. If you have questions or need anything, just reply to this email.
+        </p>
+      </div>`),
   },
 };
 
-// --- Admin notification statuses (notify admin, not customer) ---
+// --- Admin notification statuses ---
 
-const ADMIN_NOTIFY_STATUSES = new Set([
-  "approved", // customer approved estimate → admin should create invoice
-  "declined", // customer declined → admin should know
-  "revised", // revised estimate sent → admin awareness
-]);
+const ADMIN_NOTIFY_STATUSES = new Set(["approved", "declined", "revised"]);
 
 // --- Email sending via Resend ---
 
-async function sendEmail(to: string, subject: string, text: string): Promise<boolean> {
+async function sendEmail(
+  to: string,
+  subject: string,
+  text: string,
+  html?: string,
+): Promise<boolean> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
     console.log(`[notify] RESEND_API_KEY not set — skipping email to ${to}: ${subject}`);
@@ -104,13 +376,16 @@ async function sendEmail(to: string, subject: string, text: string): Promise<boo
   const from = Deno.env.get("NOTIFY_FROM_EMAIL") || "HMLS <noreply@hmls.autos>";
 
   try {
+    const body: Record<string, unknown> = { from, to: [to], subject, text };
+    if (html) body.html = html;
+
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from, to: [to], subject, text }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
@@ -134,7 +409,6 @@ export async function notifyOrderStatusChange(
   newStatus: string,
 ): Promise<void> {
   try {
-    // Look up order + customer
     const [order] = await db
       .select()
       .from(schema.orders)
@@ -146,44 +420,69 @@ export async function notifyOrderStatusChange(
       return;
     }
 
-    const [customer] = await db
-      .select()
-      .from(schema.customers)
-      .where(eq(schema.customers.id, order.customerId))
-      .limit(1);
+    // Use contactEmail snapshot first, fall back to customer record
+    let toEmail = order.contactEmail ?? null;
+    let customerName = order.contactName || "there";
 
-    if (!customer?.email) {
-      console.warn(`[notify] No email for customer ${order.customerId}`);
-      return;
+    if (!toEmail) {
+      const [customer] = await db
+        .select()
+        .from(schema.customers)
+        .where(eq(schema.customers.id, order.customerId))
+        .limit(1);
+
+      if (!customer?.email) {
+        console.warn(`[notify] No email for order ${orderId} / customer ${order.customerId}`);
+        return;
+      }
+      toEmail = customer.email;
+      customerName = customer.name || order.contactName || "there";
     }
 
     const ctx: NotificationContext = {
-      customerName: customer.name || "there",
+      customerName,
       orderId: order.id,
+      baseUrl: BASE_URL,
       portalUrl: PORTAL_URL,
     };
 
-    // Use order's own pricing data (no separate estimates/quotes lookup)
+    // Pricing
     if (order.priceRangeLowCents && order.priceRangeHighCents) {
-      ctx.estimateTotal = `$${(order.priceRangeLowCents / 100).toFixed(0)}–$${
-        (order.priceRangeHighCents / 100).toFixed(0)
+      ctx.priceRangeLow = order.priceRangeLowCents;
+      ctx.priceRangeHigh = order.priceRangeHighCents;
+      ctx.estimateTotal = `${fmtCents(order.priceRangeLowCents)}–${
+        fmtCents(order.priceRangeHighCents)
       }`;
     } else if (order.subtotalCents) {
-      ctx.estimateTotal = `$${(order.subtotalCents / 100).toFixed(2)}`;
+      ctx.estimateTotal = fmtCents(order.subtotalCents);
     }
 
     if (order.subtotalCents) {
+      ctx.subtotal = order.subtotalCents;
       ctx.quoteTotal = (order.subtotalCents / 100).toFixed(2);
     }
 
+    // Items & vehicle for rich email
+    if (order.items) {
+      ctx.items = order.items as OrderItem[];
+    }
+    if (order.vehicleInfo) {
+      ctx.vehicleInfo = order.vehicleInfo as NotificationContext["vehicleInfo"];
+    }
+    if (order.expiresAt) {
+      ctx.expiresAt = order.expiresAt.toISOString();
+    }
+
+    // Magic link: points to /estimate/[id] (no /portal prefix)
     if (order.shareToken) {
-      ctx.reviewUrl = `${PORTAL_URL}/estimate/${order.id}?token=${order.shareToken}`;
+      ctx.reviewUrl = `${BASE_URL}/estimate/${order.id}?token=${order.shareToken}`;
     }
 
     // Send customer email
     const template = STATUS_EMAILS[newStatus];
     if (template) {
-      await sendEmail(customer.email, template.subject, template.body(ctx));
+      const html = template.html ? template.html(ctx) : undefined;
+      await sendEmail(toEmail, template.subject, template.text(ctx), html);
     }
 
     // Notify admin for certain statuses
@@ -191,14 +490,12 @@ export async function notifyOrderStatusChange(
       const adminEmail = Deno.env.get("ADMIN_NOTIFY_EMAIL");
       if (adminEmail) {
         const adminSubject = `[HMLS Admin] Order #${order.id} → ${newStatus}`;
-        const adminBody = `Order #${order.id} (${
-          customer.name || customer.email
-        }) changed to: ${newStatus}\n\nAction may be required.\n\nAdmin portal: ${PORTAL_URL}/admin/orders`;
+        const adminBody =
+          `Order #${order.id} (${customerName} / ${toEmail}) changed to: ${newStatus}\n\nAdmin portal: ${PORTAL_URL}/admin/orders/${order.id}`;
         await sendEmail(adminEmail, adminSubject, adminBody);
       }
     }
   } catch (err) {
-    // Never let notification failures break the main flow
-    console.error(`[notify] Error sending notification for order ${orderId}:`, err);
+    console.error(`[notify] Error for order ${orderId}:`, err);
   }
 }
