@@ -46,7 +46,7 @@ export function runStaffAgent(options: RunStaffAgentOptions) {
     system: STAFF_SYSTEM_PROMPT,
     messages,
     tools,
-    stopWhen: [stepCountIs(10), hasToolCall("ask_user_question")],
+    stopWhen: [stepCountIs(25), hasToolCall("ask_user_question")],
     onStepFinish: (step) => {
       const toolCalls = step.toolCalls ?? [];
       if (toolCalls.length > 0) {
