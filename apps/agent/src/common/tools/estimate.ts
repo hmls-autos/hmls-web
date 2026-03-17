@@ -288,9 +288,10 @@ export const createEstimateTool = {
         .insert(schema.orders)
         .values({
           customerId: customer.id,
-          status: "draft",
+          status: "sent",
           statusHistory: [
             { status: "draft", timestamp: new Date().toISOString(), actor: "system" },
+            { status: "sent", timestamp: new Date().toISOString(), actor: "agent" },
           ],
           items: orderItems,
           notes: params.notes ?? null,
@@ -317,8 +318,8 @@ export const createEstimateTool = {
         orderId: order.id,
         eventType: "status_change",
         fromStatus: null,
-        toStatus: "draft",
-        actor: "system",
+        toStatus: "sent",
+        actor: "agent",
         metadata: {
           vehicleInfo: params.vehicle,
           itemCount: orderItems.length,
