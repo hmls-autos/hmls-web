@@ -4,7 +4,6 @@ import { db, schema } from "../../db/client.ts";
 import { and, eq, isNull } from "drizzle-orm";
 import { Errors } from "@hmls/shared/errors";
 import { toolResult } from "@hmls/shared/tool-result";
-import { notifyOrderStatusChange } from "../../lib/notifications.ts";
 
 function dollarsToCents(dollars: number): number {
   return Math.round(dollars * 100);
@@ -146,14 +145,15 @@ export function createStripeTools(secretKey: string) {
         })
         .returning();
 
-      // Link quote to existing order (find the most recent approved order for this customer)
+      // Link quote to existing order (find the most recent in-progress order for this customer)
+      // NOTE: Quote creation does NOT transition order status — the order must go through
+      // the full preauth → scheduled → in_progress → invoiced flow.
       const [existingOrder] = await db
         .select()
         .from(schema.orders)
         .where(
           and(
             eq(schema.orders.customerId, params.customerId),
-            eq(schema.orders.status, "approved"),
             isNull(schema.orders.quoteId),
           ),
         )
@@ -161,23 +161,13 @@ export function createStripeTools(secretKey: string) {
         .limit(1);
 
       if (existingOrder) {
-        const history = Array.isArray(existingOrder.statusHistory)
-          ? existingOrder.statusHistory
-          : [];
         await db
           .update(schema.orders)
           .set({
             quoteId: dbQuote.id,
-            status: "invoiced",
-            statusHistory: [
-              ...history,
-              { status: "invoiced", timestamp: new Date().toISOString(), actor: "system" },
-            ],
             updatedAt: new Date(),
           })
           .where(eq(schema.orders.id, existingOrder.id));
-
-        notifyOrderStatusChange(existingOrder.id, "invoiced");
       }
 
       return toolResult({
