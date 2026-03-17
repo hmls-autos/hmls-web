@@ -49,9 +49,13 @@ const orders = new Hono<AdminEnv>();
 
 orders.use("*", requireAdmin);
 
-// GET /orders — list all orders
+// GET /orders — list all orders (with pagination)
 orders.get("/", async (c) => {
   const status = c.req.query("status");
+  const page = Math.max(1, Number(c.req.query("page")) || 1);
+  const limit = Math.min(200, Math.max(1, Number(c.req.query("limit")) || 50));
+  const offset = (page - 1) * limit;
+
   let query = db
     .select()
     .from(schema.orders)
@@ -62,7 +66,7 @@ orders.get("/", async (c) => {
     query = query.where(eq(schema.orders.status, status));
   }
 
-  const rows = await query.limit(200);
+  const rows = await query.limit(limit).offset(offset);
   return c.json(rows);
 });
 
@@ -105,7 +109,7 @@ orders.post("/", async (c) => {
     : null;
 
   const orderItems: OrderItem[] = (body.items ?? []).map((item) => {
-    const laborCents = Math.round((item.labor_hours ?? 0) * 120 * 100);
+    const laborCents = Math.round((item.labor_hours ?? 0) * 140 * 100); // $140/hr default (matches pricing engine)
     const partsCents = Math.round((item.parts_cost ?? 0) * 100);
     const totalCents = laborCents + partsCents;
     return {

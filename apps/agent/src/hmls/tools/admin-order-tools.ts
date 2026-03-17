@@ -196,7 +196,7 @@ const createOrderTool = {
 
     // Build OrderItem[] from simple items input
     const orderItems: OrderItem[] = (params.items ?? []).map((item) => {
-      const laborCents = Math.round((item.labor_hours ?? 0) * 120 * 100); // $120/hr default
+      const laborCents = Math.round((item.labor_hours ?? 0) * 140 * 100); // $140/hr default (matches pricing engine)
       const partsCents = Math.round((item.parts_cost ?? 0) * 100);
       const totalCents = laborCents + partsCents;
       return {
@@ -331,7 +331,7 @@ const updateOrderItemsTool = {
 
     if (params.items !== undefined) {
       const orderItems: OrderItem[] = params.items.map((item) => {
-        const laborCents = Math.round((item.labor_hours ?? 0) * 120 * 100); // $120/hr default
+        const laborCents = Math.round((item.labor_hours ?? 0) * 140 * 100); // $140/hr default (matches pricing engine)
         const partsCents = Math.round((item.parts_cost ?? 0) * 100);
         const totalCents = laborCents + partsCents;
         return {
