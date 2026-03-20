@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Pencil,
   Plus,
+  Printer,
   Save,
   Tag,
   Trash2,
@@ -561,6 +562,16 @@ function EstimatePanel({
                 Estimate PDF — Order #{order.id}
               </span>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const w = window.open(pdfUrl, "_blank");
+                    if (w) w.addEventListener("load", () => w.print());
+                  }}
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800"
+                >
+                  <Printer className="w-3 h-3" /> Print
+                </button>
                 <a
                   href={pdfUrl}
                   target="_blank"
@@ -681,6 +692,16 @@ function QuotePanel({
                 Quote PDF — Order #{order.id}
               </span>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const w = window.open(pdfUrl, "_blank");
+                    if (w) w.addEventListener("load", () => w.print());
+                  }}
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800"
+                >
+                  <Printer className="w-3 h-3" /> Print
+                </button>
                 <a
                   href={pdfUrl}
                   target="_blank"
