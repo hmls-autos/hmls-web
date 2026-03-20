@@ -64,15 +64,27 @@ chat.post("/", optionalAuth, async (c) => {
   let body;
   try {
     body = await c.req.json();
-  } catch {
+  } catch (e) {
+    const raw = await c.req.text().catch(() => "<unreadable>");
+    logger.error("JSON parse failed", { error: String(e), rawBody: raw.slice(0, 500) });
     return c.json(
       { error: { code: "BAD_REQUEST", message: "Invalid JSON body" } },
       400,
     );
   }
 
+  logger.info("Body received", {
+    keys: Object.keys(body),
+    hasMessages: "messages" in body,
+    bodyPreview: JSON.stringify(body).slice(0, 300),
+  });
+
   const { messages } = body;
   if (!messages || !Array.isArray(messages)) {
+    logger.error("Validation failed", {
+      messagesType: typeof messages,
+      bodyKeys: Object.keys(body),
+    });
     throw Errors.validation("Invalid request", "messages array is required");
   }
 
