@@ -596,39 +596,113 @@ function QuotePanel({
   order,
 }: {
   order: {
+    id: number;
+    shareToken: string | null;
     subtotalCents: number;
     stripeQuoteId: string | null;
     stripeInvoiceId: string | null;
     quoteId: number | null;
   };
 }) {
+  const [showPdf, setShowPdf] = useState(false);
+  const pdfUrl = order.shareToken
+    ? `${AGENT_URL}/api/orders/${order.id}/pdf?token=${order.shareToken}`
+    : null;
+
   return (
-    <div className="rounded-lg border border-border bg-surface-alt p-3 space-y-2">
-      <span className="text-xs font-semibold text-text uppercase tracking-wide block">
-        Quote
-      </span>
-      <p className="text-xs text-text">
-        Total:{" "}
-        <span className="font-semibold">
-          {formatCents(order.subtotalCents ?? 0)}
-        </span>
-      </p>
-      {order.stripeQuoteId && (
-        <p className="text-xs text-text-secondary">
-          Stripe Quote: <span className="font-mono">{order.stripeQuoteId}</span>
+    <>
+      <div className="rounded-lg border border-border bg-surface-alt p-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-text uppercase tracking-wide">
+            Quote
+          </span>
+          {pdfUrl && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPdf(true)}
+                className="flex items-center gap-1 text-xs text-text-secondary hover:text-text"
+                title="Preview PDF"
+              >
+                <FileText className="w-3 h-3" /> Preview
+              </button>
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs text-text-secondary hover:text-text"
+                title="Open PDF"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-text">
+          Total:{" "}
+          <span className="font-semibold">
+            {formatCents(order.subtotalCents ?? 0)}
+          </span>
         </p>
+        {order.stripeQuoteId && (
+          <p className="text-xs text-text-secondary">
+            Stripe Quote:{" "}
+            <span className="font-mono">{order.stripeQuoteId}</span>
+          </p>
+        )}
+        {order.stripeInvoiceId && (
+          <p className="text-xs text-text-secondary">
+            Invoice: <span className="font-mono">{order.stripeInvoiceId}</span>
+          </p>
+        )}
+        {order.quoteId && (
+          <p className="text-xs text-text-secondary">
+            Quote ID: #{order.quoteId}
+          </p>
+        )}
+      </div>
+
+      {/* PDF Preview Modal */}
+      {showPdf && pdfUrl && (
+        // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop dismiss
+        // biome-ignore lint/a11y/noStaticElementInteractions: backdrop dismiss
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setShowPdf(false)}
+        >
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: stop propagation */}
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: stop propagation */}
+          <div
+            className="relative w-full max-w-3xl h-[90vh] mx-4 bg-white rounded-lg overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-gray-50">
+              <span className="text-sm font-medium text-gray-700">
+                Quote PDF — Order #{order.id}
+              </span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800"
+                >
+                  <ExternalLink className="w-3 h-3" /> Open
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowPdf(false)}
+                  className="text-gray-400 hover:text-gray-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <iframe src={pdfUrl} className="w-full h-full" title="Quote PDF" />
+          </div>
+        </div>
       )}
-      {order.stripeInvoiceId && (
-        <p className="text-xs text-text-secondary">
-          Invoice: <span className="font-mono">{order.stripeInvoiceId}</span>
-        </p>
-      )}
-      {order.quoteId && (
-        <p className="text-xs text-text-secondary">
-          Quote ID: #{order.quoteId}
-        </p>
-      )}
-    </div>
+    </>
   );
 }
 
