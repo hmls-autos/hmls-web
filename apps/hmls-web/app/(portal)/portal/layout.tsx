@@ -2,6 +2,7 @@
 
 import { Calendar, ClipboardList, LayoutDashboard, User } from "lucide-react";
 import { DashboardLayout, type NavItem } from "@/components/DashboardLayout";
+import Navbar from "@/components/Navbar";
 
 const navItems: NavItem[] = [
   { href: "/portal", label: "Dashboard", icon: LayoutDashboard },
@@ -16,8 +17,11 @@ export default function PortalLayout({
   children: React.ReactNode;
 }) {
   return (
-    <DashboardLayout navItems={navItems} title="Menu">
-      {children}
-    </DashboardLayout>
+    <>
+      <Navbar />
+      <DashboardLayout navItems={navItems} title="Menu">
+        {children}
+      </DashboardLayout>
+    </>
   );
 }
