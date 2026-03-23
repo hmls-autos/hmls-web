@@ -93,7 +93,7 @@ export function DashboardLayout({
     );
   }
 
-  const basePath = navItems[0]?.href?.replace(/\/[^/]*$/, "") ?? "/";
+  const basePath = navItems[0]?.href ?? "/";
 
   const navContent = (
     <>
