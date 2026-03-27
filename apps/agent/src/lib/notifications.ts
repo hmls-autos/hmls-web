@@ -479,7 +479,7 @@ export async function notifyOrderStatusChange(
     let toEmail = order.contactEmail ?? null;
     let customerName = order.contactName || "there";
 
-    if (!toEmail) {
+    if (!toEmail && order.customerId) {
       const [customer] = await db
         .select()
         .from(schema.customers)
@@ -492,6 +492,11 @@ export async function notifyOrderStatusChange(
       }
       toEmail = customer.email;
       customerName = customer.name || order.contactName || "there";
+    }
+
+    if (!toEmail) {
+      console.warn(`[notify] No email for order ${orderId} — no customer linked`);
+      return;
     }
 
     const ctx: NotificationContext = {

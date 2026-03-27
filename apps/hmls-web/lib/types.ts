@@ -82,7 +82,7 @@ export interface OrderItem {
 
 export interface Order {
   id: number;
-  customerId: number;
+  customerId: number | null;
   estimateId: number | null;
   quoteId: number | null;
   bookingId: number | null;

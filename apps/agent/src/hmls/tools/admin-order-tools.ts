@@ -124,12 +124,29 @@ const searchCustomersTool = {
 const createOrderTool = {
   name: "create_order",
   description:
-    "Create a new draft order for a customer. Use search_customers to find the customer_id first. " +
+    "Create a new draft order. All customer fields are optional — you can create an order with zero customer info. " +
+    "If customer_id is given, uses that customer. If customer_email is given, looks up or creates a customer. " +
+    "If only name/phone, creates a guest customer. If nothing is provided, creates an anonymous customer. " +
     "Optionally include vehicle info and line items. Returns the new order id and status.",
   schema: z.object({
     customer_id: z
       .string()
-      .describe("Customer ID (numeric string or number)"),
+      .optional()
+      .describe(
+        "Existing customer ID. If omitted, a customer is found or created from other fields (all optional).",
+      ),
+    customer_name: z
+      .string()
+      .optional()
+      .describe("Customer name (used to create/find customer if no customer_id)"),
+    customer_email: z
+      .string()
+      .optional()
+      .describe("Customer email (used to look up existing customer or create new one)"),
+    customer_phone: z
+      .string()
+      .optional()
+      .describe("Customer phone number"),
     vehicle_year: z
       .number()
       .int()
@@ -160,7 +177,10 @@ const createOrderTool = {
   }),
   execute: async (
     params: {
-      customer_id: string;
+      customer_id?: string;
+      customer_name?: string;
+      customer_email?: string;
+      customer_phone?: string;
       vehicle_year?: number;
       vehicle_make?: string;
       vehicle_model?: string;
@@ -169,21 +189,65 @@ const createOrderTool = {
     },
     _ctx: unknown,
   ) => {
-    const customerId = Number(params.customer_id);
-    if (!Number.isInteger(customerId) || customerId <= 0) {
-      return toolResult({ success: false, error: "Invalid customer_id" });
-    }
+    let customer: {
+      id: number;
+      name: string | null;
+      email: string | null;
+      phone: string | null;
+      address: string | null;
+    } | null = null;
 
-    // Verify customer exists
-    const [customer] = await db
-      .select()
-      .from(schema.customers)
-      .where(eq(schema.customers.id, customerId))
-      .limit(1);
-
-    if (!customer) {
-      return toolResult({ success: false, error: `Customer #${customerId} not found` });
+    if (params.customer_id) {
+      // Existing customer by ID
+      const customerId = Number(params.customer_id);
+      if (!Number.isInteger(customerId) || customerId <= 0) {
+        return toolResult({ success: false, error: "Invalid customer_id" });
+      }
+      const [found] = await db
+        .select()
+        .from(schema.customers)
+        .where(eq(schema.customers.id, customerId))
+        .limit(1);
+      if (!found) {
+        return toolResult({ success: false, error: `Customer #${customerId} not found` });
+      }
+      customer = found;
+    } else if (params.customer_name || params.customer_email || params.customer_phone) {
+      // Try to find by email first
+      if (params.customer_email) {
+        const [existing] = await db
+          .select()
+          .from(schema.customers)
+          .where(ilike(schema.customers.email, params.customer_email))
+          .limit(1);
+        if (existing) {
+          customer = existing;
+        } else {
+          // Create new customer
+          const [created] = await db
+            .insert(schema.customers)
+            .values({
+              name: params.customer_name || null,
+              email: params.customer_email,
+              phone: params.customer_phone || null,
+            })
+            .returning();
+          customer = created;
+        }
+      } else {
+        // No email — create guest customer with name/phone
+        const [created] = await db
+          .insert(schema.customers)
+          .values({
+            name: params.customer_name || null,
+            email: null,
+            phone: params.customer_phone || null,
+          })
+          .returning();
+        customer = created;
+      }
     }
+    // No customer info at all → order created without a customer link
 
     // Build vehicle info if provided
     const vehicleInfo = (params.vehicle_year || params.vehicle_make || params.vehicle_model)
@@ -216,7 +280,7 @@ const createOrderTool = {
     const [order] = await db
       .insert(schema.orders)
       .values({
-        customerId,
+        customerId: customer?.id ?? null,
         status: "draft",
         statusHistory: [
           { status: "draft", timestamp: new Date().toISOString(), actor: "agent" },
@@ -227,10 +291,10 @@ const createOrderTool = {
         priceRangeLowCents: Math.round(subtotalCents * 0.9),
         priceRangeHighCents: Math.round(subtotalCents * 1.1),
         vehicleInfo: vehicleInfo ?? undefined,
-        contactName: customer.name ?? null,
-        contactEmail: customer.email ?? null,
-        contactPhone: customer.phone ?? null,
-        contactAddress: customer.address ?? null,
+        contactName: customer?.name ?? null,
+        contactEmail: customer?.email ?? null,
+        contactPhone: customer?.phone ?? null,
+        contactAddress: customer?.address ?? null,
       })
       .returning();
 
@@ -251,12 +315,12 @@ const createOrderTool = {
       success: true,
       orderId: order.id,
       status: order.status,
-      customerName: customer.name ?? null,
+      customerName: customer?.name ?? null,
       vehicleInfo: vehicleInfo
         ? [vehicleInfo.year, vehicleInfo.make, vehicleInfo.model].filter(Boolean).join(" ")
         : null,
       subtotalFormatted: `$${(subtotalCents / 100).toFixed(2)}`,
-      message: `Draft order #${order.id} created for ${customer.name ?? `customer #${customerId}`}`,
+      message: `Draft order #${order.id} created${customer?.name ? ` for ${customer.name}` : ""}`,
     });
   },
 };

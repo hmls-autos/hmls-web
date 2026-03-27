@@ -175,7 +175,7 @@ export interface OrderItem {
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   shopId: uuid("shop_id").references(() => shops.id),
-  customerId: integer("customer_id").references(() => customers.id).notNull(),
+  customerId: integer("customer_id").references(() => customers.id),
   estimateId: integer("estimate_id").references(() => estimates.id, { onDelete: "set null" }),
   quoteId: integer("quote_id").references(() => quotes.id),
   bookingId: integer("booking_id").references(() => bookings.id),

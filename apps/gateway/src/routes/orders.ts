@@ -182,8 +182,10 @@ orders.get("/:id", async (c) => {
   }
 
   const [customer, booking, events] = await Promise.all([
-    db.select().from(schema.customers).where(eq(schema.customers.id, order.customerId)).limit(1)
-      .then((r) => r[0]),
+    order.customerId
+      ? db.select().from(schema.customers).where(eq(schema.customers.id, order.customerId)).limit(1)
+        .then((r) => r[0])
+      : null,
     order.bookingId
       ? db.select().from(schema.bookings).where(eq(schema.bookings.id, order.bookingId)).limit(1)
         .then((r) => r[0])
