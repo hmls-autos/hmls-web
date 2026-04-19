@@ -39,6 +39,21 @@ jobs:
       - name: Install hmls-web dependencies
         run: cd apps/hmls-web && bun install --frozen-lockfile
 
+      - name: Check image payload budget (hmls-web)
+        run: |
+          MAX_KB=500
+          fail=0
+          while IFS= read -r -d '' f; do
+            kb=$(( $(wc -c < "$f") / 1024 ))
+            if [ "$kb" -gt "$MAX_KB" ]; then
+              echo "::error file=$f::$f is ${kb} KB (max ${MAX_KB} KB). Pre-generate smaller WebP variants and wire them via lib/image-loader.ts."
+              fail=1
+            fi
+          done < <(find apps/hmls-web/public -type f \
+            \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" \
+               -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.avif" \) -print0)
+          exit "$fail"
+
       - name: Lint (hmls-web)
         run: cd apps/hmls-web && bun run lint
 
