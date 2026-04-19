@@ -4,6 +4,7 @@
     "jsr:@db/sqlite@0.13": "0.13.0",
     "jsr:@denosaurs/plug@1": "1.1.0",
     "jsr:@logtape/logtape@0.9": "0.9.2",
+    "jsr:@std/assert@1": "1.0.19",
     "jsr:@std/encoding@1": "1.0.10",
     "jsr:@std/fmt@1": "1.0.9",
     "jsr:@std/fs@1": "1.0.23",
@@ -15,13 +16,13 @@
     "npm:@react-pdf/renderer@^4.3.2": "4.3.2_react@19.2.4",
     "npm:@supabase/supabase-js@^2.99.1": "2.99.1",
     "npm:ai@^6.0.116": "6.0.116_zod@4.3.6",
-    "npm:drizzle-kit@*": "0.30.1_esbuild@0.19.12",
+    "npm:drizzle-kit@*": "0.31.9_esbuild@0.25.12",
     "npm:drizzle-kit@0.30.1": "0.30.1_esbuild@0.19.12",
     "npm:drizzle-kit@0.30.4": "0.30.4_esbuild@0.19.12",
     "npm:drizzle-kit@0.31.4": "0.31.4_esbuild@0.25.12",
     "npm:drizzle-kit@0.31.9": "0.31.9_esbuild@0.25.12",
     "npm:drizzle-kit@~0.31.9": "0.31.9_esbuild@0.25.12",
-    "npm:drizzle-orm@~0.45.1": "0.45.1_postgres@3.4.4",
+    "npm:drizzle-orm@~0.45.1": "0.45.1_postgres@3.4.8",
     "npm:hono@^4.12.8": "4.12.8",
     "npm:json@*": "11.0.0",
     "npm:nanoid@^5.1.7": "5.1.7",
@@ -52,6 +53,12 @@
     },
     "@logtape/logtape@0.9.2": {
       "integrity": "b2699784930da54b597d4eed33811ad297e9ad6d9779eb59bdc9177ea0a5be15"
+    },
+    "@std/assert@1.0.19": {
+      "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
     },
     "@std/encoding@1.0.10": {
       "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
@@ -793,13 +800,13 @@
       ],
       "bin": true
     },
-    "drizzle-orm@0.45.1_postgres@3.4.4": {
+    "drizzle-orm@0.45.1_postgres@3.4.8": {
       "integrity": "sha512-Te0FOdKIistGNPMq2jscdqngBRfBpC8uMFVwqjf6gtTVJHIQ/dosgV/CLBU2N4ZJBsXL5savCba9b0YJskKdcA==",
       "dependencies": [
-        "postgres@3.4.4"
+        "postgres@3.4.8"
       ],
       "optionalPeers": [
-        "postgres@3.4.4"
+        "postgres@3.4.8"
       ]
     },
     "emoji-regex-xs@1.0.0": {
@@ -1169,6 +1176,7 @@
     "dependencies": [
       "jsr:@db/sqlite@0.13",
       "jsr:@logtape/logtape@0.9",
+      "jsr:@std/assert@1",
       "npm:@ai-sdk/google@^3.0.43",
       "npm:ai@^6.0.116",
       "npm:drizzle-orm@~0.45.1",
