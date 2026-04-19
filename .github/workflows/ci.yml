@@ -89,3 +89,6 @@ jobs:
 
       - name: Check API
         run: deno task check
+
+      - name: Test API
+        run: deno task test
