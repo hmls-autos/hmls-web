@@ -3,23 +3,22 @@
 import {
   ArrowLeft,
   Calendar,
-  Check,
   ClipboardEdit,
   ExternalLink,
   FileText,
   MapPin,
   MessageSquare,
   Pencil,
-  Plus,
   Printer,
-  Save,
   Tag,
-  Trash2,
   User,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { OrderProgressBar } from "@/components/OrderProgressBar";
+import { CustomerEditor } from "@/components/order/CustomerEditor";
+import { ItemEditor } from "@/components/order/ItemEditor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,17 +34,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { useAdminOrder } from "@/hooks/useAdmin";
+import {
+  type OrderContactPatch,
+  useOrderMutations,
+} from "@/hooks/useOrderMutations";
 import { AGENT_URL } from "@/lib/config";
-import { authFetch } from "@/lib/fetcher";
 import { formatCents, formatDate, formatDateTime } from "@/lib/format";
 import {
   EDITABLE_STATUSES,
   ORDER_STATUS,
+  ORDER_STEP_LABELS_ADMIN,
   ORDER_TRANSITIONS,
 } from "@/lib/status";
 import type { OrderEvent, OrderItem } from "@/lib/types";
@@ -85,64 +86,6 @@ const BOOKING_STATUSES = new Set([
   "completed",
 ]);
 
-/* ── Progress bar steps ───────────────────────────────────────────────── */
-
-const MAIN_STEPS = [
-  "draft",
-  "estimated",
-  "approved",
-  "preauth",
-  "scheduled",
-  "in_progress",
-  "invoiced",
-  "paid",
-] as const;
-
-const MAIN_STEP_LABELS: Record<string, string> = {
-  draft: "Draft",
-  estimated: "Estimated",
-  approved: "Approved",
-  preauth: "Card on File",
-  scheduled: "Scheduled",
-  in_progress: "In Progress",
-  invoiced: "Invoiced",
-  paid: "Paid",
-};
-
-const TERMINAL_STATUSES = new Set(["cancelled", "void", "archived"]);
-const BRANCH_STATUSES = new Set(["declined", "revised"]);
-
-function getStepState(
-  stepStatus: string,
-  currentStatus: string,
-): "completed" | "current" | "pending" {
-  const currentIdx = MAIN_STEPS.indexOf(
-    currentStatus as (typeof MAIN_STEPS)[number],
-  );
-  const stepIdx = MAIN_STEPS.indexOf(stepStatus as (typeof MAIN_STEPS)[number]);
-
-  // If current status is a branch/terminal, figure out progress from statusHistory context
-  if (currentIdx === -1) {
-    // declined/revised sit between estimated and approved
-    if (currentStatus === "declined" || currentStatus === "revised") {
-      const effectiveIdx = MAIN_STEPS.indexOf("estimated");
-      if (stepIdx <= effectiveIdx) return "completed";
-      return "pending";
-    }
-    // terminal: cancelled/void/archived — mark all up to last main step as completed
-    if (currentStatus === "archived") {
-      // archived means completed was reached
-      return "completed";
-    }
-    // cancelled/void — we don't know exactly where, treat nothing as current
-    return stepIdx === 0 ? "completed" : "pending";
-  }
-
-  if (stepIdx < currentIdx) return "completed";
-  if (stepIdx === currentIdx) return "current";
-  return "pending";
-}
-
 /* ── Status Badge (using shadcn Badge) ─────────────────────────────── */
 
 function OrderStatusBadge({
@@ -160,358 +103,6 @@ function OrderStatusBadge({
     <Badge variant="outline" className={cn("border-0", entry.color)}>
       {entry.label}
     </Badge>
-  );
-}
-
-/* ── Progress Bar ─────────────────────────────────────────────────────── */
-
-function OrderProgressBar({ status }: { status: string }) {
-  const isTerminal = TERMINAL_STATUSES.has(status);
-  const isBranch = BRANCH_STATUSES.has(status);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-0 overflow-x-auto pb-2">
-        {MAIN_STEPS.map((step, idx) => {
-          const state = getStepState(step, status);
-          return (
-            <div key={step} className="flex items-center">
-              {/* Connector line before (except first) */}
-              {idx > 0 && (
-                <div
-                  className={cn(
-                    "h-0.5 w-4 sm:w-8 shrink-0",
-                    state === "completed" || state === "current"
-                      ? "bg-emerald-500"
-                      : "bg-border",
-                  )}
-                />
-              )}
-              {/* Step circle + label */}
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <div
-                  className={cn(
-                    "w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors",
-                    state === "completed"
-                      ? "bg-emerald-500 text-white"
-                      : state === "current"
-                        ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
-                        : "bg-card border-2 border-border text-muted-foreground",
-                  )}
-                >
-                  {state === "completed" ? (
-                    <Check className="w-3.5 h-3.5" />
-                  ) : (
-                    <span className="text-[10px]">{idx + 1}</span>
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    "text-[10px] leading-tight text-center whitespace-nowrap",
-                    state === "current"
-                      ? "font-semibold text-foreground"
-                      : state === "completed"
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-muted-foreground",
-                  )}
-                >
-                  {MAIN_STEP_LABELS[step]}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Branch/terminal badge */}
-      {(isTerminal || isBranch) && (
-        <div className="flex items-center gap-2">
-          <OrderStatusBadge status={status} config={ORDER_STATUS} />
-          {isBranch && (
-            <span className="text-xs text-muted-foreground">
-              {status === "declined"
-                ? "Customer declined — revise or cancel"
-                : "Revised estimate ready to re-send"}
-            </span>
-          )}
-          {status === "cancelled" && (
-            <span className="text-xs text-muted-foreground">
-              Order was cancelled
-            </span>
-          )}
-          {status === "void" && (
-            <span className="text-xs text-muted-foreground">
-              Invoice was voided
-            </span>
-          )}
-          {status === "archived" && (
-            <span className="text-xs text-muted-foreground">
-              Order archived after completion
-            </span>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Customer Editor ──────────────────────────────────────────────────── */
-
-function CustomerEditor({
-  order,
-  onSave,
-  onCancel,
-  saving,
-}: {
-  order: {
-    contactName: string | null;
-    contactEmail: string | null;
-    contactPhone: string | null;
-    contactAddress: string | null;
-  };
-  onSave: (data: {
-    contact_name: string;
-    contact_email: string;
-    contact_phone: string;
-    contact_address: string;
-  }) => void;
-  onCancel: () => void;
-  saving: boolean;
-}) {
-  const [name, setName] = useState(order.contactName ?? "");
-  const [email, setEmail] = useState(order.contactEmail ?? "");
-  const [phone, setPhone] = useState(order.contactPhone ?? "");
-  const [address, setAddress] = useState(order.contactAddress ?? "");
-
-  return (
-    <div className="border border-border rounded-lg p-4 bg-muted space-y-3">
-      <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide">
-        Edit Contact (this order only)
-      </h4>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <Input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="text-xs h-8"
-        />
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="text-xs h-8"
-        />
-        <Input
-          type="tel"
-          placeholder="Phone"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="text-xs h-8"
-        />
-      </div>
-      <Textarea
-        placeholder="Address"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-        rows={2}
-        className="text-xs min-h-0 resize-y"
-      />
-      <div className="flex justify-end gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onCancel}
-          disabled={saving}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() =>
-            onSave({
-              contact_name: name,
-              contact_email: email,
-              contact_phone: phone,
-              contact_address: address,
-            })
-          }
-          disabled={saving}
-        >
-          <Save className="w-3.5 h-3.5" /> {saving ? "Saving..." : "Save"}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/* ── Item Editor ──────────────────────────────────────────────────────── */
-
-function ItemEditor({
-  items,
-  notes,
-  onSave,
-  onCancel,
-  saving,
-}: {
-  items: OrderItem[];
-  notes: string | null;
-  onSave: (items: OrderItem[], notes: string) => void;
-  onCancel: () => void;
-  saving: boolean;
-}) {
-  const [editItems, setEditItems] = useState<OrderItem[]>(
-    items.length > 0 ? items : [],
-  );
-  const [editNotes, setEditNotes] = useState(notes ?? "");
-
-  function updateItem(index: number, patch: Partial<OrderItem>) {
-    setEditItems((prev) =>
-      prev.map((item, i) => {
-        if (i !== index) return item;
-        const updated = { ...item, ...patch };
-        if ("quantity" in patch || "unitPriceCents" in patch) {
-          updated.totalCents = updated.quantity * updated.unitPriceCents;
-        }
-        return updated;
-      }),
-    );
-  }
-
-  return (
-    <div className="border border-border rounded-lg p-4 bg-muted space-y-3">
-      <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide">
-        Edit Items
-      </h4>
-
-      {editItems.map((item, idx) => (
-        <div
-          key={item.id}
-          className="grid grid-cols-1 sm:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-2 border-b border-border pb-2 last:border-0"
-        >
-          <select
-            value={item.category}
-            onChange={(e) =>
-              updateItem(idx, {
-                category: e.target.value as OrderItem["category"],
-              })
-            }
-            className="text-xs h-8 rounded-md border border-input bg-transparent px-2 py-1.5"
-          >
-            <option value="labor">Labor</option>
-            <option value="parts">Parts</option>
-            <option value="fee">Fee</option>
-            <option value="discount">Discount</option>
-          </select>
-          <Input
-            type="text"
-            placeholder="Name"
-            value={item.name}
-            onChange={(e) => updateItem(idx, { name: e.target.value })}
-            className="min-w-0 text-xs h-8"
-          />
-          <Input
-            type="number"
-            min={1}
-            value={item.quantity}
-            onChange={(e) =>
-              updateItem(idx, { quantity: Number(e.target.value) || 1 })
-            }
-            className="w-full sm:w-14 text-xs h-8 text-right"
-          />
-          <Input
-            type="number"
-            min={0}
-            step={0.01}
-            placeholder="$"
-            value={(item.unitPriceCents / 100).toFixed(2)}
-            onChange={(e) =>
-              updateItem(idx, {
-                unitPriceCents: Math.round((Number(e.target.value) || 0) * 100),
-              })
-            }
-            className="w-full sm:w-24 text-xs h-8 text-right"
-          />
-          <span className="text-xs text-muted-foreground w-16 text-right">
-            {formatCents(item.quantity * item.unitPriceCents)}
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            onClick={() =>
-              setEditItems((prev) => prev.filter((_, i) => i !== idx))
-            }
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      ))}
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() =>
-          setEditItems((prev) => [
-            ...prev,
-            {
-              id: crypto.randomUUID(),
-              category: "labor",
-              name: "",
-              description: "",
-              quantity: 1,
-              unitPriceCents: 0,
-              totalCents: 0,
-              taxable: true,
-            },
-          ])
-        }
-        className="text-muted-foreground"
-      >
-        <Plus className="w-3.5 h-3.5" /> Add item
-      </Button>
-
-      <div>
-        <label
-          htmlFor="item-editor-notes"
-          className="text-xs font-medium text-muted-foreground block mb-1"
-        >
-          Notes
-        </label>
-        <Textarea
-          id="item-editor-notes"
-          value={editNotes}
-          onChange={(e) => setEditNotes(e.target.value)}
-          rows={2}
-          className="text-xs min-h-0 resize-y"
-        />
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onCancel}
-          disabled={saving}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => onSave(editItems, editNotes)}
-          disabled={saving}
-        >
-          <Save className="w-3.5 h-3.5" /> {saving ? "Saving..." : "Save"}
-        </Button>
-      </div>
-    </div>
   );
 }
 
@@ -805,8 +396,9 @@ function eventDescription(event: OrderEvent): string {
     case "status_change":
       if (event.fromStatus && event.toStatus) {
         const fromLabel =
-          MAIN_STEP_LABELS[event.fromStatus] ?? event.fromStatus;
-        const toLabel = MAIN_STEP_LABELS[event.toStatus] ?? event.toStatus;
+          ORDER_STEP_LABELS_ADMIN[event.fromStatus] ?? event.fromStatus;
+        const toLabel =
+          ORDER_STEP_LABELS_ADMIN[event.toStatus] ?? event.toStatus;
         return `Status changed from ${fromLabel} → ${toLabel}`;
       }
       return "Status changed";
@@ -908,9 +500,14 @@ export default function OrderDetailPage() {
   const { data, isLoading, isError, mutate } = useAdminOrder(orderId);
 
   const [editMode, setEditMode] = useState<null | "items" | "customer">(null);
-  const [transitioning, setTransitioning] = useState(false);
-  const [savingItems, setSavingItems] = useState(false);
-  const [savingCustomer, setSavingCustomer] = useState(false);
+  const {
+    transitionStatus,
+    saveItems,
+    saveCustomer,
+    transitioning,
+    savingItems,
+    savingCustomer,
+  } = useOrderMutations(orderId, mutate);
 
   if (isLoading) {
     return (
@@ -967,64 +564,34 @@ export default function OrderDetailPage() {
   const showBookingPanel = BOOKING_STATUSES.has(order.status);
 
   async function handleTransition(newStatus: string) {
+    let reason: string | undefined;
     if (newStatus === "cancelled") {
-      const reason = prompt("Cancellation reason (optional):");
-      if (reason === null) return;
-      await doTransition(newStatus, reason || undefined);
-    } else {
-      await doTransition(newStatus);
+      const input = prompt("Cancellation reason (optional):");
+      if (input === null) return;
+      reason = input || undefined;
     }
-  }
-
-  async function doTransition(newStatus: string, cancellationReason?: string) {
-    setTransitioning(true);
     try {
-      await authFetch(`/api/admin/orders/${order.id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: newStatus, cancellationReason }),
-      });
-      mutate();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to update status");
-    } finally {
-      setTransitioning(false);
+      await transitionStatus(newStatus, reason);
+    } catch {
+      /* error toast shown by hook */
     }
   }
 
   async function handleSaveItems(newItems: OrderItem[], newNotes: string) {
-    setSavingItems(true);
     try {
-      await authFetch(`/api/admin/orders/${order.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ items: newItems, notes: newNotes }),
-      });
-      mutate();
+      await saveItems(newItems, newNotes);
       setEditMode(null);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to save items");
-    } finally {
-      setSavingItems(false);
+    } catch {
+      /* error toast shown by hook */
     }
   }
 
-  async function handleSaveCustomer(data: {
-    contact_name: string;
-    contact_email: string;
-    contact_phone: string;
-    contact_address: string;
-  }) {
-    setSavingCustomer(true);
+  async function handleSaveCustomer(patch: OrderContactPatch) {
     try {
-      await authFetch(`/api/admin/orders/${order.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
-      mutate();
+      await saveCustomer(patch);
       setEditMode(null);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to save contact info");
-    } finally {
-      setSavingCustomer(false);
+    } catch {
+      /* error toast shown by hook */
     }
   }
 
@@ -1066,7 +633,7 @@ export default function OrderDetailPage() {
       {/* Progress bar */}
       <Card className="py-4 gap-0">
         <CardContent>
-          <OrderProgressBar status={order.status} />
+          <OrderProgressBar status={order.status} variant="admin" />
         </CardContent>
       </Card>
 

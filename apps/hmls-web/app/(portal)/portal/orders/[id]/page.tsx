@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useState } from "react";
+import { OrderProgressBar } from "@/components/OrderProgressBar";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { usePortalOrder } from "@/hooks/usePortal";
@@ -28,134 +29,6 @@ import type { OrderEvent, OrderItem } from "@/lib/types";
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
 );
-
-/* ── Progress bar ─────────────────────────────────────────────────────── */
-
-const PORTAL_STEPS = [
-  "draft",
-  "estimated",
-  "approved",
-  "preauth",
-  "scheduled",
-  "in_progress",
-  "invoiced",
-  "paid",
-] as const;
-
-const PORTAL_STEP_LABELS: Record<string, string> = {
-  draft: "Preparing",
-  estimated: "Estimate Ready",
-  approved: "Approved",
-  preauth: "Card Authorized",
-  scheduled: "Scheduled",
-  in_progress: "In Progress",
-  invoiced: "Invoice Ready",
-  paid: "Complete",
-};
-
-function getStepState(
-  stepStatus: string,
-  currentStatus: string,
-): "completed" | "current" | "pending" {
-  const currentIdx = PORTAL_STEPS.indexOf(
-    currentStatus as (typeof PORTAL_STEPS)[number],
-  );
-  const stepIdx = PORTAL_STEPS.indexOf(
-    stepStatus as (typeof PORTAL_STEPS)[number],
-  );
-
-  if (currentIdx === -1) {
-    if (currentStatus === "declined" || currentStatus === "revised") {
-      const effectiveIdx = PORTAL_STEPS.indexOf("estimated");
-      return stepIdx <= effectiveIdx ? "completed" : "pending";
-    }
-    if (currentStatus === "completed" || currentStatus === "archived") {
-      return "completed";
-    }
-    return stepIdx === 0 ? "completed" : "pending";
-  }
-
-  if (stepIdx < currentIdx) return "completed";
-  if (stepIdx === currentIdx) return "current";
-  return "pending";
-}
-
-function PortalProgressBar({ status }: { status: string }) {
-  const isTerminal = new Set(["cancelled", "void", "archived"]).has(status);
-  const isBranch = new Set(["declined", "revised"]).has(status);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-0 overflow-x-auto pb-1">
-        {PORTAL_STEPS.map((step, idx) => {
-          const state = getStepState(step, status);
-          return (
-            <div key={step} className="flex items-center">
-              {idx > 0 && (
-                <div
-                  className={`h-0.5 w-3 sm:w-6 shrink-0 ${
-                    state === "completed" || state === "current"
-                      ? "bg-emerald-500"
-                      : "bg-border"
-                  }`}
-                />
-              )}
-              <div className="flex flex-col items-center gap-1 shrink-0">
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
-                    state === "completed"
-                      ? "bg-emerald-500 text-white"
-                      : state === "current"
-                        ? "bg-red-primary text-white ring-2 ring-red-primary/30"
-                        : "bg-surface border-2 border-border text-text-secondary"
-                  }`}
-                >
-                  {state === "completed" ? (
-                    <Check className="w-3.5 h-3.5" />
-                  ) : (
-                    <span className="text-[10px]">{idx + 1}</span>
-                  )}
-                </div>
-                <span
-                  className={`text-[10px] leading-tight text-center whitespace-nowrap ${
-                    state === "current"
-                      ? "font-semibold text-text"
-                      : state === "completed"
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-text-secondary"
-                  }`}
-                >
-                  {PORTAL_STEP_LABELS[step]}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {(isTerminal || isBranch) && (
-        <div className="flex items-center gap-2">
-          <StatusBadge status={status} config={PORTAL_ORDER_STATUS} />
-          {status === "declined" && (
-            <span className="text-xs text-text-secondary">
-              Estimate declined — we may send a revised version soon
-            </span>
-          )}
-          {status === "revised" && (
-            <span className="text-xs text-text-secondary">
-              Updated estimate ready for your review
-            </span>
-          )}
-          {status === "cancelled" && (
-            <span className="text-xs text-text-secondary">
-              Order was cancelled
-            </span>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ── Timeline helpers ─────────────────────────────────────────────────── */
 
@@ -572,7 +445,7 @@ export default function PortalOrderDetailPage() {
 
         {/* Progress bar */}
         <div className="bg-surface border border-border rounded-xl p-4">
-          <PortalProgressBar status={order.status} />
+          <OrderProgressBar status={order.status} variant="portal" />
         </div>
 
         {/* Content */}
