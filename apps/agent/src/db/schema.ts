@@ -51,6 +51,7 @@ export const customers = pgTable("customers", {
 
 export const providers = pgTable("providers", {
   id: serial("id").primaryKey(),
+  authUserId: varchar("auth_user_id", { length: 255 }).unique(),
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }),
   phone: varchar("phone", { length: 20 }),

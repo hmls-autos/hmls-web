@@ -569,12 +569,12 @@ const createBookingTool = {
         } will confirm your appointment shortly.`,
       });
     } catch (error: unknown) {
-      // Handle exclusion constraint violation (overlap)
-      if (
-        error instanceof Error &&
-        "code" in error &&
-        (error as { code: string }).code === "23P01"
-      ) {
+      const code = error instanceof Error && "code" in error
+        ? (error as { code: string }).code
+        : undefined;
+
+      // Exclusion constraint violation (overlap)
+      if (code === "23P01") {
         console.log(`[scheduling] Overlap detected for provider ${params.providerId}`);
         return toolResult({
           success: false,
@@ -583,7 +583,27 @@ const createBookingTool = {
             "That time slot was just taken. Please check availability again for updated slots.",
         });
       }
-      throw error;
+
+      // FK violation — usually an invalid providerId from the LLM
+      if (code === "23503") {
+        console.error(`[scheduling] FK violation creating booking`, error);
+        return toolResult({
+          success: false,
+          error: "invalid_reference",
+          message:
+            "The selected mechanic is no longer available. Please call get_availability again " +
+            "to get current slots before retrying.",
+        });
+      }
+
+      // Anything else — log and degrade gracefully instead of crashing the stream
+      console.error(`[scheduling] Unexpected error creating booking`, error);
+      return toolResult({
+        success: false,
+        error: "booking_failed",
+        message: "Sorry, something went wrong saving the booking. Please try again in a moment, " +
+          "or call us at (949) 213-7073.",
+      });
     }
   },
 };

@@ -25,6 +25,7 @@ const navLinks = [
 
 const portalLink = { href: "/portal", label: "My Portal" };
 const adminLink = { href: "/admin", label: "Admin" };
+const mechanicLink = { href: "/mechanic", label: "Mechanic" };
 
 const portalSubNav = [
   { href: "/portal", label: "Dashboard", icon: LayoutDashboard },
@@ -45,7 +46,7 @@ export default function MobileNav({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const { user, supabase, isLoading, isAdmin } = useAuth();
+  const { user, supabase, isLoading, isAdmin, isMechanic } = useAuth();
 
   const close = useCallback(() => setIsOpen(false), []);
 
@@ -163,6 +164,19 @@ export default function MobileNav({
                     }`}
                   >
                     {adminLink.label}
+                  </Link>
+                )}
+                {isMechanic && (
+                  <Link
+                    href={mechanicLink.href}
+                    onClick={close}
+                    className={`text-sm transition-colors ${
+                      pathname.startsWith(mechanicLink.href)
+                        ? "text-red-400 font-medium"
+                        : "text-text-secondary hover:text-text"
+                    }`}
+                  >
+                    {mechanicLink.label}
                   </Link>
                 )}
               </>

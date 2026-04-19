@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, LogIn, LogOut } from "lucide-react";
+import { LayoutDashboard, LogIn, LogOut, Wrench } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,10 +16,11 @@ const navLinks = [
 
 const portalLink = { href: "/portal", label: "My Portal" };
 const adminLink = { href: "/admin", label: "Admin", icon: LayoutDashboard };
+const mechanicLink = { href: "/mechanic", label: "Mechanic", icon: Wrench };
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user, supabase, isLoading, isAdmin } = useAuth();
+  const { user, supabase, isLoading, isAdmin, isMechanic } = useAuth();
   const isUserLoggedIn = !!user;
   const isHome = pathname === "/";
   const [scrolled, setScrolled] = useState(false);
@@ -95,6 +96,20 @@ export default function Navbar() {
                   }`}
                 >
                   {adminLink.label}
+                </Link>
+              )}
+              {isMechanic && (
+                <Link
+                  href={mechanicLink.href}
+                  className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
+                    pathname.startsWith(mechanicLink.href)
+                      ? "text-red-400"
+                      : isTransparent
+                        ? "text-white/70 hover:text-white"
+                        : "text-text-secondary hover:text-text"
+                  }`}
+                >
+                  {mechanicLink.label}
                 </Link>
               )}
             </>
