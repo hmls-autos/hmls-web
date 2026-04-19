@@ -80,8 +80,23 @@ chat.post("/", requireAuthUser, async (c) => {
     throw Errors.validation("Invalid request", "messages array is required");
   }
 
-  // Resolve authenticated user -> customer record (upsert on first contact).
+  // Admins have their own chat (/api/admin/chat) and must not mix message
+  // history into the customer-facing HMLS agent. Block here as defense in
+  // depth; the web UI also redirects admins to /admin/chat.
   const authUser = c.get("authUser");
+  if (authUser.role === "admin") {
+    return c.json(
+      {
+        error: {
+          code: "FORBIDDEN",
+          message: "Admins must use the admin chat at /admin/chat",
+        },
+      },
+      403,
+    );
+  }
+
+  // Resolve authenticated user -> customer record (upsert on first contact).
   const userContext = await resolveCustomer({ email: authUser.email });
 
   const startTime = Date.now();
