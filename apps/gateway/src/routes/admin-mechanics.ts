@@ -584,4 +584,135 @@ adminMechanics.delete("/:id/overrides/:overrideId", async (c) => {
   return c.json({ ok: true });
 });
 
+// GET /:id/bookings — bookings assigned to this mechanic, with customer join
+adminMechanics.get("/:id/bookings", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
+      400,
+    );
+  }
+  const from = c.req.query("from");
+  const to = c.req.query("to");
+
+  const conditions = [eq(schema.bookings.providerId, id)];
+  if (from && to) {
+    conditions.push(
+      between(schema.bookings.scheduledAt, new Date(from), new Date(to)),
+    );
+  } else if (from) {
+    conditions.push(gte(schema.bookings.scheduledAt, new Date(from)));
+  } else if (to) {
+    conditions.push(lte(schema.bookings.scheduledAt, new Date(to)));
+  }
+
+  const rows = await db
+    .select({
+      booking: schema.bookings,
+      customerName: schema.customers.name,
+      customerEmail: schema.customers.email,
+      customerPhone: schema.customers.phone,
+    })
+    .from(schema.bookings)
+    .leftJoin(
+      schema.customers,
+      eq(schema.bookings.customerId, schema.customers.id),
+    )
+    .where(and(...conditions))
+    .orderBy(asc(schema.bookings.scheduledAt))
+    .limit(200);
+
+  return c.json(
+    rows.map((r) => ({
+      ...r.booking,
+      customer: {
+        name: r.customerName,
+        email: r.customerEmail,
+        phone: r.customerPhone,
+      },
+    })),
+  );
+});
+
+// POST /bookings/:bookingId/reassign — change assigned mechanic
+adminMechanics.post("/bookings/:bookingId/reassign", async (c) => {
+  const bookingId = Number(c.req.param("bookingId"));
+  if (!Number.isInteger(bookingId) || bookingId <= 0) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid booking ID" } },
+      400,
+    );
+  }
+
+  const body = await c.req.json<{ providerId: number; force?: boolean }>()
+    .catch(() => null);
+
+  if (!body || !Number.isInteger(body.providerId) || body.providerId <= 0) {
+    return c.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "providerId (positive integer) is required",
+        },
+      },
+      400,
+    );
+  }
+
+  const [booking] = await db
+    .select()
+    .from(schema.bookings)
+    .where(eq(schema.bookings.id, bookingId))
+    .limit(1);
+  if (!booking) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Booking not found" } },
+      404,
+    );
+  }
+  if (booking.providerId === body.providerId) {
+    return c.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "Booking already assigned to that mechanic",
+        },
+      },
+      400,
+    );
+  }
+
+  const [provider] = await db
+    .select()
+    .from(schema.providers)
+    .where(eq(schema.providers.id, body.providerId))
+    .limit(1);
+  if (!provider) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Target mechanic not found" } },
+      404,
+    );
+  }
+  if (!provider.isActive && !body.force) {
+    return c.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "Target mechanic is inactive. Pass force:true to reassign anyway.",
+        },
+      },
+      400,
+    );
+  }
+
+  const [updated] = await db
+    .update(schema.bookings)
+    .set({ providerId: body.providerId, updatedAt: new Date() })
+    .where(eq(schema.bookings.id, bookingId))
+    .returning();
+
+  return c.json(updated);
+});
+
 export { adminMechanics };
