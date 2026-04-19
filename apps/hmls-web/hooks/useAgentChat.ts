@@ -18,8 +18,12 @@ import {
 } from "react";
 import type { BookingConfirmationData } from "@/components/BookingConfirmation";
 import type { EstimateCardData } from "@/components/EstimateCard";
-import type { QuestionData } from "@/components/QuestionCard";
-import type { SlotPickerData } from "@/components/SlotPicker";
+import {
+  clearStoredChat,
+  loadStoredChatMessages,
+  useChatPersist,
+} from "@/hooks/useChatStorage";
+import { useChatToolEvents } from "@/hooks/useChatToolEvents";
 import { CHAT_ENDPOINT } from "@/lib/config";
 
 export interface Message {
@@ -45,11 +49,6 @@ function getTextContent(msg: UIMessage): string {
     .join("");
 }
 
-/** Extract all tool parts (static and dynamic) from a UIMessage. */
-function getToolParts(msg: UIMessage) {
-  return msg.parts.filter(isToolOrDynamicToolUIPart);
-}
-
 /**
  * Like lastAssistantMessageIsCompleteWithToolCalls, but skips auto-send when
  * ask_user_question is the pending tool — the user must pick an option first.
@@ -62,8 +61,6 @@ function sendAutomaticallyWhenNotAskUser({
   if (!lastAssistantMessageIsCompleteWithToolCalls({ messages })) return false;
   const last = messages[messages.length - 1];
   if (!last || last.role !== "assistant") return false;
-  // ask_user_question has an execute() on the backend so providerExecuted=true.
-  // Check ALL output-available tool parts, not just client-side ones.
   const hasAskUserQuestion = last.parts
     .filter(isToolOrDynamicToolUIPart)
     .some(
@@ -71,24 +68,7 @@ function sendAutomaticallyWhenNotAskUser({
         p.state === "output-available" &&
         getToolOrDynamicToolName(p) === "ask_user_question",
     );
-  if (hasAskUserQuestion) return false;
-  return true;
-}
-
-const STORAGE_KEY = "hmls-chat-history";
-
-function loadStoredMessages(): UIMessage[] | undefined {
-  if (typeof window === "undefined") return undefined;
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {
-    /* ignore corrupt data */
-  }
-  return undefined;
+  return !hasAskUserQuestion;
 }
 
 export function useAgentChat(options: UseAgentChatOptions = {}) {
@@ -98,22 +78,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     accessToken,
     endpoint = CHAT_ENDPOINT,
   } = options;
-  const [pendingQuestion, setPendingQuestion] = useState<QuestionData | null>(
-    null,
-  );
-  const [pendingSlotPicker, setPendingSlotPicker] =
-    useState<SlotPickerData | null>(null);
+
+  const [initialMessages] = useState(loadStoredChatMessages);
   const [currentTool, setCurrentTool] = useState<string | null>(null);
-
-  // Track which tool invocations we've already processed to avoid duplicates
-  const processedInvocationsRef = useRef<Set<string>>(new Set());
-
-  // Load persisted messages once on mount
-  const [initialMessages] = useState(loadStoredMessages);
-
-  const scrollToBottom = useCallback(() => {
-    scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
-  }, [scrollRef]);
 
   const focusInput = useCallback(() => {
     inputRef?.current?.focus();
@@ -122,11 +89,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   // Keep headers ref in sync so transport always has fresh token
   const headersRef = useRef<Record<string, string>>({});
   useEffect(() => {
-    const h: Record<string, string> = {};
-    if (accessToken) {
-      h.Authorization = `Bearer ${accessToken}`;
-    }
-    headersRef.current = h;
+    headersRef.current = accessToken
+      ? { Authorization: `Bearer ${accessToken}` }
+      : {};
   }, [accessToken]);
 
   // Create transport once, using a ref-based header resolver
@@ -159,79 +124,24 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     },
   });
 
-  const isLoading = status === "submitted" || status === "streaming";
+  const {
+    pendingQuestion,
+    pendingSlotPicker,
+    setPendingQuestion,
+    setPendingSlotPicker,
+    reset: resetToolEvents,
+  } = useChatToolEvents(chatMessages, setCurrentTool);
 
-  // Clear processed invocations when messages are reset externally
-  useEffect(() => {
-    if (chatMessages.length === 0) {
-      processedInvocationsRef.current.clear();
-    }
-  }, [chatMessages.length]);
-
-  // Persist messages to localStorage
-  useEffect(() => {
-    try {
-      if (chatMessages.length > 0) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(chatMessages));
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch {
-      /* localStorage full or unavailable */
-    }
-  }, [chatMessages]);
-
-  // Derive tool call state from streaming messages
-  useEffect(() => {
-    const processed = processedInvocationsRef.current;
-
-    for (const msg of chatMessages) {
-      if (msg.role !== "assistant") continue;
-      const toolParts = getToolParts(msg);
-
-      for (const part of toolParts) {
-        const toolName = getToolOrDynamicToolName(part);
-
-        // Track active tool calls
-        if (
-          part.state === "input-available" ||
-          part.state === "input-streaming"
-        ) {
-          setCurrentTool(toolName);
-        }
-
-        // Detect ask_user_question tool calls
-        if (
-          toolName === "ask_user_question" &&
-          (part.state === "input-available" ||
-            part.state === "output-available") &&
-          !processed.has(`question-${part.toolCallId}`)
-        ) {
-          processed.add(`question-${part.toolCallId}`);
-          setPendingQuestion(part.input as QuestionData);
-        }
-
-        // Detect tool results
-        if (
-          part.state === "output-available" &&
-          !processed.has(`result-${part.toolCallId}`)
-        ) {
-          processed.add(`result-${part.toolCallId}`);
-          setCurrentTool(null);
-
-          if (toolName === "get_availability" && part.output) {
-            setPendingSlotPicker(part.output as SlotPickerData);
-          }
-        }
-      }
-    }
-  }, [chatMessages]);
+  useChatPersist(chatMessages);
 
   // Scroll on new messages
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when messages change
   useEffect(() => {
-    scrollToBottom();
-  }, [chatMessages, scrollToBottom]);
+    scrollRef?.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages, scrollRef]);
+
+  const isLoading = status === "submitted" || status === "streaming";
+  const error = chatError?.message ?? null;
 
   // Build messages array matching the existing Message interface.
   // Injects estimate-card and booking-confirmation messages after
@@ -246,74 +156,74 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           role: "user",
           content: getTextContent(msg),
         });
-      } else if (msg.role === "assistant") {
-        // Add the text content (may be empty during tool-only steps)
-        const text = getTextContent(msg);
-        if (text) {
-          result.push({ id: msg.id, role: "assistant", content: text });
+        continue;
+      }
+
+      if (msg.role !== "assistant") continue;
+
+      const text = getTextContent(msg);
+      if (text) {
+        result.push({ id: msg.id, role: "assistant", content: text });
+      }
+
+      for (const part of msg.parts.filter(isToolOrDynamicToolUIPart)) {
+        if (part.state !== "output-available") continue;
+        const toolName = getToolOrDynamicToolName(part);
+
+        if (
+          toolName === "create_booking" &&
+          (part.output as Record<string, unknown>)?.success !== undefined
+        ) {
+          result.push({
+            id: `${msg.id}-booking-${part.toolCallId}`,
+            role: "booking-confirmation",
+            content: "",
+            bookingData: part.output as BookingConfirmationData,
+          });
         }
 
-        // Check tool parts for card data
-        const toolParts = getToolParts(msg);
-        for (const part of toolParts) {
-          if (part.state !== "output-available") continue;
-          const toolName = getToolOrDynamicToolName(part);
-
-          if (
-            toolName === "create_booking" &&
-            (part.output as Record<string, unknown>)?.success !== undefined
-          ) {
-            result.push({
-              id: `${msg.id}-booking-${part.toolCallId}`,
-              role: "booking-confirmation",
-              content: "",
-              bookingData: part.output as BookingConfirmationData,
-            });
-          }
-
-          if (
-            toolName === "create_estimate" &&
-            (part.output as Record<string, unknown>)?.success === true
-          ) {
-            const raw = part.output as {
-              success: boolean;
-              orderId?: number;
-              vehicle?: string;
-              items: {
-                name: string;
-                description?: string;
-                totalCents: number;
-              }[];
-              subtotal: number;
-              priceRange: string | null;
-              expiresAt?: string | null;
-              downloadUrl?: string;
-              shareUrl?: string | null;
-              note?: string;
-            };
-            result.push({
-              id: `${msg.id}-estimate-${part.toolCallId}`,
-              role: "estimate-card",
-              content: "",
-              estimateData: {
-                success: true,
-                estimateId: raw.orderId,
-                vehicle: raw.vehicle ?? "Unknown vehicle",
-                items: (raw.items ?? []).map((i) => ({
-                  name: i.name,
-                  description: i.description,
-                  price:
-                    typeof i.totalCents === "number" ? i.totalCents / 100 : 0,
-                })),
-                subtotal: typeof raw.subtotal === "number" ? raw.subtotal : 0,
-                priceRange: raw.priceRange ?? "",
-                expiresAt: raw.expiresAt ?? undefined,
-                shareUrl: raw.shareUrl ?? undefined,
-                downloadUrl: raw.downloadUrl,
-                note: raw.note,
-              },
-            });
-          }
+        if (
+          toolName === "create_estimate" &&
+          (part.output as Record<string, unknown>)?.success === true
+        ) {
+          const raw = part.output as {
+            success: boolean;
+            orderId?: number;
+            vehicle?: string;
+            items: {
+              name: string;
+              description?: string;
+              totalCents: number;
+            }[];
+            subtotal: number;
+            priceRange: string | null;
+            expiresAt?: string | null;
+            downloadUrl?: string;
+            shareUrl?: string | null;
+            note?: string;
+          };
+          result.push({
+            id: `${msg.id}-estimate-${part.toolCallId}`,
+            role: "estimate-card",
+            content: "",
+            estimateData: {
+              success: true,
+              estimateId: raw.orderId,
+              vehicle: raw.vehicle ?? "Unknown vehicle",
+              items: (raw.items ?? []).map((i) => ({
+                name: i.name,
+                description: i.description,
+                price:
+                  typeof i.totalCents === "number" ? i.totalCents / 100 : 0,
+              })),
+              subtotal: typeof raw.subtotal === "number" ? raw.subtotal : 0,
+              priceRange: raw.priceRange ?? "",
+              expiresAt: raw.expiresAt ?? undefined,
+              shareUrl: raw.shareUrl ?? undefined,
+              downloadUrl: raw.downloadUrl,
+              note: raw.note,
+            },
+          });
         }
       }
     }
@@ -321,15 +231,13 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     return result;
   }, [chatMessages]);
 
-  const error = chatError?.message ?? null;
-
   const sendMessage = useCallback(
     (content: string) => {
       setPendingQuestion(null);
       setPendingSlotPicker(null);
       chatSendMessage({ text: content });
     },
-    [chatSendMessage],
+    [chatSendMessage, setPendingQuestion, setPendingSlotPicker],
   );
 
   const answerQuestion = useCallback(
@@ -337,7 +245,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       setPendingQuestion(null);
       sendMessage(answer);
     },
-    [sendMessage],
+    [sendMessage, setPendingQuestion],
   );
 
   const selectSlot = useCallback(
@@ -357,24 +265,14 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         `I'd like the ${timeLabel} slot on ${dateLabel} with provider ${providerId}.`,
       );
     },
-    [sendMessage],
+    [sendMessage, setPendingSlotPicker],
   );
 
   const clearMessages = useCallback(() => {
     setChatMessages([]);
-    setPendingQuestion(null);
-    setPendingSlotPicker(null);
-    processedInvocationsRef.current.clear();
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
-  }, [setChatMessages]);
-
-  const clearError = useCallback(() => {
-    chatClearError();
-  }, [chatClearError]);
+    resetToolEvents();
+    clearStoredChat();
+  }, [setChatMessages, resetToolEvents]);
 
   return {
     messages,
@@ -387,6 +285,6 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     answerQuestion,
     selectSlot,
     clearMessages,
-    clearError,
+    clearError: chatClearError,
   };
 }

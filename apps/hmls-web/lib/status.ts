@@ -193,3 +193,79 @@ export const ORDER_TRANSITIONS: Record<string, string[]> = {
 
 /** Statuses where order items and notes are editable by admin. */
 export const EDITABLE_STATUSES = ["draft", "revised"];
+
+/* ── Progress bar step model ──────────────────────────────────────────── */
+
+export const ORDER_MAIN_STEPS = [
+  "draft",
+  "estimated",
+  "approved",
+  "preauth",
+  "scheduled",
+  "in_progress",
+  "invoiced",
+  "paid",
+] as const;
+
+export type OrderMainStep = (typeof ORDER_MAIN_STEPS)[number];
+
+export const ORDER_STEP_LABELS_ADMIN: Record<string, string> = {
+  draft: "Draft",
+  estimated: "Estimated",
+  approved: "Approved",
+  preauth: "Card on File",
+  scheduled: "Scheduled",
+  in_progress: "In Progress",
+  invoiced: "Invoiced",
+  paid: "Paid",
+};
+
+export const ORDER_STEP_LABELS_PORTAL: Record<string, string> = {
+  draft: "Preparing",
+  estimated: "Estimate Ready",
+  approved: "Approved",
+  preauth: "Card Authorized",
+  scheduled: "Scheduled",
+  in_progress: "In Progress",
+  invoiced: "Invoice Ready",
+  paid: "Complete",
+};
+
+export const ORDER_TERMINAL_STATUSES: ReadonlySet<string> = new Set([
+  "cancelled",
+  "void",
+  "archived",
+]);
+
+export const ORDER_BRANCH_STATUSES: ReadonlySet<string> = new Set([
+  "declined",
+  "revised",
+]);
+
+export type OrderStepState = "completed" | "current" | "pending";
+
+export function getOrderStepState(
+  stepStatus: string,
+  currentStatus: string,
+): OrderStepState {
+  const currentIdx = ORDER_MAIN_STEPS.indexOf(currentStatus as OrderMainStep);
+  const stepIdx = ORDER_MAIN_STEPS.indexOf(stepStatus as OrderMainStep);
+
+  if (currentIdx === -1) {
+    // Branch: declined/revised sit between estimated and approved.
+    if (currentStatus === "declined" || currentStatus === "revised") {
+      const effectiveIdx = ORDER_MAIN_STEPS.indexOf("estimated");
+      return stepIdx <= effectiveIdx ? "completed" : "pending";
+    }
+    // Post-paid: completed/archived — everything done.
+    if (currentStatus === "completed" || currentStatus === "archived") {
+      return "completed";
+    }
+    // cancelled/void — unknown progress, show only start as completed.
+    return stepIdx === 0 ? "completed" : "pending";
+  }
+
+  if (stepIdx < currentIdx) return "completed";
+  if (stepIdx === currentIdx) return "current";
+  return "pending";
+}

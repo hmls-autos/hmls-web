@@ -4,12 +4,18 @@ export interface LineItem {
   price: number;
 }
 
+export interface ServiceItem {
+  name: string;
+  partsNeeded: boolean;
+  partsNote?: string;
+}
+
 export interface Booking {
   id: number;
   customerId: number;
   providerId?: number | null;
   serviceType: string;
-  serviceItems?: unknown[];
+  serviceItems?: ServiceItem[];
   symptomDescription?: string | null;
   vehicleYear: number | string | null;
   vehicleMake: string | null;
