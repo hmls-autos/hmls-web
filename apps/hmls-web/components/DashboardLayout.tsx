@@ -30,6 +30,7 @@ export function DashboardLayout({
   title,
   maxWidth = "max-w-5xl",
   adminCheck,
+  mechanicCheck,
   adminPanelLabel,
   fullHeight,
   children,
@@ -38,6 +39,7 @@ export function DashboardLayout({
   title: string;
   maxWidth?: string;
   adminCheck?: boolean;
+  mechanicCheck?: boolean;
   adminPanelLabel?: string;
   /** When true, children fill the remaining height with no padding wrapper */
   fullHeight?: boolean;
@@ -49,8 +51,13 @@ export function DashboardLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const guardEndpoint = adminCheck
+    ? "/api/admin/dashboard"
+    : mechanicCheck
+      ? "/api/mechanic/me"
+      : null;
   const { error: adminError, isLoading: adminLoading } = useSWR(
-    adminCheck && (session || skipAuth) ? "/api/admin/dashboard" : null,
+    guardEndpoint && (session || skipAuth) ? guardEndpoint : null,
     fetcher,
   );
 
@@ -66,7 +73,9 @@ export function DashboardLayout({
     setSidebarOpen(false);
   }, [pathname]);
 
-  const isLoading = !skipAuth && (authLoading || (adminCheck && adminLoading));
+  const isLoading =
+    !skipAuth &&
+    (authLoading || ((adminCheck || mechanicCheck) && adminLoading));
 
   if (isLoading) {
     return (
@@ -78,7 +87,8 @@ export function DashboardLayout({
 
   if (!skipAuth && !session) return null;
 
-  if (!skipAuth && adminCheck && adminError) {
+  if (!skipAuth && (adminCheck || mechanicCheck) && adminError) {
+    const deniedRoleLabel = adminCheck ? "admin" : "mechanic";
     return (
       <main className="flex flex-1 items-center justify-center">
         <div className="text-center">
@@ -87,7 +97,7 @@ export function DashboardLayout({
             Access Denied
           </h1>
           <p className="text-sm text-muted-foreground">
-            You don&apos;t have admin access.
+            You don&apos;t have {deniedRoleLabel} access.
           </p>
         </div>
       </main>

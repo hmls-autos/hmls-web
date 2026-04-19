@@ -5,6 +5,7 @@ import { AppError } from "@hmls/shared/errors";
 import { estimates } from "./routes/estimates.ts";
 import { portal } from "./routes/portal.ts";
 import { admin } from "./routes/admin.ts";
+import { mechanic } from "./routes/mechanic.ts";
 import { orders, ordersPdf } from "./routes/orders.ts";
 import { chat, initChat, staffChat } from "./routes/chat.ts";
 import { createWebhookRoute } from "./routes/webhook.ts";
@@ -74,6 +75,7 @@ export function createHmlsApp(options: HmlsAppOptions) {
   app.route("/api/portal", portal);
   app.route("/api/admin", admin);
   app.route("/api/admin/orders", orders);
+  app.route("/api/mechanic", mechanic);
   app.route("/task", chat);
   app.route("/staff-task", staffChat);
 

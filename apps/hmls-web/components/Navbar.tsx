@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, LogIn, LogOut } from "lucide-react";
+import { LayoutDashboard, LogIn, LogOut, Wrench } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,18 +8,19 @@ import { useAuth } from "@/components/AuthProvider";
 import MobileNav from "./MobileNav";
 import ThemeToggle from "./ThemeToggle";
 
-const navLinks = [
+const marketingLinks = [
   { href: "/", label: "Home" },
   { href: "/contact", label: "Contact" },
-  { href: "/chat", label: "Chat" },
 ];
+const customerChatLink = { href: "/chat", label: "Chat" };
 
 const portalLink = { href: "/portal", label: "My Portal" };
 const adminLink = { href: "/admin", label: "Admin", icon: LayoutDashboard };
+const mechanicLink = { href: "/mechanic", label: "Mechanic", icon: Wrench };
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user, supabase, isLoading, isAdmin } = useAuth();
+  const { user, supabase, isLoading, isAdmin, isMechanic } = useAuth();
   const isUserLoggedIn = !!user;
   const isHome = pathname === "/";
   const [scrolled, setScrolled] = useState(false);
@@ -54,7 +55,7 @@ export default function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8">
-          {navLinks.map(({ href, label }) => (
+          {marketingLinks.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
@@ -69,20 +70,36 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+          {!isAdmin && (
+            <Link
+              href={customerChatLink.href}
+              className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
+                pathname === customerChatLink.href
+                  ? "text-red-400"
+                  : isTransparent
+                    ? "text-white/70 hover:text-white"
+                    : "text-text-secondary hover:text-text"
+              }`}
+            >
+              {customerChatLink.label}
+            </Link>
+          )}
           {isUserLoggedIn && (
             <>
-              <Link
-                href={portalLink.href}
-                className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
-                  pathname.startsWith(portalLink.href)
-                    ? "text-red-400"
-                    : isTransparent
-                      ? "text-white/70 hover:text-white"
-                      : "text-text-secondary hover:text-text"
-                }`}
-              >
-                {portalLink.label}
-              </Link>
+              {!isAdmin && (
+                <Link
+                  href={portalLink.href}
+                  className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
+                    pathname.startsWith(portalLink.href)
+                      ? "text-red-400"
+                      : isTransparent
+                        ? "text-white/70 hover:text-white"
+                        : "text-text-secondary hover:text-text"
+                  }`}
+                >
+                  {portalLink.label}
+                </Link>
+              )}
               {isAdmin && (
                 <Link
                   href={adminLink.href}
@@ -95,6 +112,20 @@ export default function Navbar() {
                   }`}
                 >
                   {adminLink.label}
+                </Link>
+              )}
+              {isMechanic && (
+                <Link
+                  href={mechanicLink.href}
+                  className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
+                    pathname.startsWith(mechanicLink.href)
+                      ? "text-red-400"
+                      : isTransparent
+                        ? "text-white/70 hover:text-white"
+                        : "text-text-secondary hover:text-text"
+                  }`}
+                >
+                  {mechanicLink.label}
                 </Link>
               )}
             </>
@@ -127,12 +158,14 @@ export default function Navbar() {
                 Sign In
               </Link>
             ))}
-          <Link
-            href="/chat"
-            className="px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
-          >
-            Get a Quote
-          </Link>
+          {!isAdmin && (
+            <Link
+              href="/chat"
+              className="px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Get a Quote
+            </Link>
+          )}
         </div>
 
         {/* Mobile nav */}

@@ -10,6 +10,7 @@ type AuthContextType = {
   supabase: ReturnType<typeof createClient>;
   isLoading: boolean;
   isAdmin: boolean;
+  isMechanic: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +21,31 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
+}
+
+/** Decode the payload segment of a JWT without verifying. */
+function decodeJwt(token: string | null | undefined): Record<string, unknown> {
+  if (!token) return {};
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return {};
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+    return JSON.parse(atob(padded));
+  } catch {
+    return {};
+  }
+}
+
+function rolesFromSession(session: Session | null) {
+  // The JWT carries user_role via public.custom_access_token_hook (which
+  // bridges legacy app_metadata admins on the DB side).
+  const claims = decodeJwt(session?.access_token);
+  const role = claims.user_role as string | undefined;
+  return {
+    isAdmin: role === "admin",
+    isMechanic: role === "mechanic",
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -52,6 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
+  const { isAdmin, isMechanic } = rolesFromSession(session);
+
   return (
     <AuthContext.Provider
       value={{
@@ -59,7 +87,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         supabase,
         isLoading,
-        isAdmin: user?.app_metadata?.role === "admin",
+        isAdmin,
+        isMechanic,
       }}
     >
       {children}
