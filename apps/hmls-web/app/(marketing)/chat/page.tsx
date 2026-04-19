@@ -15,16 +15,23 @@ import { toolDisplayNames } from "@/lib/agent-tools";
 
 function ChatPageInner() {
   const prefersReducedMotion = useReducedMotion();
-  const { session, isLoading: authLoading } = useAuth();
+  const { session, isLoading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Redirect unauthenticated visitors to /login so they never hit the
-  // gateway's 401 on send. Runs only after auth has resolved.
+  // gateway's 401 on send. Admins are funneled to their own chat at
+  // /admin/chat — the gateway would reject them with 403 otherwise.
   useEffect(() => {
-    if (authLoading || session) return;
-    router.replace("/login");
-  }, [authLoading, session, router]);
+    if (authLoading) return;
+    if (!session) {
+      router.replace("/login");
+      return;
+    }
+    if (isAdmin) {
+      router.replace("/admin/chat");
+    }
+  }, [authLoading, session, isAdmin, router]);
 
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -99,8 +106,9 @@ function ChatPageInner() {
     setInput("");
   };
 
-  // Show loading state while auth resolves or while redirecting unauthenticated users to /login
-  if (authLoading || !session) {
+  // Show loading state while auth resolves, or while redirecting
+  // unauthenticated users to /login / admins to /admin/chat.
+  if (authLoading || !session || isAdmin) {
     return (
       <main className="flex flex-col flex-1 bg-background text-text">
         <div className="flex-1 flex flex-col items-center justify-center px-4">
