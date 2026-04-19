@@ -8,13 +8,12 @@ export default function Hero() {
       {/* Background image */}
       <div className="absolute inset-0">
         <Image
-          src="/images/engine-bay-mercedes.png"
+          src="/images/engine-bay-mercedes-1920.webp"
           alt="Mercedes engine bay — precision engineering"
           fill
           priority
           className="object-cover"
           sizes="100vw"
-          quality={90}
         />
       </div>
 
