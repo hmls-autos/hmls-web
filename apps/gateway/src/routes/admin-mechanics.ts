@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, asc, between, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, between, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { db, schema } from "@hmls/agent/db";
 import { type AdminEnv, requireAdmin } from "../middleware/admin.ts";
 import {
@@ -351,6 +351,237 @@ adminMechanics.delete("/:id", async (c) => {
     );
   }
   return c.json({ success: true });
+});
+
+// GET /:id/availability — read weekly hours
+adminMechanics.get("/:id/availability", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
+      400,
+    );
+  }
+  const rows = await db
+    .select()
+    .from(schema.providerAvailability)
+    .where(eq(schema.providerAvailability.providerId, id))
+    .orderBy(asc(schema.providerAvailability.dayOfWeek));
+  return c.json(rows);
+});
+
+// PUT /:id/availability — replace weekly hours atomically
+adminMechanics.put("/:id/availability", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
+      400,
+    );
+  }
+
+  const body = await c.req.json<{
+    availability: Array<
+      { dayOfWeek: number; startTime: string; endTime: string }
+    >;
+  }>().catch(() => null);
+
+  if (!body?.availability || !Array.isArray(body.availability)) {
+    return c.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "availability array required",
+        },
+      },
+      400,
+    );
+  }
+
+  for (const row of body.availability) {
+    if (
+      !Number.isInteger(row.dayOfWeek) ||
+      row.dayOfWeek < 0 ||
+      row.dayOfWeek > 6 ||
+      !/^\d{2}:\d{2}(:\d{2})?$/.test(row.startTime) ||
+      !/^\d{2}:\d{2}(:\d{2})?$/.test(row.endTime)
+    ) {
+      return c.json(
+        {
+          error: {
+            code: "BAD_REQUEST",
+            message: "Invalid row: dayOfWeek 0-6, HH:MM[:SS] times required",
+          },
+        },
+        400,
+      );
+    }
+    if (row.endTime <= row.startTime) {
+      return c.json(
+        {
+          error: {
+            code: "BAD_REQUEST",
+            message: "endTime must be after startTime",
+          },
+        },
+        400,
+      );
+    }
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(schema.providerAvailability)
+      .where(eq(schema.providerAvailability.providerId, id));
+    if (body.availability.length > 0) {
+      await tx.insert(schema.providerAvailability).values(
+        body.availability.map((a) => ({ providerId: id, ...a })),
+      );
+    }
+  });
+
+  const rows = await db
+    .select()
+    .from(schema.providerAvailability)
+    .where(eq(schema.providerAvailability.providerId, id))
+    .orderBy(asc(schema.providerAvailability.dayOfWeek));
+  return c.json(rows);
+});
+
+// GET /:id/overrides — read schedule overrides
+adminMechanics.get("/:id/overrides", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
+      400,
+    );
+  }
+  const from = c.req.query("from");
+  const to = c.req.query("to");
+
+  const conditions = [eq(schema.providerScheduleOverrides.providerId, id)];
+  if (from) {
+    conditions.push(gte(schema.providerScheduleOverrides.overrideDate, from));
+  }
+  if (to) {
+    conditions.push(lte(schema.providerScheduleOverrides.overrideDate, to));
+  }
+
+  const rows = await db
+    .select()
+    .from(schema.providerScheduleOverrides)
+    .where(and(...conditions))
+    .orderBy(asc(schema.providerScheduleOverrides.overrideDate));
+  return c.json(rows);
+});
+
+// POST /:id/overrides — upsert override (one per date)
+adminMechanics.post("/:id/overrides", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
+      400,
+    );
+  }
+
+  const body = await c.req.json<{
+    overrideDate: string;
+    isAvailable: boolean;
+    startTime?: string;
+    endTime?: string;
+    reason?: string;
+  }>().catch(() => null);
+
+  if (!body?.overrideDate || typeof body.isAvailable !== "boolean") {
+    return c.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "overrideDate (YYYY-MM-DD) and isAvailable required",
+        },
+      },
+      400,
+    );
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(body.overrideDate)) {
+    return c.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "overrideDate must be YYYY-MM-DD",
+        },
+      },
+      400,
+    );
+  }
+  if (body.isAvailable && (!body.startTime || !body.endTime)) {
+    return c.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "startTime and endTime required when isAvailable is true",
+        },
+      },
+      400,
+    );
+  }
+
+  await db
+    .delete(schema.providerScheduleOverrides)
+    .where(
+      and(
+        eq(schema.providerScheduleOverrides.providerId, id),
+        eq(schema.providerScheduleOverrides.overrideDate, body.overrideDate),
+      ),
+    );
+
+  const [created] = await db
+    .insert(schema.providerScheduleOverrides)
+    .values({
+      providerId: id,
+      overrideDate: body.overrideDate,
+      isAvailable: body.isAvailable,
+      startTime: body.startTime ?? null,
+      endTime: body.endTime ?? null,
+      reason: body.reason ?? null,
+    })
+    .returning();
+  return c.json(created, 201);
+});
+
+// DELETE /:id/overrides/:overrideId — delete single override
+adminMechanics.delete("/:id/overrides/:overrideId", async (c) => {
+  const id = Number(c.req.param("id"));
+  const overrideId = Number(c.req.param("overrideId"));
+  if (
+    !Number.isInteger(id) || id <= 0 ||
+    !Number.isInteger(overrideId) || overrideId <= 0
+  ) {
+    return c.json(
+      { error: { code: "BAD_REQUEST", message: "Invalid ID" } },
+      400,
+    );
+  }
+
+  const result = await db
+    .delete(schema.providerScheduleOverrides)
+    .where(
+      and(
+        eq(schema.providerScheduleOverrides.id, overrideId),
+        eq(schema.providerScheduleOverrides.providerId, id),
+      ),
+    )
+    .returning({ id: schema.providerScheduleOverrides.id });
+
+  if (result.length === 0) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Override not found" } },
+      404,
+    );
+  }
+  return c.json({ ok: true });
 });
 
 export { adminMechanics };
