@@ -42,7 +42,7 @@ export default function About() {
             <div className="absolute -top-3 -left-3 w-px h-20 bg-red-500" />
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
               <Image
-                src="/images/engine-bay.png"
+                src="/images/engine-bay-1280.webp"
                 alt="Engine bay detail"
                 fill
                 className="object-cover"

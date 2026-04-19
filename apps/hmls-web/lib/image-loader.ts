@@ -6,8 +6,21 @@ interface ImageLoaderParams {
   quality?: number;
 }
 
-export default function imageLoader({ src }: ImageLoaderParams): string {
-  // Deno Deploy doesn't have a built-in image optimizer.
-  // Return the src as-is, but Next.js still generates sizes/srcSet/loading attributes.
+// Deno Deploy has no runtime image optimizer, so we pre-generate WebP
+// variants for hot images and map srcset widths to the closest pre-generated
+// size. Each entry lists the widths available on disk.
+const PREGEN: Record<string, readonly number[]> = {
+  "engine-bay-mercedes": [640, 960, 1280, 1920],
+  "engine-bay": [640, 960, 1280],
+};
+
+export default function imageLoader({ src, width }: ImageLoaderParams): string {
+  for (const [base, widths] of Object.entries(PREGEN)) {
+    if (src.startsWith(`/images/${base}`)) {
+      const chosen =
+        widths.find((w) => w >= width) ?? widths[widths.length - 1];
+      return `/images/${base}-${chosen}.webp`;
+    }
+  }
   return src;
 }
