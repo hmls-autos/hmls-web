@@ -185,33 +185,36 @@ staff agent calls `find_customer` / `create_order` / `create_estimate` with expl
 
 **Database Schema** (`apps/agent/src/db/schema.ts`): Drizzle ORM
 
-- `orders` — **single source of truth** for the work lifecycle (status, items, contact snapshot,
-  payment)
-  - Payment columns: `paid_at`, `payment_method`, `payment_reference`, `capturedAmountCents`
-  - Legacy FK columns still present but unwritten by new flows: `estimate_id`, `quote_id`,
-    `booking_id`, `stripe_quote_id`, `stripe_invoice_id`, `stripe_payment_intent_id`,
-    `preauth_amount_cents` (scheduled to drop in Layer 3)
+- `orders` — **single source of truth** for the work lifecycle
+  - Lifecycle: `status`, `statusHistory`, `revisionNumber`, `cancellationReason`
+  - Content: `items` (jsonb), `notes`, `adminNotes`, `subtotalCents`, `priceRangeLow/HighCents`
+  - Vehicle + symptoms: `vehicleInfo`, `symptomDescription`, `photoUrls`, `customerNotes`
+  - Contact snapshot: `contactName/Email/Phone/Address`
+  - Scheduling: `scheduledAt`, `appointmentEnd`, `durationMinutes`, `providerId`, `location`,
+    `locationLat/Lng`, `accessInstructions`, `blockedRange` (tstzrange, auto-computed by trigger)
+  - Sharing: `shareToken`, `validDays`, `expiresAt`
+  - Payment: `paidAt`, `paymentMethod`, `paymentReference`, `capturedAmountCents`
 - `order_events` — audit log (fromStatus, toStatus, actor, metadata)
-- `customers`, `shops` (multi-tenant foundation, not yet enforced), `providers` (mechanics)
-- `bookings` — still exists; will be absorbed into `orders` in Layer 3
-- **Deprecated, don't write to**: `estimates`, `quotes` — still exist in schema and DB but no code
-  path writes. Scheduled for drop in Layer 3.
+- `customers`, `shops` (multi-tenant foundation, not yet enforced), `providers` (mechanics),
+  `providerAvailability`, `providerScheduleOverrides`
 - `pricingConfig` for dynamic pricing config
 - `olpVehicles` / `olpLaborTimes` for OLP labor reference data
 - `userProfiles` / `vehicles` / `fixoSessions` / `fixoMedia` / `obdCodes` / `fixoEstimates` for fixo
+- **Dropped (Layer 3)**: `estimates`, `quotes`, `bookings` tables all removed. Booking data is now
+  part of the order row.
 
 ### Migrations
 
-- `0001` - Orders lifecycle (initial orders table)
-- `0002` - Order contact snapshot fields
-- `0003` - Preauth fields (now deprecated by 0008)
-- `0004` - Fixo estimates
-- `0005` - Bookings status machine
-- `0006` - RBAC auth hook
-- `0007` - Fix `compute_blocked_range` trigger (was referencing non-existent `buffer_before_minutes`
-  / `buffer_after_minutes` cols)
-- `0008` - Simplify status machine: drop preauth/invoiced/paid/archived/void; add
+- `0001-0006` - Orders lifecycle, contact snapshot, RBAC hook, etc.
+- `0007` - Fix `compute_blocked_range` trigger (was referencing non-existent
+  `buffer_before/after_minutes` cols)
+- `0008` - Simplify status machine (13→9 states): drop preauth/invoiced/paid/archived/void; add
   paid_at/payment_method/payment_reference
+- `0009` - Layer 3 PR A: orders absorbs booking scheduling fields; move `compute_blocked_range`
+  trigger from bookings to orders; backfill linked bookings
+- `0010` - Layer 3 PR C: drop `bookings`, `estimates`, `quotes` tables; drop orders legacy FK
+  columns (estimate_id, quote_id, booking_id, stripe_quote_id, stripe_invoice_id,
+  stripe_payment_intent_id, preauth_amount_cents)
 
 ## Pre-Push CI
 
@@ -311,39 +314,6 @@ vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY --scope spinsirrs-projects
 vercel env add NEXT_PUBLIC_AGENT_URL --scope spinsirrs-projects  # https://api.fixo.hmls.autos
 ```
 
-## Roadmap — Layer 3: collapse bookings into orders
-
-Goal: one entity. Every work-lifecycle field lives on `orders`. `bookings`, `estimates`, `quotes`
-tables get dropped.
-
-### PR A — schema + double write
-
-1. Add columns to `orders`: `scheduled_at`, `appointment_end`, `duration_minutes`, `provider_id` (FK
-   → providers), `location`, `location_lat`, `location_lng`, `access_instructions`,
-   `symptom_description`, `photo_urls`, `customer_notes`, `blocked_range` (tstzrange).
-2. Migrate `compute_blocked_range` trigger from `bookings` to `orders`.
-3. Backfill: for every `orders.booking_id`, copy booking fields onto the order.
-4. Update `create_booking` tool (`apps/agent/src/hmls/tools/scheduling.ts`) to **also** write the
-   new fields to the order row (dual-write, bookings row still created for compatibility).
-
-### PR B — switch reads to orders
-
-1. `get_availability` reads provider_id / blocked_range from `orders`, not `bookings`.
-2. Admin order detail page (`/admin/orders/:id`) BookingPanel reads order.scheduled_at etc directly.
-3. Admin-mechanics `POST /bookings/:id/reassign` → operates on orders.provider_id.
-4. Portal `/me/bookings` endpoint → returns `orders` with `scheduled_at IS NOT NULL`.
-5. Admin booking CRUD endpoints in `admin.ts` → delete or rewrite to orders.
-6. `create_booking` tool stops writing to `bookings` (writes only to orders).
-
-### PR C — drop legacy tables
-
-1. Migration: drop `bookings`, `estimates`, `quotes` tables.
-2. Drop columns: `orders.estimate_id`, `orders.quote_id`, `orders.booking_id`,
-   `orders.stripe_quote_id`, `orders.stripe_invoice_id`, `orders.stripe_payment_intent_id`,
-   `orders.preauth_amount_cents`.
-3. Remove schema definitions for bookings/estimates/quotes from `schema.ts`.
-4. Remove legacy type re-exports from `apps/hmls-web/lib/types.ts`.
-
 ## Recent session summary (2026-04-20)
 
 - **Layer 1 done**: status machine simplified from 13→9 states. Migration `0008` remaps legacy data.
@@ -352,11 +322,17 @@ tables get dropped.
 - **Layer 2 done**: admin UI consolidated. Dashboard shows order-based stats. `/admin/schedule`
   deleted — Assign/Confirm/Reject actions migrated into order detail page BookingPanel.
   `/admin/estimates` and `/admin/quotes` admin routes deleted.
+- **Layer 3 done**: orders absorbed bookings. Migrations `0009` (add scheduling columns + trigger +
+  backfill) and `0010` (drop bookings/estimates/quotes + legacy FK columns) applied. All code
+  paths read/write `orders` directly. `notifyBookingStatusChange` removed; mechanic's
+  confirm/reject booking flow removed (admin does it via order status transitions). Customer
+  cancel-booking is now an order-level action (`scheduled → cancelled`). Stripe webhook is now a
+  no-op (dormant).
 - **Agent UX hardened**: EstimateCard shows "Pending review" badge when order is draft.
   `create_estimate` pulls customerId from auth context for customer chat; staff agent still passes
-  it explicitly for walk-ins. `get_availability` Postgres `ANY(ARRAY[...])` type cast bug fixed (use
-  `inArray` helper). `compute_blocked_range` trigger fixed (no-buffer version). SlotPicker converted
-  to date + time dropdowns, bookings created unassigned (admin dispatches).
-- **Known deferred**: Layer 3 (collapse bookings into orders) — planned, not started. Multi-shop
-  tenancy — `shops` table exists but no code path scopes by `shop_id` yet. BAR § 3353 compliance
-  flow — design in the air, not implemented.
+  it explicitly for walk-ins. SlotPicker is date + time dropdowns, orders created unassigned (admin
+  dispatches).
+- **Known deferred**: Multi-shop tenancy — `shops` table exists but no code path scopes by
+  `shop_id` yet. BAR § 3353 compliance flow — design in the air, not implemented. Stripe auto-
+  capture is dormant — needs re-implementation if a shop opts in (add payment columns back
+  selectively, wire webhook handlers).
