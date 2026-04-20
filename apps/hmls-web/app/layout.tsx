@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { JsonLd } from "@/components/JsonLd";
+import { PageEnter } from "@/components/PageEnter";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const barlow = Barlow({
@@ -86,9 +87,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <TooltipProvider>
-              <div id="main-content" className="flex-1 flex flex-col">
-                {children}
-              </div>
+              <PageEnter>{children}</PageEnter>
               <Toaster richColors position="bottom-right" />
             </TooltipProvider>
           </AuthProvider>

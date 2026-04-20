@@ -1,36 +1,48 @@
 # Admin Mechanics Management Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
+> checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a full-scope admin surface under `/admin/mechanics` to list, create, edit, deactivate mechanics; view and edit their schedules; and reassign bookings. Visual style is a "Fleet Board" — a grid of rich cards with utilization bars, plus a per-mechanic detail page with a 7-day schedule strip.
+**Goal:** Build a full-scope admin surface under `/admin/mechanics` to list, create, edit,
+deactivate mechanics; view and edit their schedules; and reassign bookings. Visual style is a "Fleet
+Board" — a grid of rich cards with utilization bars, plus a per-mechanic detail page with a 7-day
+schedule strip.
 
 **Architecture:**
-- New Hono sub-router `apps/gateway/src/routes/admin-mechanics.ts`, mounted at `/api/admin/mechanics`, guarded by the existing `requireAdmin` middleware. No schema changes.
-- Aggregate stats (week utilization, isOnJobNow, earnings30d) live in a pure helper module (`apps/gateway/src/lib/mechanic-stats.ts`) that is unit-tested, then composed into list/detail endpoints.
-- Frontend uses the existing SWR + `authFetch` pattern. New hook file `hooks/useAdminMechanics.ts`. New pages under `app/(admin)/admin/mechanics/`.
 
-**Tech Stack:** Deno + Hono + Drizzle ORM (Postgres) for the gateway; Next.js 16 + React 19 + Tailwind 4 + SWR for the web; existing shadcn/ui components (Card, Dialog, Button, Badge, Skeleton).
+- New Hono sub-router `apps/gateway/src/routes/admin-mechanics.ts`, mounted at
+  `/api/admin/mechanics`, guarded by the existing `requireAdmin` middleware. No schema changes.
+- Aggregate stats (week utilization, isOnJobNow, earnings30d) live in a pure helper module
+  (`apps/gateway/src/lib/mechanic-stats.ts`) that is unit-tested, then composed into list/detail
+  endpoints.
+- Frontend uses the existing SWR + `authFetch` pattern. New hook file `hooks/useAdminMechanics.ts`.
+  New pages under `app/(admin)/admin/mechanics/`.
+
+**Tech Stack:** Deno + Hono + Drizzle ORM (Postgres) for the gateway; Next.js 16 + React 19 +
+Tailwind 4 + SWR for the web; existing shadcn/ui components (Card, Dialog, Button, Badge, Skeleton).
 
 ---
 
 ## Spec
 
-See `docs/superpowers/specs/2026-04-19-admin-mechanics-design.md`. Summary of backend endpoints (all under `/api/admin/mechanics`, admin-gated):
+See `docs/superpowers/specs/2026-04-19-admin-mechanics-design.md`. Summary of backend endpoints (all
+under `/api/admin/mechanics`, admin-gated):
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| GET | `/` | List mechanics with aggregate stats |
-| POST | `/` | Create a mechanic |
-| GET | `/:id` | Full profile |
-| PATCH | `/:id` | Edit profile fields |
-| DELETE | `/:id` | Soft delete (sets `isActive=false`) |
-| GET | `/:id/availability` | Weekly hours |
-| PUT | `/:id/availability` | Overwrite weekly hours |
-| GET | `/:id/overrides` | Schedule overrides |
-| POST | `/:id/overrides` | Upsert override |
-| DELETE | `/:id/overrides/:overrideId` | Delete override |
-| GET | `/:id/bookings` | Mechanic's bookings (supports `from`/`to`) |
-| POST | `/bookings/:bookingId/reassign` | Reassign booking to `{ providerId }` |
+| Method | Path                            | Purpose                                    |
+| ------ | ------------------------------- | ------------------------------------------ |
+| GET    | `/`                             | List mechanics with aggregate stats        |
+| POST   | `/`                             | Create a mechanic                          |
+| GET    | `/:id`                          | Full profile                               |
+| PATCH  | `/:id`                          | Edit profile fields                        |
+| DELETE | `/:id`                          | Soft delete (sets `isActive=false`)        |
+| GET    | `/:id/availability`             | Weekly hours                               |
+| PUT    | `/:id/availability`             | Overwrite weekly hours                     |
+| GET    | `/:id/overrides`                | Schedule overrides                         |
+| POST   | `/:id/overrides`                | Upsert override                            |
+| DELETE | `/:id/overrides/:overrideId`    | Delete override                            |
+| GET    | `/:id/bookings`                 | Mechanic's bookings (supports `from`/`to`) |
+| POST   | `/bookings/:bookingId/reassign` | Reassign booking to `{ providerId }`       |
 
 ---
 
@@ -38,10 +50,12 @@ See `docs/superpowers/specs/2026-04-19-admin-mechanics-design.md`. Summary of ba
 
 ### Backend (create)
 
-- `apps/gateway/src/lib/mechanic-stats.ts` — pure functions for stats computation (utilization, isOnJobNow, earnings derivation rules). ~150 lines.
+- `apps/gateway/src/lib/mechanic-stats.ts` — pure functions for stats computation (utilization,
+  isOnJobNow, earnings derivation rules). ~150 lines.
 - `apps/gateway/src/lib/mechanic-stats_test.ts` — Deno unit tests for the above.
 - `apps/gateway/src/routes/admin-mechanics.ts` — Hono sub-router with all endpoints. ~400 lines.
-- `apps/gateway/src/routes/admin-mechanics_test.ts` — smoke tests for unauthorized access + input validation.
+- `apps/gateway/src/routes/admin-mechanics_test.ts` — smoke tests for unauthorized access + input
+  validation.
 
 ### Backend (modify)
 
@@ -64,38 +78,46 @@ See `docs/superpowers/specs/2026-04-19-admin-mechanics-design.md`. Summary of ba
 ### Frontend (modify)
 
 - `apps/hmls-web/app/(admin)/admin/layout.tsx` — add "Mechanics" nav item (Wrench icon).
-- `apps/hmls-web/app/(admin)/admin/orders/[id]/page.tsx` — wire the ReassignBookingDialog into this page (per spec: reassign is discoverable from order detail too).
+- `apps/hmls-web/app/(admin)/admin/orders/[id]/page.tsx` — wire the ReassignBookingDialog into this
+  page (per spec: reassign is discoverable from order detail too).
 
 ---
 
 ## Testing Strategy
 
-- **Backend:** TDD for `mechanic-stats.ts` using Deno's built-in test runner — the file pattern `*_test.ts` matches `apps/gateway/src/routes/chat_test.ts`. For the HTTP routes, match the `chat_test.ts` style: 401/400 path assertions that don't require a live DB. DB-backed happy paths are verified via manual QA with the dev server (see final task).
-- **Frontend:** This project does not have a frontend unit-test framework set up (grep returned no `*.test.ts(x)` under `apps/hmls-web`). Do not add one. Verification is via manual QA (dev server + browser) and the CI suite (`bun run lint`, `bun run typecheck`, `bun run build`).
+- **Backend:** TDD for `mechanic-stats.ts` using Deno's built-in test runner — the file pattern
+  `*_test.ts` matches `apps/gateway/src/routes/chat_test.ts`. For the HTTP routes, match the
+  `chat_test.ts` style: 401/400 path assertions that don't require a live DB. DB-backed happy paths
+  are verified via manual QA with the dev server (see final task).
+- **Frontend:** This project does not have a frontend unit-test framework set up (grep returned no
+  `*.test.ts(x)` under `apps/hmls-web`). Do not add one. Verification is via manual QA (dev server +
+  browser) and the CI suite (`bun run lint`, `bun run typecheck`, `bun run build`).
 
 ---
 
 ## Task 1: Backend — pure stats helpers
 
 **Files:**
+
 - Create: `apps/gateway/src/lib/mechanic-stats.ts`
 - Test: `apps/gateway/src/lib/mechanic-stats_test.ts`
 
-**What this covers:** the only real business logic on the backend is the aggregate math. Isolating it into pure functions lets us unit-test without spinning up DB.
+**What this covers:** the only real business logic on the backend is the aggregate math. Isolating
+it into pure functions lets us unit-test without spinning up DB.
 
 - [ ] **Step 1: Write the failing tests**
 
 Create `apps/gateway/src/lib/mechanic-stats_test.ts`:
 
 ```ts
-import { assertEquals, assertAlmostEquals } from "@std/assert";
+import { assertAlmostEquals, assertEquals } from "@std/assert";
 import {
   availableMinutesForWeek,
   bookedMinutesForWeek,
   computeUtilization,
+  endOfWeek,
   isOnJobNow,
   startOfWeek,
-  endOfWeek,
 } from "./mechanic-stats.ts";
 
 // Helper: freeze "now" to a known Monday 10:00 UTC.
@@ -144,8 +166,7 @@ Deno.test("availableMinutesForWeek subtracts full-day unavailable overrides", ()
 });
 
 Deno.test("availableMinutesForWeek adds extra-hours overrides on non-working days", () => {
-  const weekly: { dayOfWeek: number; startTime: string; endTime: string }[] =
-    [];
+  const weekly: { dayOfWeek: number; startTime: string; endTime: string }[] = [];
   // Saturday 2026-04-25 extra shift 10:00-14:00 = 240 min
   const overrides = [
     {
@@ -231,8 +252,8 @@ Deno.test("isOnJobNow returns false when no booking covers now", () => {
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `deno test apps/gateway/src/lib/mechanic-stats_test.ts`
-Expected: FAIL — module `./mechanic-stats.ts` does not exist.
+Run: `deno test apps/gateway/src/lib/mechanic-stats_test.ts` Expected: FAIL — module
+`./mechanic-stats.ts` does not exist.
 
 - [ ] **Step 3: Implement the helpers**
 
@@ -374,8 +395,7 @@ export function isOnJobNow(bookings: BookingRow[], now: Date): boolean {
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `deno test apps/gateway/src/lib/mechanic-stats_test.ts`
-Expected: PASS (10 tests).
+Run: `deno test apps/gateway/src/lib/mechanic-stats_test.ts` Expected: PASS (10 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -389,9 +409,11 @@ git commit -m "feat(gateway): pure mechanic stats helpers with tests"
 ## Task 2: Backend — admin-mechanics router (list + CRUD)
 
 **Files:**
+
 - Create: `apps/gateway/src/routes/admin-mechanics.ts`
 
-This task implements only the list + per-mechanic CRUD endpoints. Availability, overrides, bookings, and reassign go in Tasks 3–5. Splitting keeps review reasonable.
+This task implements only the list + per-mechanic CRUD endpoints. Availability, overrides, bookings,
+and reassign go in Tasks 3–5. Splitting keeps review reasonable.
 
 - [ ] **Step 1: Create the router file with imports and admin-guard**
 
@@ -494,7 +516,9 @@ adminMechanics.get("/", async (c) => {
     db
       .select({
         providerId: schema.bookings.providerId,
-        amountCents: sql<number>`COALESCE(${schema.orders.capturedAmountCents}, ${schema.orders.subtotalCents})`,
+        amountCents: sql<
+          number
+        >`COALESCE(${schema.orders.capturedAmountCents}, ${schema.orders.subtotalCents})`,
       })
       .from(schema.orders)
       .innerJoin(
@@ -640,12 +664,8 @@ adminMechanics.post("/", async (c) => {
       phone: body.phone ?? null,
       timezone: body.timezone ?? "America/Los_Angeles",
       serviceRadiusMiles: body.serviceRadiusMiles ?? 30,
-      homeBaseLat: body.homeBaseLat == null
-        ? null
-        : String(body.homeBaseLat),
-      homeBaseLng: body.homeBaseLng == null
-        ? null
-        : String(body.homeBaseLng),
+      homeBaseLat: body.homeBaseLat == null ? null : String(body.homeBaseLat),
+      homeBaseLng: body.homeBaseLng == null ? null : String(body.homeBaseLng),
       specialties: body.specialties ?? null,
       isActive: body.isActive ?? true,
       authUserId: body.authUserId ?? null,
@@ -718,14 +738,10 @@ adminMechanics.patch("/:id", async (c) => {
     updates.serviceRadiusMiles = body.serviceRadiusMiles;
   }
   if (body.homeBaseLat !== undefined) {
-    updates.homeBaseLat = body.homeBaseLat == null
-      ? null
-      : String(body.homeBaseLat);
+    updates.homeBaseLat = body.homeBaseLat == null ? null : String(body.homeBaseLat);
   }
   if (body.homeBaseLng !== undefined) {
-    updates.homeBaseLng = body.homeBaseLng == null
-      ? null
-      : String(body.homeBaseLng);
+    updates.homeBaseLng = body.homeBaseLng == null ? null : String(body.homeBaseLng);
   }
   if (body.specialties !== undefined) updates.specialties = body.specialties;
   if (body.isActive !== undefined) updates.isActive = body.isActive;
@@ -792,6 +808,7 @@ git commit -m "feat(gateway): admin mechanics CRUD endpoints"
 ## Task 3: Backend — availability + overrides endpoints
 
 **Files:**
+
 - Modify: `apps/gateway/src/routes/admin-mechanics.ts`
 
 - [ ] **Step 1: Add availability read/write endpoints**
@@ -1041,8 +1058,7 @@ adminMechanics.delete("/:id/overrides/:overrideId", async (c) => {
 
 - [ ] **Step 3: Run `deno check`**
 
-Run: `deno task check`
-Expected: PASS (no type errors).
+Run: `deno task check` Expected: PASS (no type errors).
 
 - [ ] **Step 4: Commit**
 
@@ -1056,6 +1072,7 @@ git commit -m "feat(gateway): admin availability + override endpoints"
 ## Task 4: Backend — bookings + reassign endpoints
 
 **Files:**
+
 - Modify: `apps/gateway/src/routes/admin-mechanics.ts`
 
 - [ ] **Step 1: Add `GET /:id/bookings`**
@@ -1184,8 +1201,7 @@ adminMechanics.post("/bookings/:bookingId/reassign", async (c) => {
       {
         error: {
           code: "BAD_REQUEST",
-          message:
-            "Target mechanic is inactive. Pass force:true to reassign anyway.",
+          message: "Target mechanic is inactive. Pass force:true to reassign anyway.",
         },
       },
       400,
@@ -1204,8 +1220,7 @@ adminMechanics.post("/bookings/:bookingId/reassign", async (c) => {
 
 - [ ] **Step 3: Run `deno check`**
 
-Run: `deno task check`
-Expected: PASS.
+Run: `deno task check` Expected: PASS.
 
 - [ ] **Step 4: Commit**
 
@@ -1219,6 +1234,7 @@ git commit -m "feat(gateway): admin bookings list + reassign endpoint"
 ## Task 5: Backend — mount router + smoke tests
 
 **Files:**
+
 - Modify: `apps/gateway/src/hmls-app.ts`
 - Create: `apps/gateway/src/routes/admin-mechanics_test.ts`
 
@@ -1257,10 +1273,11 @@ Deno.test("admin-mechanics: rejects reassign missing header", async () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to confirm they pass (the router already rejects unauthenticated requests)**
+- [ ] **Step 2: Run tests to confirm they pass (the router already rejects unauthenticated
+      requests)**
 
-Run: `deno test apps/gateway/src/routes/admin-mechanics_test.ts`
-Expected: PASS (3 tests). The router is self-contained so no mounting needed to validate the auth boundary.
+Run: `deno test apps/gateway/src/routes/admin-mechanics_test.ts` Expected: PASS (3 tests). The
+router is self-contained so no mounting needed to validate the auth boundary.
 
 - [ ] **Step 3: Mount the router in `hmls-app.ts`**
 
@@ -1270,16 +1287,16 @@ Edit `apps/gateway/src/hmls-app.ts`. In the imports block near the top, add:
 import { adminMechanics } from "./routes/admin-mechanics.ts";
 ```
 
-In the route-mount block (around the other `app.route(...)` calls), add (place it right after `app.route("/api/admin/orders", orders);`):
+In the route-mount block (around the other `app.route(...)` calls), add (place it right after
+`app.route("/api/admin/orders", orders);`):
 
 ```ts
-  app.route("/api/admin/mechanics", adminMechanics);
+app.route("/api/admin/mechanics", adminMechanics);
 ```
 
 - [ ] **Step 4: Run the full Deno check + lint + tests**
 
-Run: `deno task check && deno task lint && deno test apps/gateway`
-Expected: PASS.
+Run: `deno task check && deno task lint && deno test apps/gateway` Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -1293,6 +1310,7 @@ git commit -m "feat(gateway): mount admin mechanics router + smoke tests"
 ## Task 6: Frontend — data layer hook
 
 **Files:**
+
 - Create: `apps/hmls-web/hooks/useAdminMechanics.ts`
 
 - [ ] **Step 1: Create the hook module**
@@ -1530,8 +1548,7 @@ export async function reassignBooking(
 
 - [ ] **Step 2: Typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS.
 
 - [ ] **Step 3: Commit**
 
@@ -1545,6 +1562,7 @@ git commit -m "feat(web): admin mechanics data hooks"
 ## Task 7: Frontend — `UtilizationBar` + `MechanicCard` components
 
 **Files:**
+
 - Create: `apps/hmls-web/components/admin/mechanics/UtilizationBar.tsx`
 - Create: `apps/hmls-web/components/admin/mechanics/MechanicCard.tsx`
 
@@ -1624,16 +1642,8 @@ interface Props {
 export function MechanicCard({ mechanic: m, onToggleActive }: Props) {
   const [isToggling, setIsToggling] = useState(false);
 
-  const dotClass = m.isOnJobNow
-    ? "bg-purple-500"
-    : m.isActive
-    ? "bg-green-500"
-    : "bg-neutral-400";
-  const dotLabel = m.isOnJobNow
-    ? "On a job now"
-    : m.isActive
-    ? "Active"
-    : "Inactive";
+  const dotClass = m.isOnJobNow ? "bg-purple-500" : m.isActive ? "bg-green-500" : "bg-neutral-400";
+  const dotLabel = m.isOnJobNow ? "On a job now" : m.isActive ? "Active" : "Inactive";
 
   async function handleToggle() {
     setIsToggling(true);
@@ -1676,8 +1686,9 @@ export function MechanicCard({ mechanic: m, onToggleActive }: Props) {
             {m.nextBookingAt ? formatDateTime(m.nextBookingAt) : "No upcoming bookings"}
           </p>
           <p>
-            <span className="font-medium text-foreground">Upcoming:</span>{" "}
-            {m.upcomingBookingsCount} job
+            <span className="font-medium text-foreground">Upcoming:</span> {m.upcomingBookingsCount}
+            {" "}
+            job
             {m.upcomingBookingsCount === 1 ? "" : "s"} this week
           </p>
           <p>
@@ -1710,8 +1721,7 @@ export function MechanicCard({ mechanic: m, onToggleActive }: Props) {
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS.
 
 - [ ] **Step 4: Commit**
 
@@ -1725,6 +1735,7 @@ git commit -m "feat(web): mechanic card + utilization bar components"
 ## Task 8: Frontend — Fleet board page + KPI strip + empty/loading
 
 **Files:**
+
 - Create: `apps/hmls-web/app/(admin)/admin/mechanics/page.tsx`
 
 - [ ] **Step 1: Create the page**
@@ -1737,10 +1748,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus } from "lucide-react";
-import {
-  type MechanicListRow,
-  useAdminMechanics,
-} from "@/hooks/useAdminMechanics";
+import { type MechanicListRow, useAdminMechanics } from "@/hooks/useAdminMechanics";
 import { MechanicCard } from "@/components/admin/mechanics/MechanicCard";
 import { cn } from "@/lib/utils";
 import { formatCents } from "@/lib/format";
@@ -1841,14 +1849,10 @@ export default function MechanicsPage() {
       <div>
         <Skeleton className="h-8 w-40 mb-6" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {["k1", "k2", "k3", "k4"].map((k) => (
-            <Skeleton key={k} className="h-20 w-full" />
-          ))}
+          {["k1", "k2", "k3", "k4"].map((k) => <Skeleton key={k} className="h-20 w-full" />)}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {["m1", "m2", "m3"].map((k) => (
-            <Skeleton key={k} className="h-60 w-full" />
-          ))}
+          {["m1", "m2", "m3"].map((k) => <Skeleton key={k} className="h-60 w-full" />)}
         </div>
       </div>
     );
@@ -1902,27 +1906,29 @@ export default function MechanicsPage() {
         </FilterChip>
       </div>
 
-      {filtered.length === 0 ? (
-        <Card className="p-6 text-center">
-          <CardContent className="p-0">
-            <p className="text-sm text-muted-foreground">
-              {mechanics.length === 0
-                ? "No mechanics yet. Add your first to get started."
-                : "No mechanics match this filter."}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((m) => (
-            <MechanicCard
-              key={m.id}
-              mechanic={m}
-              onToggleActive={toggleActive}
-            />
-          ))}
-        </div>
-      )}
+      {filtered.length === 0
+        ? (
+          <Card className="p-6 text-center">
+            <CardContent className="p-0">
+              <p className="text-sm text-muted-foreground">
+                {mechanics.length === 0
+                  ? "No mechanics yet. Add your first to get started."
+                  : "No mechanics match this filter."}
+              </p>
+            </CardContent>
+          </Card>
+        )
+        : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filtered.map((m) => (
+              <MechanicCard
+                key={m.id}
+                mechanic={m}
+                onToggleActive={toggleActive}
+              />
+            ))}
+          </div>
+        )}
 
       <AddMechanicDialog
         open={dialogOpen}
@@ -1948,6 +1954,7 @@ git commit -m "feat(web): admin mechanics fleet board page"
 ## Task 9: Frontend — Add Mechanic Dialog
 
 **Files:**
+
 - Create: `apps/hmls-web/components/admin/mechanics/AddMechanicDialog.tsx`
 
 - [ ] **Step 1: Create the dialog**
@@ -2039,8 +2046,7 @@ export function AddMechanicDialog({ open, onOpenChange, onCreated }: Props) {
         <DialogHeader>
           <DialogTitle>Add Mechanic</DialogTitle>
           <DialogDescription>
-            Create a mechanic record. Link them to a Supabase user later to
-            grant login access.
+            Create a mechanic record. Link them to a Supabase user later to grant login access.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -2143,8 +2149,7 @@ export function AddMechanicDialog({ open, onOpenChange, onCreated }: Props) {
 
 - [ ] **Step 2: Typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS.
 
 - [ ] **Step 3: Add nav entry and commit**
 
@@ -2186,6 +2191,7 @@ git commit -m "feat(web): add mechanic dialog + nav entry"
 ## Task 10: Frontend — Mechanic detail page (profile + bookings)
 
 **Files:**
+
 - Create: `apps/hmls-web/components/admin/mechanics/EditProfileForm.tsx`
 - Create: `apps/hmls-web/app/(admin)/admin/mechanics/[id]/page.tsx`
 
@@ -2217,9 +2223,7 @@ export function EditProfileForm({ mechanic, onSave, onCancel }: Props) {
   const [lat, setLat] = useState(mechanic.homeBaseLat ?? "");
   const [lng, setLng] = useState(mechanic.homeBaseLng ?? "");
   const [specialties, setSpecialties] = useState(
-    Array.isArray(mechanic.specialties)
-      ? (mechanic.specialties as string[]).join(", ")
-      : "",
+    Array.isArray(mechanic.specialties) ? (mechanic.specialties as string[]).join(", ") : "",
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -2405,8 +2409,7 @@ function ProfileCard({ id }: { id: number }) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    updateMechanic({ isActive: true })}
+                  onClick={() => updateMechanic({ isActive: true })}
                 >
                   Reactivate
                 </Button>
@@ -2446,9 +2449,7 @@ function ProfileCard({ id }: { id: number }) {
               </dd>
               <dt className="text-muted-foreground">Specialties</dt>
               <dd className="text-foreground">
-                {specialtiesList.length > 0
-                  ? specialtiesList.join(", ")
-                  : "—"}
+                {specialtiesList.length > 0 ? specialtiesList.join(", ") : "—"}
               </dd>
             </dl>
           )}
@@ -2613,8 +2614,7 @@ export default function MechanicDetailPage({
       {/* ReassignBookingDialog is wired in Task 13 */}
       {reassignTarget && (
         <div className="text-xs text-muted-foreground">
-          Reassign dialog coming in next task for booking #{reassignTarget.id};
-          close:{" "}
+          Reassign dialog coming in next task for booking #{reassignTarget.id}; close:{" "}
           <button
             type="button"
             className="underline"
@@ -2631,8 +2631,7 @@ export default function MechanicDetailPage({
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS.
 
 - [ ] **Step 4: Commit**
 
@@ -2646,6 +2645,7 @@ git commit -m "feat(web): mechanic detail page - profile + bookings"
 ## Task 11: Frontend — 7-day schedule strip component
 
 **Files:**
+
 - Create: `apps/hmls-web/components/admin/mechanics/ScheduleStrip.tsx`
 
 This renders today + 6 days, with availability background + booking blocks overlaid.
@@ -2657,10 +2657,7 @@ This renders today + 6 days, with availability background + booking blocks overl
 
 import { useMemo } from "react";
 import type { Booking } from "@/lib/types";
-import type {
-  ScheduleOverride,
-  WeeklyRow,
-} from "@/hooks/useAdminMechanics";
+import type { ScheduleOverride, WeeklyRow } from "@/hooks/useAdminMechanics";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -2778,9 +2775,8 @@ export function ScheduleStrip(
               {availableRanges.map((r, i) => {
                 const top = ((Math.max(r.startMin, dayStart) - dayStart) /
                   TOTAL_MINUTES) * 100;
-                const height =
-                  ((Math.min(r.endMin, dayEnd) - Math.max(r.startMin, dayStart)) /
-                    TOTAL_MINUTES) * 100;
+                const height = ((Math.min(r.endMin, dayEnd) - Math.max(r.startMin, dayStart)) /
+                  TOTAL_MINUTES) * 100;
                 if (height <= 0) return null;
                 return (
                   <div
@@ -2829,50 +2825,46 @@ export function ScheduleStrip(
 Edit `apps/hmls-web/app/(admin)/admin/mechanics/[id]/page.tsx`. Add these imports at the top:
 
 ```tsx
-import {
-  useAdminMechanicAvailability,
-  useAdminMechanicOverrides,
-} from "@/hooks/useAdminMechanics";
+import { useAdminMechanicAvailability, useAdminMechanicOverrides } from "@/hooks/useAdminMechanics";
 import { ScheduleStrip } from "@/components/admin/mechanics/ScheduleStrip";
 ```
 
 Inside `MechanicDetailPage`, after the existing `useAdminMechanicBookings` hook call, add:
 
 ```tsx
-  const { availability } = useAdminMechanicAvailability(id);
-  const { overrides } = useAdminMechanicOverrides(
-    id,
-    new Date().toISOString().slice(0, 10),
-    new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-  );
+const { availability } = useAdminMechanicAvailability(id);
+const { overrides } = useAdminMechanicOverrides(
+  id,
+  new Date().toISOString().slice(0, 10),
+  new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+);
 ```
 
 Insert a new section between `<ProfileCard />` and "Upcoming bookings":
 
 ```tsx
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-foreground">
-            Next 7 days
-          </h2>
-          {/* Edit hours / Add time off buttons — wired in Task 12 */}
-        </div>
-        <Card className="p-3">
-          <CardContent className="p-0">
-            <ScheduleStrip
-              weekly={availability}
-              overrides={overrides}
-              bookings={bookings}
-            />
-          </CardContent>
-        </Card>
-      </div>
+<div>
+  <div className="flex items-center justify-between mb-2">
+    <h2 className="text-sm font-semibold text-foreground">
+      Next 7 days
+    </h2>
+    {/* Edit hours / Add time off buttons — wired in Task 12 */}
+  </div>
+  <Card className="p-3">
+    <CardContent className="p-0">
+      <ScheduleStrip
+        weekly={availability}
+        overrides={overrides}
+        bookings={bookings}
+      />
+    </CardContent>
+  </Card>
+</div>;
 ```
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS.
 
 - [ ] **Step 4: Commit**
 
@@ -2886,6 +2878,7 @@ git commit -m "feat(web): 7-day schedule strip on mechanic detail"
 ## Task 12: Frontend — Edit Hours + Add Time Off dialogs
 
 **Files:**
+
 - Create: `apps/hmls-web/components/admin/mechanics/EditHoursDialog.tsx`
 - Create: `apps/hmls-web/components/admin/mechanics/AddTimeOffDialog.tsx`
 - Modify: `apps/hmls-web/app/(admin)/admin/mechanics/[id]/page.tsx`
@@ -2926,8 +2919,7 @@ interface Props {
 }
 
 export function EditHoursDialog({ mechanicId, open, onOpenChange }: Props) {
-  const { availability, saveAvailability } =
-    useAdminMechanicAvailability(mechanicId);
+  const { availability, saveAvailability } = useAdminMechanicAvailability(mechanicId);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -2994,8 +2986,7 @@ export function EditHoursDialog({ mechanicId, open, onOpenChange }: Props) {
             <div key={i} className="flex items-center gap-2">
               <select
                 value={s.dayOfWeek}
-                onChange={(e) =>
-                  update(i, { dayOfWeek: Number(e.target.value) })}
+                onChange={(e) => update(i, { dayOfWeek: Number(e.target.value) })}
                 className="border border-border rounded-md px-2 py-1.5 text-sm bg-background"
               >
                 {DAY_LABELS.map((label, idx) => (
@@ -3110,9 +3101,7 @@ export function AddTimeOffDialog({ mechanicId, open, onOpenChange }: Props) {
         startTime: isAvailable
           ? (startTime.length === 5 ? `${startTime}:00` : startTime)
           : undefined,
-        endTime: isAvailable
-          ? (endTime.length === 5 ? `${endTime}:00` : endTime)
-          : undefined,
+        endTime: isAvailable ? (endTime.length === 5 ? `${endTime}:00` : endTime) : undefined,
         reason: reason.trim() || undefined,
       });
       setDate("");
@@ -3214,50 +3203,49 @@ import { AddTimeOffDialog } from "@/components/admin/mechanics/AddTimeOffDialog"
 Inside the component, add state near the top:
 
 ```tsx
-  const [editHoursOpen, setEditHoursOpen] = useState(false);
-  const [timeOffOpen, setTimeOffOpen] = useState(false);
+const [editHoursOpen, setEditHoursOpen] = useState(false);
+const [timeOffOpen, setTimeOffOpen] = useState(false);
 ```
 
 Replace the placeholder comment `{/* Edit hours / Add time off buttons — wired in Task 12 */}` with:
 
 ```tsx
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditHoursOpen(true)}
-            >
-              Edit hours
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setTimeOffOpen(true)}
-            >
-              Add time off
-            </Button>
-          </div>
+<div className="flex items-center gap-2">
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => setEditHoursOpen(true)}
+  >
+    Edit hours
+  </Button>
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => setTimeOffOpen(true)}
+  >
+    Add time off
+  </Button>
+</div>;
 ```
 
 At the bottom of the returned JSX, before the closing `</div>`, add:
 
 ```tsx
-      <EditHoursDialog
-        mechanicId={id}
-        open={editHoursOpen}
-        onOpenChange={setEditHoursOpen}
-      />
-      <AddTimeOffDialog
-        mechanicId={id}
-        open={timeOffOpen}
-        onOpenChange={setTimeOffOpen}
-      />
+<EditHoursDialog
+  mechanicId={id}
+  open={editHoursOpen}
+  onOpenChange={setEditHoursOpen}
+/>
+<AddTimeOffDialog
+  mechanicId={id}
+  open={timeOffOpen}
+  onOpenChange={setTimeOffOpen}
+/>
 ```
 
 - [ ] **Step 4: Typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -3271,6 +3259,7 @@ git commit -m "feat(web): edit hours + time off dialogs"
 ## Task 13: Frontend — Reassign Booking dialog + wire into detail page
 
 **Files:**
+
 - Create: `apps/hmls-web/components/admin/mechanics/ReassignBookingDialog.tsx`
 - Modify: `apps/hmls-web/app/(admin)/admin/mechanics/[id]/page.tsx`
 
@@ -3289,10 +3278,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  reassignBooking,
-  useAdminMechanics,
-} from "@/hooks/useAdminMechanics";
+import { reassignBooking, useAdminMechanics } from "@/hooks/useAdminMechanics";
 import { formatDateTime } from "@/lib/format";
 import type { Booking } from "@/lib/types";
 
@@ -3354,16 +3340,14 @@ export function ReassignBookingDialog(
           <DialogTitle>Reassign booking</DialogTitle>
           {booking && (
             <DialogDescription>
-              #{booking.id} · {formatDateTime(booking.scheduledAt)} ·{" "}
-              {booking.serviceType}
+              #{booking.id} · {formatDateTime(booking.scheduledAt)} · {booking.serviceType}
             </DialogDescription>
           )}
         </DialogHeader>
         <div className="space-y-3">
           <select
             value={targetId ?? ""}
-            onChange={(e) =>
-              setTargetId(e.target.value ? Number(e.target.value) : null)}
+            onChange={(e) => setTargetId(e.target.value ? Number(e.target.value) : null)}
             className="w-full border border-border rounded-md px-2 py-1.5 text-sm bg-background"
           >
             <option value="">Select a mechanic…</option>
@@ -3413,21 +3397,20 @@ import { ReassignBookingDialog } from "@/components/admin/mechanics/ReassignBook
 Replace the placeholder block `{reassignTarget && (...dismiss...)}` with:
 
 ```tsx
-      <ReassignBookingDialog
-        booking={reassignTarget}
-        open={!!reassignTarget}
-        onOpenChange={(o) => !o && setReassignTarget(null)}
-        onReassigned={() => {
-          mutateBookings();
-          setReassignTarget(null);
-        }}
-      />
+<ReassignBookingDialog
+  booking={reassignTarget}
+  open={!!reassignTarget}
+  onOpenChange={(o) => !o && setReassignTarget(null)}
+  onReassigned={() => {
+    mutateBookings();
+    setReassignTarget(null);
+  }}
+/>;
 ```
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS.
 
 - [ ] **Step 4: Commit**
 
@@ -3441,13 +3424,17 @@ git commit -m "feat(web): reassign booking dialog"
 ## Task 14: Frontend — expose Reassign from admin order detail
 
 **Files:**
+
 - Modify: `apps/hmls-web/app/(admin)/admin/orders/[id]/page.tsx`
 
-**Context:** The spec says reassign should be discoverable from admin order pages too. This is a light wiring task — add a single button that opens the existing dialog when the order has a linked booking.
+**Context:** The spec says reassign should be discoverable from admin order pages too. This is a
+light wiring task — add a single button that opens the existing dialog when the order has a linked
+booking.
 
 - [ ] **Step 1: Read the file to find the right spot**
 
-Run: Open `apps/hmls-web/app/(admin)/admin/orders/[id]/page.tsx`. Locate where the order + booking are rendered (the page uses `useAdminOrder` and has a `booking` field).
+Run: Open `apps/hmls-web/app/(admin)/admin/orders/[id]/page.tsx`. Locate where the order + booking
+are rendered (the page uses `useAdminOrder` and has a `booking` field).
 
 - [ ] **Step 2: Add the dialog import + button**
 
@@ -3461,34 +3448,39 @@ import { ReassignBookingDialog } from "@/components/admin/mechanics/ReassignBook
 Inside the component, near the other state, add:
 
 ```tsx
-  const [reassignOpen, setReassignOpen] = useState(false);
+const [reassignOpen, setReassignOpen] = useState(false);
 ```
 
-In the booking section (wherever the booking details are rendered — search for `booking` object usage), add a button next to existing actions:
+In the booking section (wherever the booking details are rendered — search for `booking` object
+usage), add a button next to existing actions:
 
 ```tsx
-{data?.booking && (
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => setReassignOpen(true)}
-  >
-    Reassign mechanic
-  </Button>
-)}
+{
+  data?.booking && (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setReassignOpen(true)}
+    >
+      Reassign mechanic
+    </Button>
+  );
+}
 ```
 
 At the end of the returned JSX, before the final closing tag, add:
 
 ```tsx
-{data?.booking && (
-  <ReassignBookingDialog
-    booking={data.booking}
-    open={reassignOpen}
-    onOpenChange={setReassignOpen}
-    onReassigned={() => mutate()}
-  />
-)}
+{
+  data?.booking && (
+    <ReassignBookingDialog
+      booking={data.booking}
+      open={reassignOpen}
+      onOpenChange={setReassignOpen}
+      onReassigned={() => mutate()}
+    />
+  );
+}
 ```
 
 If `mutate` is not already in scope from `useAdminOrder(...)`, change the destructure to include it:
@@ -3499,8 +3491,7 @@ const { data, isLoading, mutate } = useAdminOrder(id);
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS.
 
 - [ ] **Step 4: Commit**
 
@@ -3514,15 +3505,22 @@ git commit -m "feat(web): reassign mechanic button on admin order detail"
 ## Task 15: KPI tiles on mechanic detail page
 
 **Files:**
+
 - Modify: `apps/hmls-web/app/(admin)/admin/mechanics/[id]/page.tsx`
 
-**What this covers:** Spec calls for a right-sidebar KPI block on the detail page (Week utilization · Bookings this week · Earnings 30d · Jobs completed). The `GET /admin/mechanics/:id` endpoint returns plain profile only; the aggregate stats already live on the list endpoint, so we re-read the fleet list with SWR (cached) and pluck this mechanic's row. No new backend endpoint needed. Jobs-completed comes from the bookings list we already load (filter `status = 'completed'`).
+**What this covers:** Spec calls for a right-sidebar KPI block on the detail page (Week utilization
+· Bookings this week · Earnings 30d · Jobs completed). The `GET /admin/mechanics/:id` endpoint
+returns plain profile only; the aggregate stats already live on the list endpoint, so we re-read the
+fleet list with SWR (cached) and pluck this mechanic's row. No new backend endpoint needed.
+Jobs-completed comes from the bookings list we already load (filter `status = 'completed'`).
 
-The sparkline from the spec is deliberately out-of-scope for this plan — it would need an 8-week historical utilization endpoint. Noted in spec's "Out-of-scope follow-ups".
+The sparkline from the spec is deliberately out-of-scope for this plan — it would need an 8-week
+historical utilization endpoint. Noted in spec's "Out-of-scope follow-ups".
 
 - [ ] **Step 1: Extend the detail page**
 
-Edit `apps/hmls-web/app/(admin)/admin/mechanics/[id]/page.tsx`. Add the hook import at the top if not already imported:
+Edit `apps/hmls-web/app/(admin)/admin/mechanics/[id]/page.tsx`. Add the hook import at the top if
+not already imported:
 
 ```tsx
 import { useAdminMechanics } from "@/hooks/useAdminMechanics";
@@ -3537,56 +3535,53 @@ import { formatCents } from "@/lib/format";
 Inside `MechanicDetailPage`, after the existing hook calls, add:
 
 ```tsx
-  const { mechanics } = useAdminMechanics();
-  const listRow = mechanics.find((m) => m.id === id);
-  const jobsCompleted = bookings.filter((b) => b.status === "completed").length;
+const { mechanics } = useAdminMechanics();
+const listRow = mechanics.find((m) => m.id === id);
+const jobsCompleted = bookings.filter((b) => b.status === "completed").length;
 ```
 
 Insert this block immediately under the header, before `<ProfileCard />`:
 
 ```tsx
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-4 gap-0">
-          <CardContent className="p-0">
-            <p className="text-xs text-muted-foreground">Week utilization</p>
-            <p className="text-lg font-display font-bold text-foreground tabular-nums">
-              {listRow?.weekUtilization == null
-                ? "—"
-                : `${listRow.weekUtilization}%`}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="p-4 gap-0">
-          <CardContent className="p-0">
-            <p className="text-xs text-muted-foreground">Bookings this week</p>
-            <p className="text-lg font-display font-bold text-foreground tabular-nums">
-              {listRow?.upcomingBookingsCount ?? 0}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="p-4 gap-0">
-          <CardContent className="p-0">
-            <p className="text-xs text-muted-foreground">Earnings (30d)</p>
-            <p className="text-lg font-display font-bold text-foreground tabular-nums">
-              {formatCents(listRow?.earnings30d ?? 0)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="p-4 gap-0">
-          <CardContent className="p-0">
-            <p className="text-xs text-muted-foreground">Jobs completed</p>
-            <p className="text-lg font-display font-bold text-foreground tabular-nums">
-              {jobsCompleted}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+  <Card className="p-4 gap-0">
+    <CardContent className="p-0">
+      <p className="text-xs text-muted-foreground">Week utilization</p>
+      <p className="text-lg font-display font-bold text-foreground tabular-nums">
+        {listRow?.weekUtilization == null ? "—" : `${listRow.weekUtilization}%`}
+      </p>
+    </CardContent>
+  </Card>
+  <Card className="p-4 gap-0">
+    <CardContent className="p-0">
+      <p className="text-xs text-muted-foreground">Bookings this week</p>
+      <p className="text-lg font-display font-bold text-foreground tabular-nums">
+        {listRow?.upcomingBookingsCount ?? 0}
+      </p>
+    </CardContent>
+  </Card>
+  <Card className="p-4 gap-0">
+    <CardContent className="p-0">
+      <p className="text-xs text-muted-foreground">Earnings (30d)</p>
+      <p className="text-lg font-display font-bold text-foreground tabular-nums">
+        {formatCents(listRow?.earnings30d ?? 0)}
+      </p>
+    </CardContent>
+  </Card>
+  <Card className="p-4 gap-0">
+    <CardContent className="p-0">
+      <p className="text-xs text-muted-foreground">Jobs completed</p>
+      <p className="text-lg font-display font-bold text-foreground tabular-nums">
+        {jobsCompleted}
+      </p>
+    </CardContent>
+  </Card>
+</div>;
 ```
 
 - [ ] **Step 2: Typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS.
 
 - [ ] **Step 3: Commit**
 
@@ -3628,16 +3623,20 @@ cd apps/hmls-web && bun run dev
 
 Sign in as an admin user (or set `SKIP_AUTH=true` for the API), then:
 
-1. Navigate to `/admin/mechanics`. Expect fleet board with existing mechanics (if any) or empty state.
+1. Navigate to `/admin/mechanics`. Expect fleet board with existing mechanics (if any) or empty
+   state.
 2. Click `+ Add Mechanic`. Fill name + phone + radius, submit. New card appears.
 3. Click `View →` on the new card. Profile page opens.
 4. Click `Edit`. Change phone. Save. Profile shows new phone.
 5. Click `Edit hours`. Add a Monday 09:00–17:00 slot. Save. Schedule strip updates.
-6. Click `Add time off`. Pick tomorrow's date (full-day time off). Save. Strip shows that day greyed.
-7. If seed data has a booking assigned to another mechanic, open that mechanic's detail, click `Reassign…` on a booking, select the new mechanic. Verify booking moves.
+6. Click `Add time off`. Pick tomorrow's date (full-day time off). Save. Strip shows that day
+   greyed.
+7. If seed data has a booking assigned to another mechanic, open that mechanic's detail, click
+   `Reassign…` on a booking, select the new mechanic. Verify booking moves.
 8. Back on the fleet board, click `Deactivate` on a card. It moves to inactive filter.
 9. Reactivate via the `Inactive` filter.
-10. Navigate to `/admin/orders/<id>` for an order that has a booking. Verify `Reassign mechanic` button appears and works.
+10. Navigate to `/admin/orders/<id>` for an order that has a booking. Verify `Reassign mechanic`
+    button appears and works.
 
 - [ ] **Step 4: Commit if any fixes were needed during QA**
 
