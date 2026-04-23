@@ -9,7 +9,7 @@ import type { ToolContext } from "../../common/convert-tools.ts";
 // Statuses a customer is allowed to cancel from (before any money changes hands)
 const CUSTOMER_CANCELLABLE_STATUSES = ["draft", "estimated"];
 
-// Statuses where a customer can still modify requested items (before shop prices them)
+// Statuses where a customer can still add/remove items on their own order
 const CUSTOMER_EDITABLE_STATUSES = ["draft", "revised", "estimated"];
 
 // ---------------------------------------------------------------------------
@@ -303,7 +303,9 @@ const modifyOrderItemsTool = {
   name: "modify_order_items",
   description:
     "Customer adds or removes service request items on a draft, revised, or estimated order. " +
-    "Customers CANNOT set prices — all pricing is determined by the shop. " +
+    "Added items are priced automatically from the OLP labor database at the shop's standard " +
+    "rate ($140/hr) and roll into the subtotal. If the vehicle or service isn't in OLP, the " +
+    "item is added at $0 and the shop prices it during review. " +
     "Only works when the order is in 'draft', 'revised', or 'estimated' status. " +
     "Use this when a customer wants to add a service request (e.g. 'also do an oil change') " +
     "or remove an item they no longer want.",
@@ -317,7 +319,9 @@ const modifyOrderItemsTool = {
         }),
       )
       .optional()
-      .describe("Service items to add (no pricing — shop will price these)"),
+      .describe(
+        "Service items to add. Pricing is auto-looked-up from OLP when possible; otherwise shop prices on review.",
+      ),
     removeItemIds: z
       .array(z.string())
       .optional()
@@ -367,16 +371,11 @@ const modifyOrderItemsTool = {
     }
 
     // Add new service-request items. OLP labor lookup runs whenever vehicle
-    // info is known. How we treat the looked-up price depends on status:
-    //   - draft / revised: order has NOT been quoted to the customer yet, so
-    //     auto-price the item and roll it into subtotal (UI shows a real price
-    //     instead of $0 placeholders).
-    //   - estimated: the shop has already sent a quote. Auto-pricing here
-    //     would silently change the quoted total before the shop re-approves,
-    //     so keep the lookup as a *suggestion* (laborHours + metadata) and
-    //     leave unitPriceCents/totalCents at 0 until the shop re-prices.
-    const autoPrice = order.status === "draft" || order.status === "revised";
-
+    // info is known. Looked-up labor is priced at $140/hr (matches the
+    // pricing engine in admin-order-tools) and flows into the subtotal, so
+    // the customer sees a real price immediately for any item they add —
+    // on draft, revised, or estimated orders alike. Shop review catches any
+    // bad lookup during the normal admin flow before final billing.
     if (params.addItems && params.addItems.length > 0) {
       const vehicleInfo = order.vehicleInfo as
         | { year?: string; make?: string; model?: string }
@@ -386,7 +385,7 @@ const modifyOrderItemsTool = {
       );
 
       for (const req of params.addItems) {
-        let suggestedHours: number | undefined;
+        let laborHours: number | undefined;
         let sourceMeta: Record<string, unknown> | undefined;
 
         if (canLookup) {
@@ -409,19 +408,20 @@ const modifyOrderItemsTool = {
                 undefined,
               );
               if (laborTimes.length > 0) {
-                suggestedHours = Number(laborTimes[0].labor_hours);
+                laborHours = Number(laborTimes[0].labor_hours);
                 sourceMeta = laborTimes[0].sourceMeta as Record<string, unknown>;
               }
             }
           } catch (_e) {
-            // OLP unavailable — item stays fully unpriced regardless of status.
+            // OLP unavailable — item is added without a price; shop prices manually.
           }
         }
 
         // $140/hr matches the pricing engine in admin-order-tools.
-        const priceCents = autoPrice && suggestedHours !== undefined
-          ? Math.round(suggestedHours * 140 * 100)
-          : 0;
+        const priceCents = laborHours !== undefined ? Math.round(laborHours * 140 * 100) : 0;
+
+        const metadata: Record<string, unknown> = { customerRequested: true };
+        if (sourceMeta) metadata.sourceMeta = sourceMeta;
 
         const newItem: OrderItem & { metadata?: Record<string, unknown> } = {
           id: randomUUID(),
@@ -432,14 +432,9 @@ const modifyOrderItemsTool = {
           unitPriceCents: priceCents,
           totalCents: priceCents,
           taxable: true,
-          ...(suggestedHours !== undefined ? { laborHours: suggestedHours } : {}),
+          ...(laborHours !== undefined ? { laborHours } : {}),
+          metadata,
         };
-        const metadata: Record<string, unknown> = { customerRequested: true };
-        if (sourceMeta) metadata.sourceMeta = sourceMeta;
-        if (!autoPrice && suggestedHours !== undefined) {
-          metadata.suggestedHours = suggestedHours;
-        }
-        newItem.metadata = metadata;
         items.push(newItem);
       }
     }
@@ -467,7 +462,7 @@ const modifyOrderItemsTool = {
       itemCount: items.length,
       message: `Order #${id} updated. ` +
         (params.addItems?.length
-          ? `Added ${params.addItems.length} service request(s). The shop will price them. `
+          ? `Added ${params.addItems.length} service(s) (priced automatically where possible). `
           : "") +
         (params.removeItemIds?.length ? `Removed ${params.removeItemIds.length} item(s).` : ""),
     });
