@@ -32,3 +32,4 @@ olp-labor-times.db*
 
 # Infisical local config (do not commit)
 .infisical.json
+.claude/worktrees/
