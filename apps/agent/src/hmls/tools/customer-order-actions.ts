@@ -441,9 +441,31 @@ const modifyOrderItemsTool = {
 
     const subtotalCents = items.reduce((sum, item) => sum + (item.totalCents ?? 0), 0);
 
+    // If the customer modified an already-quoted order, the shop's previous
+    // estimate no longer matches the line items. Flip back to 'revised' so
+    // the shop re-reviews and re-sends. Draft/revised orders stay where they
+    // are — they haven't been sent to the customer yet.
+    const madeChange = (params.addItems?.length ?? 0) > 0 ||
+      (params.removeItemIds?.length ?? 0) > 0;
+    const shouldRevertToRevised = madeChange && order.status === "estimated";
+    const newStatus = shouldRevertToRevised ? "revised" : order.status;
+
+    const updateFields: Record<string, unknown> = {
+      items,
+      subtotalCents,
+      updatedAt: new Date(),
+    };
+    if (shouldRevertToRevised) {
+      updateFields.status = "revised";
+      updateFields.statusHistory = [
+        ...(Array.isArray(order.statusHistory) ? order.statusHistory : []),
+        { status: "revised", timestamp: new Date().toISOString(), actor: "customer" },
+      ];
+    }
+
     await db
       .update(schema.orders)
-      .set({ items, subtotalCents, updatedAt: new Date() })
+      .set(updateFields)
       .where(eq(schema.orders.id, id));
 
     await db.insert(schema.orderEvents).values({
@@ -453,18 +475,34 @@ const modifyOrderItemsTool = {
       metadata: {
         added: params.addItems?.map((i) => i.name) ?? [],
         removed: params.removeItemIds ?? [],
+        revertedFromEstimated: shouldRevertToRevised,
       },
     });
+
+    if (shouldRevertToRevised) {
+      await db.insert(schema.orderEvents).values({
+        orderId: id,
+        eventType: "status_change",
+        fromStatus: "estimated",
+        toStatus: "revised",
+        actor: "customer",
+        metadata: { reason: "customer_modified_items" },
+      });
+    }
 
     return toolResult({
       success: true,
       orderId: id,
+      status: newStatus,
       itemCount: items.length,
       message: `Order #${id} updated. ` +
         (params.addItems?.length
           ? `Added ${params.addItems.length} service(s) (priced automatically where possible). `
           : "") +
-        (params.removeItemIds?.length ? `Removed ${params.removeItemIds.length} item(s).` : ""),
+        (params.removeItemIds?.length ? `Removed ${params.removeItemIds.length} item(s). ` : "") +
+        (shouldRevertToRevised
+          ? "Since you changed an estimate the shop already sent, the shop will re-review and send an updated estimate."
+          : ""),
     });
   },
 };
