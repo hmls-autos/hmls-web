@@ -366,11 +366,17 @@ const modifyOrderItemsTool = {
       items = items.filter((item) => !removeSet.has(item.id));
     }
 
-    // Add new service-request items as unpriced rows. Customers cannot set
-    // prices — the shop prices them during review, so unitPriceCents/totalCents
-    // stay at 0. We still run the OLP labor lookup when vehicle info is known
-    // and attach it as a *suggestion* (laborHours + sourceMeta) the shop UI
-    // surfaces when they price the request — saves the reviewer a click.
+    // Add new service-request items. OLP labor lookup runs whenever vehicle
+    // info is known. How we treat the looked-up price depends on status:
+    //   - draft / revised: order has NOT been quoted to the customer yet, so
+    //     auto-price the item and roll it into subtotal (UI shows a real price
+    //     instead of $0 placeholders).
+    //   - estimated: the shop has already sent a quote. Auto-pricing here
+    //     would silently change the quoted total before the shop re-approves,
+    //     so keep the lookup as a *suggestion* (laborHours + metadata) and
+    //     leave unitPriceCents/totalCents at 0 until the shop re-prices.
+    const autoPrice = order.status === "draft" || order.status === "revised";
+
     if (params.addItems && params.addItems.length > 0) {
       const vehicleInfo = order.vehicleInfo as
         | { year?: string; make?: string; model?: string }
@@ -408,9 +414,14 @@ const modifyOrderItemsTool = {
               }
             }
           } catch (_e) {
-            // OLP unavailable — item stays fully unpriced, shop prices manually.
+            // OLP unavailable — item stays fully unpriced regardless of status.
           }
         }
+
+        // $140/hr matches the pricing engine in admin-order-tools.
+        const priceCents = autoPrice && suggestedHours !== undefined
+          ? Math.round(suggestedHours * 140 * 100)
+          : 0;
 
         const newItem: OrderItem & { metadata?: Record<string, unknown> } = {
           id: randomUUID(),
@@ -418,20 +429,17 @@ const modifyOrderItemsTool = {
           name: req.name,
           description: req.description,
           quantity: 1,
-          unitPriceCents: 0,
-          totalCents: 0,
+          unitPriceCents: priceCents,
+          totalCents: priceCents,
           taxable: true,
           ...(suggestedHours !== undefined ? { laborHours: suggestedHours } : {}),
         };
-        if (sourceMeta) {
-          newItem.metadata = {
-            customerRequested: true,
-            suggestedHours,
-            sourceMeta,
-          };
-        } else {
-          newItem.metadata = { customerRequested: true };
+        const metadata: Record<string, unknown> = { customerRequested: true };
+        if (sourceMeta) metadata.sourceMeta = sourceMeta;
+        if (!autoPrice && suggestedHours !== undefined) {
+          metadata.suggestedHours = suggestedHours;
         }
+        newItem.metadata = metadata;
         items.push(newItem);
       }
     }
