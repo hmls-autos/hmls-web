@@ -367,11 +367,52 @@ const modifyOrderItemsTool = {
     }
 
     // Add new service-request items as unpriced rows. Customers cannot set
-    // prices — the shop prices them during review. Pricing here would change
-    // the quoted total before anyone on the shop side has approved the change.
+    // prices — the shop prices them during review, so unitPriceCents/totalCents
+    // stay at 0. We still run the OLP labor lookup when vehicle info is known
+    // and attach it as a *suggestion* (laborHours + sourceMeta) the shop UI
+    // surfaces when they price the request — saves the reviewer a click.
     if (params.addItems && params.addItems.length > 0) {
+      const vehicleInfo = order.vehicleInfo as
+        | { year?: string; make?: string; model?: string }
+        | null;
+      const canLookup = Boolean(
+        vehicleInfo?.year && vehicleInfo?.make && vehicleInfo?.model,
+      );
+
       for (const req of params.addItems) {
-        items.push({
+        let suggestedHours: number | undefined;
+        let sourceMeta: Record<string, unknown> | undefined;
+
+        if (canLookup) {
+          try {
+            const { searchLaborTimes, findVehicles } = await import(
+              "./olp-client.ts"
+            );
+            const vehicles = await findVehicles(
+              vehicleInfo!.make!,
+              vehicleInfo!.model!,
+              Number(vehicleInfo!.year),
+            );
+            if (vehicles.length > 0) {
+              const serviceWords = req.name
+                .split(/\s+/)
+                .filter((w) => w.length > 1);
+              const laborTimes = await searchLaborTimes(
+                vehicles.map((v: { id: number }) => v.id),
+                serviceWords,
+                undefined,
+              );
+              if (laborTimes.length > 0) {
+                suggestedHours = Number(laborTimes[0].labor_hours);
+                sourceMeta = laborTimes[0].sourceMeta as Record<string, unknown>;
+              }
+            }
+          } catch (_e) {
+            // OLP unavailable — item stays fully unpriced, shop prices manually.
+          }
+        }
+
+        const newItem: OrderItem & { metadata?: Record<string, unknown> } = {
           id: randomUUID(),
           category: "labor",
           name: req.name,
@@ -380,7 +421,18 @@ const modifyOrderItemsTool = {
           unitPriceCents: 0,
           totalCents: 0,
           taxable: true,
-        });
+          ...(suggestedHours !== undefined ? { laborHours: suggestedHours } : {}),
+        };
+        if (sourceMeta) {
+          newItem.metadata = {
+            customerRequested: true,
+            suggestedHours,
+            sourceMeta,
+          };
+        } else {
+          newItem.metadata = { customerRequested: true };
+        }
+        items.push(newItem);
       }
     }
 
