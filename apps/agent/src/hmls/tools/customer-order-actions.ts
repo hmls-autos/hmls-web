@@ -306,6 +306,10 @@ const modifyOrderItemsTool = {
     "Added items are priced automatically from the OLP labor database at the shop's standard " +
     "rate ($140/hr) and roll into the subtotal. If the vehicle or service isn't in OLP, the " +
     "item is added at $0 and the shop prices it during review. " +
+    "IMPORTANT: if the order is in 'estimated' status (shop already sent the customer a quote), " +
+    "modifying items flips the order back to 'revised' so the shop must re-review and re-send " +
+    "the estimate. Before calling this tool on an estimated order, tell the customer: " +
+    "'Changing this estimate will send it back to the shop for a new price — you'll get an updated quote.' " +
     "Only works when the order is in 'draft', 'revised', or 'estimated' status. " +
     "Use this when a customer wants to add a service request (e.g. 'also do an oil change') " +
     "or remove an item they no longer want.",
