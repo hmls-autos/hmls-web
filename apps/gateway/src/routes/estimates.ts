@@ -2,9 +2,11 @@ import { Hono } from "hono";
 import { renderToStream } from "@react-pdf/renderer";
 import { db, schema } from "@hmls/agent/db";
 import { and, eq } from "drizzle-orm";
-import { EstimatePdf, notifyOrderStatusChange } from "@hmls/agent";
+import { EstimatePdf } from "@hmls/agent";
+import { transition } from "@hmls/agent/order-state";
 import { Errors } from "@hmls/shared/errors";
 import { type AuthEnv, requireAuth } from "../middleware/auth.ts";
+import { sendOrderStateResult } from "../lib/order-state-http.ts";
 
 // After Layer 3 "estimate" is a VIEW on the `orders` table — there is no
 // separate `estimates` table anymore. The routes below still live under
@@ -139,130 +141,55 @@ estimates.get("/:id/review", async (c) => {
   });
 });
 
-// POST /estimates/:id/approve — customer approves via share token
+// Share-token approval/decline — caller is not authenticated but holds a
+// token that proves they received the estimate. Authority derives from the
+// token; ownership check is the token-match SELECT below.
+async function assertTokenValid(
+  id: number,
+  token: string | undefined,
+): Promise<boolean> {
+  if (!token) return false;
+  const [row] = await db
+    .select({ id: schema.orders.id })
+    .from(schema.orders)
+    .where(and(eq(schema.orders.id, id), eq(schema.orders.shareToken, token)))
+    .limit(1);
+  return row != null;
+}
+
+// POST /estimates/:id/approve — share-token approval
 estimates.post("/:id/approve", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
-
   const token = c.req.query("token");
-  if (!token) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Token required" } }, 400);
-  }
-
-  const [order] = await db
-    .select()
-    .from(schema.orders)
-    .where(and(eq(schema.orders.id, id), eq(schema.orders.shareToken, token)))
-    .limit(1);
-
-  if (!order) {
+  if (!(await assertTokenValid(id, token))) {
     return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
-  if (order.status !== "estimated") {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: `Order is already '${order.status}'` } },
-      400,
-    );
-  }
-
-  const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
-  const [updated] = await db
-    .update(schema.orders)
-    .set({
-      status: "approved",
-      statusHistory: [
-        ...history,
-        { status: "approved", timestamp: new Date().toISOString(), actor: "customer" },
-      ],
-      updatedAt: new Date(),
-    })
-    .where(and(eq(schema.orders.id, order.id), eq(schema.orders.status, "estimated")))
-    .returning();
-
-  if (!updated) {
-    return c.json(
-      { error: { code: "CONFLICT", message: "Order status changed concurrently" } },
-      409,
-    );
-  }
-
-  await db.insert(schema.orderEvents).values({
-    orderId: order.id,
-    eventType: "status_change",
-    fromStatus: "estimated",
-    toStatus: "approved",
-    actor: "customer",
-    metadata: {},
-  });
-
-  notifyOrderStatusChange(order.id, "approved");
-  return c.json({ success: true, order: updated });
+  const result = await transition(id, "approved", { kind: "share_token", orderId: id });
+  if (!result.ok) return sendOrderStateResult(c, result);
+  return c.json({ success: true, order: result.value });
 });
 
-// POST /estimates/:id/decline — customer declines via share token
+// POST /estimates/:id/decline — share-token decline
 estimates.post("/:id/decline", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
-
   const token = c.req.query("token");
-  if (!token) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Token required" } }, 400);
-  }
-
-  const [order] = await db
-    .select()
-    .from(schema.orders)
-    .where(and(eq(schema.orders.id, id), eq(schema.orders.shareToken, token)))
-    .limit(1);
-
-  if (!order) {
+  if (!(await assertTokenValid(id, token))) {
     return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
-  if (order.status !== "estimated") {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: `Order is already '${order.status}'` } },
-      400,
-    );
-  }
-
-  const body = await c.req.json<{ reason?: string }>().catch(() => ({}));
-  const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
-  const [updated] = await db
-    .update(schema.orders)
-    .set({
-      status: "declined",
-      statusHistory: [
-        ...history,
-        { status: "declined", timestamp: new Date().toISOString(), actor: "customer" },
-      ],
-      cancellationReason: (body as { reason?: string }).reason ?? null,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(schema.orders.id, order.id), eq(schema.orders.status, "estimated")))
-    .returning();
-
-  if (!updated) {
-    return c.json(
-      { error: { code: "CONFLICT", message: "Order status changed concurrently" } },
-      409,
-    );
-  }
-
-  await db.insert(schema.orderEvents).values({
-    orderId: order.id,
-    eventType: "status_change",
-    fromStatus: "estimated",
-    toStatus: "declined",
-    actor: "customer",
-    metadata: {},
+  const body = await c.req.json<{ reason?: string }>().catch(
+    () => ({} as { reason?: string }),
+  );
+  const result = await transition(id, "declined", { kind: "share_token", orderId: id }, {
+    reason: body.reason,
   });
-
-  notifyOrderStatusChange(order.id, "declined");
-  return c.json({ success: true, order: updated });
+  if (!result.ok) return sendOrderStateResult(c, result);
+  return c.json({ success: true, order: result.value });
 });
 
 export { estimates };

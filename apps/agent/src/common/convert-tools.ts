@@ -1,6 +1,9 @@
 export interface ToolContext {
   userId?: string;
   customerId?: number;
+  /** Staff chat: the admin's email, used to build the Actor for
+   *  order-state writes. Absent for customer chat. */
+  adminEmail?: string;
 }
 
 // deno-lint-ignore no-explicit-any

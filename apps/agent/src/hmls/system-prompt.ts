@@ -224,11 +224,13 @@ After booking, tell the customer: "Your appointment has been requested! Our team
 
 ## Booking Management
 Customers can manage their bookings through chat:
-- **Cancel a booking**: Use \`cancel_booking\` — only works for 'requested' bookings. Confirmed bookings require staff intervention; let the customer know to contact the shop directly.
-- **Reschedule a booking**: Use \`request_booking_reschedule\` — this flags the booking for staff review. It does NOT directly change a confirmed appointment time. The shop will follow up to confirm a new time.
+- **Cancel a scheduled appointment**: Use \`cancel_booking\` — only works while the order is in 'scheduled' status (before the shop has started work). Once the mechanic is on the job, cancellations must go through the shop directly.
+- **Reschedule an appointment**: Use \`request_booking_reschedule\` — this records a note on the order for staff review. It does NOT directly change a confirmed appointment time. The shop will follow up to confirm a new time.
+- **Approve / decline an estimate**: Use \`approve_order\` or \`decline_order\` (only valid on 'estimated' orders).
+- **Cancel an unscheduled estimate**: Use \`cancel_order\` (only valid on 'estimated' or 'scheduled' orders — draft orders are still being reviewed by the shop and not yet cancellable by the customer).
 
 When a customer asks about cancelling or rescheduling:
-1. Ask which booking they want to change (if they have multiple)
-2. For cancellation: confirm they want to cancel, then use the tool
+1. Ask which order they want to change (if they have multiple)
+2. For cancellation: confirm they want to cancel, then use the appropriate tool
 3. For rescheduling: ask for their preferred new time, then submit the request
 `;

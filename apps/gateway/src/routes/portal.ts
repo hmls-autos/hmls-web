@@ -4,7 +4,8 @@ import { db, schema } from "@hmls/agent/db";
 import { and, desc, eq } from "drizzle-orm";
 import { Errors } from "@hmls/shared/errors";
 import { type AuthEnv, requireAuth } from "../middleware/auth.ts";
-import { notifyOrderStatusChange } from "@hmls/agent";
+import { transition } from "@hmls/agent/order-state";
+import { sendOrderStateResult } from "../lib/order-state-http.ts";
 
 const portal = new Hono<AuthEnv>();
 
@@ -156,7 +157,12 @@ portal.get("/me/quotes", async (c) => {
   return c.json(rows);
 });
 
-// POST /me/orders/:id/approve — customer approves estimate (status: estimated → approved)
+// Harness enforces role-based permission (e.g. "customer may approve
+// estimated"). Ownership (this customer owns this specific row) is checked
+// inline in each route below — a short SELECT is cheaper than plumbing
+// ownership through the harness.
+
+// POST /me/orders/:id/approve — customer approves estimate (estimated → approved)
 portal.post("/me/orders/:id/approve", async (c) => {
   const customerId = c.get("customerId");
   const id = Number(c.req.param("id"));
@@ -164,58 +170,22 @@ portal.post("/me/orders/:id/approve", async (c) => {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
+  // Ownership check — harness handles role-based permission, we handle
+  // "this customer owns this row".
   const [order] = await db
-    .select()
+    .select({ id: schema.orders.id, customerId: schema.orders.customerId })
     .from(schema.orders)
     .where(eq(schema.orders.id, id))
     .limit(1);
-
   if (!order || order.customerId !== customerId) {
     return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
-  if (order.status !== "estimated") {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: `Order is '${order.status}', not 'estimated'` } },
-      400,
-    );
-  }
-
-  const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
-  const [updated] = await db
-    .update(schema.orders)
-    .set({
-      status: "approved",
-      statusHistory: [
-        ...history,
-        { status: "approved", timestamp: new Date().toISOString(), actor: "customer" },
-      ],
-      updatedAt: new Date(),
-    })
-    .where(and(eq(schema.orders.id, id), eq(schema.orders.status, "estimated")))
-    .returning();
-
-  if (!updated) {
-    return c.json(
-      { error: { code: "CONFLICT", message: "Order status changed concurrently" } },
-      409,
-    );
-  }
-
-  await db.insert(schema.orderEvents).values({
-    orderId: id,
-    eventType: "status_change",
-    fromStatus: "estimated",
-    toStatus: "approved",
-    actor: "customer",
-    metadata: {},
-  });
-
-  notifyOrderStatusChange(id, "approved");
-  return c.json(updated);
+  const result = await transition(id, "approved", { kind: "customer", customerId });
+  return sendOrderStateResult(c, result);
 });
 
-// POST /me/orders/:id/decline — customer declines estimate (status: estimated → declined)
+// POST /me/orders/:id/decline — customer declines estimate (estimated → declined)
 portal.post("/me/orders/:id/decline", async (c) => {
   const customerId = c.get("customerId");
   const id = Number(c.req.param("id"));
@@ -224,61 +194,25 @@ portal.post("/me/orders/:id/decline", async (c) => {
   }
 
   const [order] = await db
-    .select()
+    .select({ id: schema.orders.id, customerId: schema.orders.customerId })
     .from(schema.orders)
     .where(eq(schema.orders.id, id))
     .limit(1);
-
   if (!order || order.customerId !== customerId) {
     return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
-  if (order.status !== "estimated") {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: `Order is '${order.status}', not 'estimated'` } },
-      400,
-    );
-  }
-
-  const body = await c.req.json<{ reason?: string }>().catch(() => ({}));
-  const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
-  const [updated] = await db
-    .update(schema.orders)
-    .set({
-      status: "declined",
-      statusHistory: [
-        ...history,
-        { status: "declined", timestamp: new Date().toISOString(), actor: "customer" },
-      ],
-      cancellationReason: (body as { reason?: string }).reason ?? null,
-      updatedAt: new Date(),
-    })
-    .where(and(eq(schema.orders.id, id), eq(schema.orders.status, "estimated")))
-    .returning();
-
-  if (!updated) {
-    return c.json(
-      { error: { code: "CONFLICT", message: "Order status changed concurrently" } },
-      409,
-    );
-  }
-
-  await db.insert(schema.orderEvents).values({
-    orderId: id,
-    eventType: "status_change",
-    fromStatus: "estimated",
-    toStatus: "declined",
-    actor: "customer",
-    metadata: {},
+  const body = await c.req.json<{ reason?: string }>().catch(
+    () => ({} as { reason?: string }),
+  );
+  const result = await transition(id, "declined", { kind: "customer", customerId }, {
+    reason: body.reason,
   });
-
-  notifyOrderStatusChange(id, "declined");
-  return c.json(updated);
+  return sendOrderStateResult(c, result);
 });
 
 // POST /me/orders/:id/cancel-booking — customer cancels a scheduled order
-// before the shop has confirmed. Only valid while the order is still in the
-// scheduled state.
+// before the shop has started work.
 portal.post("/me/orders/:id/cancel-booking", async (c) => {
   const customerId = c.get("customerId");
   const id = Number(c.req.param("id"));
@@ -287,54 +221,21 @@ portal.post("/me/orders/:id/cancel-booking", async (c) => {
   }
 
   const [order] = await db
-    .select()
+    .select({ id: schema.orders.id, customerId: schema.orders.customerId })
     .from(schema.orders)
     .where(eq(schema.orders.id, id))
     .limit(1);
-
   if (!order || order.customerId !== customerId) {
     return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
-  if (order.status !== "scheduled") {
-    return c.json(
-      {
-        error: {
-          code: "BAD_REQUEST",
-          message:
-            `Order is '${order.status}', only 'scheduled' orders can be cancelled by customer`,
-        },
-      },
-      400,
-    );
-  }
-
-  const body = await c.req.json<{ reason?: string }>().catch(() => ({ reason: undefined }));
-  const history = Array.isArray(order.statusHistory) ? order.statusHistory : [];
-
-  const [updated] = await db
-    .update(schema.orders)
-    .set({
-      status: "cancelled",
-      cancellationReason: body.reason ?? null,
-      statusHistory: [
-        ...history,
-        { status: "cancelled", timestamp: new Date().toISOString(), actor: "customer" },
-      ],
-      updatedAt: new Date(),
-    })
-    .where(and(eq(schema.orders.id, id), eq(schema.orders.status, "scheduled")))
-    .returning();
-
-  if (!updated) {
-    return c.json(
-      { error: { code: "CONFLICT", message: "Order status changed concurrently" } },
-      409,
-    );
-  }
-
-  notifyOrderStatusChange(id, "cancelled");
-  return c.json(updated);
+  const body = await c.req.json<{ reason?: string }>().catch(
+    () => ({} as { reason?: string }),
+  );
+  const result = await transition(id, "cancelled", { kind: "customer", customerId }, {
+    reason: body.reason,
+  });
+  return sendOrderStateResult(c, result);
 });
 
 export { portal };

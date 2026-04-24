@@ -45,6 +45,7 @@ staffChat.post("/", requireAdmin, async (c) => {
     const result = runStaffAgent({
       messages: modelMessages,
       config: _config,
+      adminEmail: authUser.email ?? undefined,
     });
 
     const response = result.toUIMessageStreamResponse();

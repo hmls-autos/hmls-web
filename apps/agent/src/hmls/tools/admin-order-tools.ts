@@ -1,9 +1,12 @@
 import { z } from "zod";
-import { desc, eq, ilike, or, sql } from "drizzle-orm";
+import { desc, eq, ilike, or } from "drizzle-orm";
 import { db, schema } from "../../db/client.ts";
 import type { OrderItem } from "../../db/schema.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 import type { LaborTimeResult, OlpVehicle } from "./olp-client.ts";
+import type { ToolContext } from "../../common/convert-tools.ts";
+import { addNote, patchItems } from "../../services/order-state.ts";
+import { staffAgentActor, toolResultFromOrderState } from "../../services/order-state-tool.ts";
 
 // Note: `create_order` lives in apps/agent/src/common/tools/order.ts — it's the
 // only entry point for new orders (full pricing engine, INSERT-or-UPDATE-by-orderId).
@@ -129,7 +132,9 @@ const searchCustomersTool = {
 
 const EDITABLE_STATUSES = new Set(["draft", "revised", "estimated"]);
 
-// In-memory idempotency set (production: use Redis or DB)
+// In-memory idempotency set. Narrow purpose: dedupe tool-call retries in a
+// single process. Optimistic concurrency across processes is handled by
+// patchItems via revisionNumber.
 const executedKeys = new Set<string>();
 
 const updateOrderItemsTool = {
@@ -226,51 +231,19 @@ const updateOrderItemsTool = {
       idempotencyKey?: string;
       notes?: string;
     },
-    _ctx: unknown,
+    ctx: ToolContext | undefined,
   ) => {
     const id = Number(params.order_id);
     if (!Number.isInteger(id) || id <= 0) {
       return toolResult({ success: false, error: "Invalid order_id" });
     }
 
-    // Idempotency check
-    if (params.idempotencyKey) {
-      if (executedKeys.has(params.idempotencyKey)) {
-        return toolResult({
-          success: true,
-          orderId: id,
-          message: "Already processed (idempotency hit)",
-          deduplicated: true,
-        });
-      }
-    }
-
-    const [order] = await db
-      .select()
-      .from(schema.orders)
-      .where(eq(schema.orders.id, id))
-      .limit(1);
-
-    if (!order) {
-      return toolResult({ success: false, error: `Order #${id} not found` });
-    }
-
-    if (!EDITABLE_STATUSES.has(order.status)) {
+    if (params.idempotencyKey && executedKeys.has(params.idempotencyKey)) {
       return toolResult({
-        success: false,
-        error:
-          `Cannot edit order #${id} in '${order.status}' status. Editable statuses: draft, revised, estimated`,
-      });
-    }
-
-    // Optimistic concurrency check
-    const currentVersion = (order as unknown as { revisionNumber?: number }).revisionNumber ?? 0;
-    if (params.expectedVersion !== undefined && params.expectedVersion !== currentVersion) {
-      return toolResult({
-        success: false,
-        error:
-          `Version mismatch: expected ${params.expectedVersion}, got ${currentVersion}. Refresh and retry.`,
-        currentVersion,
+        success: true,
+        orderId: id,
+        message: "Already processed (idempotency hit)",
+        deduplicated: true,
       });
     }
 
@@ -286,19 +259,31 @@ const updateOrderItemsTool = {
       });
     }
 
-    // Build working items map by itemId
+    // Read current items + vehicle info to drive OLP labor lookups and PATCH
+    // semantics. The harness re-reads for its own optimistic lock; this SELECT
+    // is for the tool's domain logic (item building, not concurrency).
+    const [order] = await db
+      .select()
+      .from(schema.orders)
+      .where(eq(schema.orders.id, id))
+      .limit(1);
+    if (!order) return toolResult({ success: false, error: `Order #${id} not found` });
+    if (!EDITABLE_STATUSES.has(order.status)) {
+      return toolResult({
+        success: false,
+        error:
+          `Cannot edit order #${id} in '${order.status}' status. Editable statuses: draft, revised, estimated`,
+      });
+    }
+
     const existingItems: OrderItem[] = Array.isArray(order.items)
       ? (order.items as OrderItem[])
       : [];
-    const itemsMap = new Map<string, OrderItem>(
-      existingItems.map((i) => [i.id, i]),
-    );
-
+    const itemsMap = new Map<string, OrderItem>(existingItems.map((i) => [i.id, i]));
     const vehicleInfo =
       (order as unknown as { vehicleInfo?: { year?: string; make?: string; model?: string } })
         .vehicleInfo;
 
-    // Helper: build OrderItem from input
     async function buildItem(
       desc: string,
       laborHours?: number,
@@ -310,7 +295,6 @@ const updateOrderItemsTool = {
       let finalLabor = laborHours ?? 0;
       let resolvedSourceMeta = sourceMeta;
 
-      // Auto-lookup labor time if not provided and vehicle info available
       if (finalLabor === 0 && vehicleInfo?.year && vehicleInfo?.make && vehicleInfo?.model) {
         try {
           const { searchLaborTimes, findVehicles } = await import("./olp-client.ts");
@@ -320,9 +304,7 @@ const updateOrderItemsTool = {
             Number(vehicleInfo.year),
           );
           if (vehicles.length > 0) {
-            const serviceWords = desc
-              .split(/\s+/)
-              .filter((w) => w.length > 1);
+            const serviceWords = desc.split(/\s+/).filter((w) => w.length > 1);
             const laborTimes = await searchLaborTimes(
               vehicles.map((v: OlpVehicle) => v.id),
               serviceWords,
@@ -334,11 +316,11 @@ const updateOrderItemsTool = {
             }
           }
         } catch (_e) {
-          // Keep defaults
+          // Keep defaults; shop prices manually on review.
         }
       }
 
-      const laborCents = Math.round(finalLabor * 140 * 100); // $140/hr
+      const laborCents = Math.round(finalLabor * 140 * 100);
       const partsCents = Math.round((partsCost ?? 0) * 100);
       const totalCents = laborCents + partsCents;
 
@@ -359,27 +341,20 @@ const updateOrderItemsTool = {
       };
     }
 
-    // 1. Apply removals
     if (params.removeItemIds && params.removeItemIds.length > 0) {
-      for (const rid of params.removeItemIds) {
-        itemsMap.delete(rid);
-      }
+      for (const rid of params.removeItemIds) itemsMap.delete(rid);
     }
 
-    // 2. Apply updates
     if (params.updateItems && params.updateItems.length > 0) {
       for (const upd of params.updateItems) {
         const existing = itemsMap.get(upd.itemId);
         if (!existing) {
           return toolResult({ success: false, error: `Item ${upd.itemId} not found` });
         }
-        // Derive existing parts cost from the already-stored total so we don't
-        // zero it out on a description/intent-only patch.
         const existingLaborHours = (existing as unknown as { laborHours?: number }).laborHours ?? 0;
         const existingLaborCents = Math.round(existingLaborHours * 140 * 100);
         const existingPartsCents = Math.max(0, existing.totalCents - existingLaborCents);
         const existingPartsCost = existingPartsCents / 100;
-        // Rebuild with new values, keeping stable ID
         const rebuilt = await buildItem(
           upd.description ?? existing.name,
           upd.labor_hours ?? existingLaborHours,
@@ -391,13 +366,12 @@ const updateOrderItemsTool = {
               | "optional"
               | "note" ??
             "replace",
-          upd.itemId, // keep same ID
+          upd.itemId,
         );
         itemsMap.set(upd.itemId, rebuilt);
       }
     }
 
-    // 3. Apply additions
     if (params.addItems && params.addItems.length > 0) {
       for (const add of params.addItems) {
         const newItem = await buildItem(
@@ -405,76 +379,44 @@ const updateOrderItemsTool = {
           add.labor_hours,
           add.parts_cost,
           add.intent ?? "replace",
-          add.itemId, // use provided or generate below
+          add.itemId,
         );
         itemsMap.set(newItem.id, newItem);
       }
     }
 
-    // Build final arrays
     const finalItems = Array.from(itemsMap.values());
-    const subtotalCents = finalItems.reduce((sum, i) => sum + i.totalCents, 0);
+    const actor = staffAgentActor(ctx);
+    const result = await patchItems(
+      id,
+      {
+        items: finalItems,
+        notes: params.notes,
+      },
+      actor,
+      {
+        expectedVersion: params.expectedVersion,
+        metadata: {
+          added: params.addItems?.map((i) => i.description) ?? [],
+          updated: params.updateItems?.map((i) => i.itemId) ?? [],
+          removed: params.removeItemIds ?? [],
+        },
+      },
+    );
 
-    const updates: Record<string, unknown> = {
-      items: finalItems,
-      subtotalCents,
-      priceRangeLowCents: Math.round(subtotalCents * 0.9),
-      priceRangeHighCents: Math.round(subtotalCents * 1.1),
-      revisionNumber: currentVersion + 1,
-      updatedAt: new Date(),
-    };
-
-    if (params.notes !== undefined) {
-      updates.notes = params.notes;
-    }
-
-    // Optimistic concurrency update — require row's revisionNumber to match the
-    // value we read, so concurrent writers collide instead of silently overwriting.
-    const [updated] = await db
-      .update(schema.orders)
-      .set(updates)
-      .where(
-        sql`${schema.orders.id} = ${id}
-          AND ${schema.orders.status} = ${order.status}
-          AND COALESCE(${schema.orders.revisionNumber}, 0) = ${currentVersion}`,
-      )
-      .returning();
-
-    if (!updated) {
-      return toolResult({
-        success: false,
-        error:
-          "Order was modified concurrently (status or revisionNumber changed) — refresh and retry",
-      });
-    }
-
-    // Record idempotency
-    if (params.idempotencyKey) {
+    if (result.ok && params.idempotencyKey) {
       executedKeys.add(params.idempotencyKey);
     }
 
-    await db.insert(schema.orderEvents).values({
-      orderId: id,
-      eventType: "items_edited",
-      actor: "agent",
-      metadata: {
-        added: params.addItems?.map((i) => i.description) ?? [],
-        updated: params.updateItems?.map((i) => i.itemId) ?? [],
-        removed: params.removeItemIds ?? [],
-        newVersion: currentVersion + 1,
-      },
-    });
-
-    return toolResult({
-      success: true,
-      orderId: updated.id,
-      status: updated.status,
-      version: currentVersion + 1,
-      subtotalFormatted: `$${((updated.subtotalCents ?? 0) / 100).toFixed(2)}`,
+    return toolResultFromOrderState(result, (row) => ({
+      orderId: row.id,
+      status: row.status,
+      version: row.revisionNumber,
+      subtotalFormatted: `$${((row.subtotalCents ?? 0) / 100).toFixed(2)}`,
       itemCount: finalItems.length,
-      notes: updated.notes,
+      notes: row.notes,
       message: `Order #${id} updated`,
-    });
+    }));
   },
 };
 
@@ -545,7 +487,7 @@ const updateOrderTool = {
       expectedVersion?: number;
       idempotencyKey?: string;
     },
-    _ctx: unknown,
+    ctx: ToolContext | undefined,
   ) => {
     const id = Number(params.order_id);
     if (!Number.isInteger(id) || id <= 0) {
@@ -573,18 +515,12 @@ const updateOrderTool = {
       return toolResult({ success: false, error: `Order #${id} not found` });
     }
 
-    const currentVersion = (order as unknown as { revisionNumber?: number }).revisionNumber ?? 0;
-    if (params.expectedVersion !== undefined && params.expectedVersion !== currentVersion) {
-      return toolResult({
-        success: false,
-        error: `Version mismatch: expected ${params.expectedVersion}, got ${currentVersion}`,
-        currentVersion,
-      });
-    }
-
+    // revisionNumber is owned by patchItems for items+pricing optimistic
+    // concurrency. Metadata updates (contact / vehicle / notes) don't touch
+    // it — bumping here only causes spurious conflicts on the next item
+    // edit.
     const updates: Record<string, unknown> = {
       updatedAt: new Date(),
-      revisionNumber: currentVersion + 1,
     };
 
     if (params.customerInfo !== undefined) {
@@ -613,35 +549,27 @@ const updateOrderTool = {
       updates.notes = params.notes;
     }
 
-    // Enforce optimistic concurrency at the SQL layer: the row we read must
-    // still carry the same revisionNumber when we write.
+    // Metadata update — no status or revisionNumber guard needed. Contact
+    // snapshot and vehicleInfo are editable at any status.
     const [updated] = await db
       .update(schema.orders)
       .set(updates)
-      .where(
-        sql`${schema.orders.id} = ${id}
-          AND COALESCE(${schema.orders.revisionNumber}, 0) = ${currentVersion}`,
-      )
+      .where(eq(schema.orders.id, id))
       .returning();
 
     if (!updated) {
-      return toolResult({
-        success: false,
-        error: "Order was modified concurrently (revisionNumber changed) — refresh and retry",
-      });
+      return toolResult({ success: false, error: `Order #${id} not found` });
     }
 
-    await db.insert(schema.orderEvents).values({
-      orderId: id,
-      eventType: "order_updated",
-      actor: "agent",
-      metadata: {
-        updatedFields: Object.keys(updates).filter(
-          (k) => !["updatedAt", "revisionNumber"].includes(k),
-        ),
-        newVersion: currentVersion + 1,
-      },
-    });
+    // Audit via the harness's addNote so the actor string stays consistent
+    // with lifecycle events. The note summarizes which metadata fields
+    // changed; structured detail lives in the harness's event metadata.
+    const updatedFields = Object.keys(updates).filter((k) => k !== "updatedAt");
+    await addNote(
+      id,
+      `Metadata updated: ${updatedFields.join(", ")}`,
+      staffAgentActor(ctx),
+    );
 
     const vehicle =
       (updated as unknown as { vehicleInfo?: { year?: string; make?: string; model?: string } })
@@ -649,7 +577,6 @@ const updateOrderTool = {
     return toolResult({
       success: true,
       orderId: updated.id,
-      version: currentVersion + 1,
       contactName: updated.contactName,
       contactPhone: updated.contactPhone,
       contactEmail: updated.contactEmail,

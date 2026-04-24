@@ -11,7 +11,7 @@
 // matching the existing modify_order_items semantics.
 
 import { z } from "zod";
-import { eq, ilike, sql } from "drizzle-orm";
+import { eq, ilike } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db, schema } from "../../db/client.ts";
 import {
@@ -23,6 +23,13 @@ import {
 import { toolResult } from "@hmls/shared/tool-result";
 import type { DiscountType, LineItem, ServiceInput } from "../../hmls/skills/estimate/types.ts";
 import type { OrderItem } from "../../db/schema.ts";
+import { patchItems } from "../../services/order-state.ts";
+import {
+  customerAgentActor,
+  staffAgentActor,
+  toolResultFromOrderState,
+} from "../../services/order-state-tool.ts";
+import type { ToolContext } from "../convert-tools.ts";
 
 const discountEnum = z.enum([
   "returning_customer",
@@ -32,8 +39,6 @@ const discountEnum = z.enum([
   "military",
   "first_responder",
 ]);
-
-const EDITABLE_STATUSES = new Set(["draft", "revised", "estimated"]);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -332,7 +337,7 @@ export const createOrderTool = {
       travelMiles?: number;
       discountType?: DiscountType;
     },
-    ctx: { customerId?: number } | undefined,
+    ctx: ToolContext | undefined,
   ) => {
     // 1. Run the pricing engine first (cheap, side-effect-free).
     const { items, subtotal, rangeLow, rangeHigh } = await priceServices(params);
@@ -344,88 +349,36 @@ export const createOrderTool = {
     };
 
     // ─────────────────────────────────────────────────────────────────
-    // UPDATE path — orderId provided
+    // UPDATE path — orderId provided. Routes through the harness's
+    // patchItems so status/events/notifications all flow through the
+    // single source of truth. The pricing engine (priceServices above)
+    // applies a minimum-service-fee floor that items.reduce() wouldn't
+    // capture — pass subtotal as `subtotalCentsOverride` to preserve it.
     // ─────────────────────────────────────────────────────────────────
     if (params.orderId !== undefined) {
-      const [existing] = await db
-        .select()
-        .from(schema.orders)
-        .where(eq(schema.orders.id, params.orderId))
-        .limit(1);
-
-      if (!existing) {
-        return toolResult({
-          success: false,
-          error: `Order #${params.orderId} not found`,
-        });
-      }
-
-      if (!EDITABLE_STATUSES.has(existing.status)) {
-        return toolResult({
-          success: false,
-          error:
-            `Order #${params.orderId} is in '${existing.status}' status and cannot be re-priced. ` +
-            "Only draft/revised/estimated orders are editable.",
-        });
-      }
-
-      const flipToRevised = existing.status === "estimated";
-      const newStatus = flipToRevised ? "revised" : existing.status;
-      const currentVersion = existing.revisionNumber ?? 1;
-
-      const updateFields: Record<string, unknown> = {
-        items,
-        subtotalCents: subtotal,
-        priceRangeLowCents: rangeLow,
-        priceRangeHighCents: rangeHigh,
-        vehicleInfo,
-        notes: params.notes ?? existing.notes,
-        revisionNumber: currentVersion + 1,
-        updatedAt: new Date(),
-      };
-      if (flipToRevised) {
-        updateFields.status = "revised";
-        updateFields.statusHistory = [
-          ...(Array.isArray(existing.statusHistory) ? existing.statusHistory : []),
-          { status: "revised", timestamp: new Date().toISOString(), actor: "agent" },
-        ];
-      }
-
-      const [updated] = await db
-        .update(schema.orders)
-        .set(updateFields)
-        .where(
-          sql`${schema.orders.id} = ${params.orderId}
-            AND COALESCE(${schema.orders.revisionNumber}, 1) = ${currentVersion}`,
-        )
-        .returning();
-
-      if (!updated) {
-        return toolResult({
-          success: false,
-          error: "Order was modified concurrently (revisionNumber changed) — refresh and retry",
-        });
-      }
-
-      await db.insert(schema.orderEvents).values({
-        orderId: params.orderId,
-        eventType: flipToRevised ? "status_change" : "items_edited",
-        ...(flipToRevised ? { fromStatus: "estimated", toStatus: "revised" } : {}),
-        actor: "agent",
-        metadata: {
-          source: "create_order_update",
-          itemCount: items.length,
+      const actor = customerAgentActor(ctx) ?? staffAgentActor(ctx);
+      const result = await patchItems(
+        params.orderId,
+        {
+          items,
+          notes: params.notes ?? undefined,
           vehicleInfo,
-          ...(flipToRevised ? { reason: "agent_repriced_estimated_order" } : {}),
         },
-      });
+        actor,
+        {
+          subtotalCentsOverride: subtotal,
+          metadata: {
+            source: "create_order_update",
+            itemCount: items.length,
+          },
+        },
+      );
 
-      return toolResult({
-        success: true,
+      return toolResultFromOrderState(result, (row) => ({
         action: "updated",
-        orderId: updated.id,
-        status: newStatus,
-        version: currentVersion + 1,
+        orderId: row.id,
+        status: row.status,
+        version: row.revisionNumber,
         vehicle: `${params.vehicle.year} ${params.vehicle.make} ${params.vehicle.model}`,
         items: items.map((i) => ({
           name: i.name,
@@ -437,10 +390,10 @@ export const createOrderTool = {
         })),
         subtotal: subtotal / 100,
         priceRange: `$${(rangeLow / 100).toFixed(2)} - $${(rangeHigh / 100).toFixed(2)}`,
-        note: flipToRevised
+        note: row.status === "revised"
           ? "Order was already sent to customer — flipped back to 'revised'. Shop must re-send."
           : "Order updated in place.",
-      });
+      }));
     }
 
     // ─────────────────────────────────────────────────────────────────

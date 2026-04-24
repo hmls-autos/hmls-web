@@ -3,6 +3,9 @@ import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getLogger } from "@logtape/logtape";
 import { db, schema } from "../../db/client.ts";
 import { toolResult } from "@hmls/shared/tool-result";
+import { attachSchedule } from "../../services/order-state.ts";
+import { customerAgentActor, staffAgentActor } from "../../services/order-state-tool.ts";
+import type { ToolContext } from "../../common/convert-tools.ts";
 
 const logger = getLogger(["hmls", "agent", "scheduling"]);
 
@@ -450,10 +453,10 @@ const createBookingTool = {
       customerNotes?: string;
       internalNotes?: string;
     },
-    _ctx: unknown,
+    ctx: ToolContext | undefined,
   ) => {
-    // Resolve customer: authenticated or guest upsert
-    let resolvedCustomerId = params.customerId ?? null;
+    // Resolve customer: authenticated or guest upsert.
+    let resolvedCustomerId = params.customerId ?? ctx?.customerId ?? null;
     if (!resolvedCustomerId && params.customerEmail) {
       const [existing] = await db
         .select()
@@ -481,97 +484,86 @@ const createBookingTool = {
       make: params.vehicleMake,
       model: params.vehicleModel,
     };
+    const actor = customerAgentActor(ctx) ?? staffAgentActor(ctx);
+
+    const schedulePatch = {
+      scheduledAt,
+      durationMinutes: params.durationMinutes,
+      providerId: null,
+      location: params.address,
+      locationLat: params.locationLat?.toString() ?? null,
+      locationLng: params.locationLng?.toString() ?? null,
+      accessInstructions: params.accessInstructions ?? null,
+      symptomDescription: params.symptomDescription ?? null,
+      photoUrls: params.photoUrls ?? null,
+      customerNotes: params.customerNotes ?? null,
+    };
 
     try {
-      // Try to attach to an existing customer order (most recent draft /
-      // estimated / approved). Otherwise create a new order.
-      let existingOrder = null;
+      // 1. Look for an existing in-flight order to attach to.
+      let orderId: number;
       if (resolvedCustomerId) {
-        const [row] = await db
-          .select()
+        const [existing] = await db
+          .select({ id: schema.orders.id })
           .from(schema.orders)
           .where(
             and(
               eq(schema.orders.customerId, resolvedCustomerId),
-              sql`${schema.orders.status} IN ('draft', 'estimated', 'approved')`,
+              sql`${schema.orders.status} IN ('draft', 'estimated', 'revised', 'approved')`,
               isNull(schema.orders.scheduledAt),
             ),
           )
           .orderBy(desc(schema.orders.createdAt))
           .limit(1);
-        existingOrder = row ?? null;
-      }
 
-      const schedulingPatch = {
-        scheduledAt,
-        durationMinutes: params.durationMinutes,
-        providerId: null as number | null,
-        location: params.address,
-        locationLat: params.locationLat?.toString() ?? null,
-        locationLng: params.locationLng?.toString() ?? null,
-        accessInstructions: params.accessInstructions ?? null,
-        symptomDescription: params.symptomDescription ?? null,
-        photoUrls: params.photoUrls ?? null,
-        customerNotes: params.customerNotes ?? null,
-      };
-
-      let order: typeof schema.orders.$inferSelect;
-      if (existingOrder) {
-        // Attach scheduling to existing order. Transition approved → scheduled;
-        // keep draft/estimated where it is so the customer approval step still
-        // happens.
-        const nextStatus = existingOrder.status === "approved" ? "scheduled" : existingOrder.status;
-        const history = Array.isArray(existingOrder.statusHistory)
-          ? existingOrder.statusHistory
-          : [];
-        const nextHistory = nextStatus !== existingOrder.status
-          ? [
-            ...history,
-            { status: nextStatus, timestamp: new Date().toISOString(), actor: "customer" },
-          ]
-          : history;
-        const [row] = await db
-          .update(schema.orders)
-          .set({
-            ...schedulingPatch,
-            status: nextStatus,
-            statusHistory: nextHistory,
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.orders.id, existingOrder.id))
-          .returning();
-        order = row;
-      } else {
-        // Walk-in / ad-hoc path — no prior estimate. Create a new scheduled
-        // order directly.
-        const [row] = await db
-          .insert(schema.orders)
-          .values({
+        if (existing) {
+          orderId = existing.id;
+        } else {
+          orderId = await createWalkInOrder({
             customerId: resolvedCustomerId,
-            status: "scheduled",
-            statusHistory: [{
-              status: "scheduled",
-              timestamp: new Date().toISOString(),
-              actor: "system",
-            }],
-            items: [],
             vehicleInfo,
-            notes: params.internalNotes ?? null,
             contactName: params.customerName ?? null,
             contactEmail: params.customerEmail ?? null,
             contactPhone: params.customerPhone ?? null,
             contactAddress: params.address,
-            ...schedulingPatch,
-          })
-          .returning();
-        order = row;
+            internalNotes: params.internalNotes ?? null,
+            actorString: `agent:${actor.kind === "agent" ? actor.surface : actor.kind}`,
+          });
+        }
+      } else {
+        // Fully anonymous booking — extremely rare, but preserve the path.
+        orderId = await createWalkInOrder({
+          customerId: null,
+          vehicleInfo,
+          contactName: params.customerName ?? null,
+          contactEmail: params.customerEmail ?? null,
+          contactPhone: params.customerPhone ?? null,
+          contactAddress: params.address,
+          internalNotes: params.internalNotes ?? null,
+          actorString: `agent:${actor.kind === "agent" ? actor.surface : actor.kind}`,
+        });
       }
 
+      // 2. Harness owns the scheduling write + any status advance +
+      // blocked_range trigger semantics.
+      const result = await attachSchedule(orderId, schedulePatch, actor);
+      if (!result.ok) {
+        // Bubble up harness errors with the same envelope the tool used
+        // historically.
+        return toolResult({
+          success: false,
+          error: "booking_failed",
+          message: result.error.code === "forbidden"
+            ? result.error.reason
+            : "Could not attach the scheduling. Please try again or call us at (949) 213-7073.",
+        });
+      }
+
+      const order = result.value;
       logger.info(
         "Order #{orderId} scheduled (unassigned — awaiting shop dispatch)",
         { orderId: order.id },
       );
-
       return toolResult({
         success: true,
         orderId: order.id,
@@ -612,5 +604,53 @@ const createBookingTool = {
     }
   },
 };
+
+/** Walk-in path: INSERT a new order at `approved` so attachSchedule can
+ *  advance it to `scheduled` via the harness. The shop reviews + adds
+ *  pricing after the fact. Creation is not a lifecycle op — the single
+ *  direct INSERT + status_change event here is the only write outside the
+ *  harness, guarded by the allowlist in .githooks/pre-commit. */
+async function createWalkInOrder(opts: {
+  customerId: number | null;
+  vehicleInfo: { year: string; make: string; model: string };
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  contactAddress: string;
+  internalNotes: string | null;
+  actorString: string;
+}): Promise<number> {
+  const now = new Date();
+  const [row] = await db
+    .insert(schema.orders)
+    .values({
+      customerId: opts.customerId,
+      status: "approved",
+      statusHistory: [{
+        status: "approved",
+        timestamp: now.toISOString(),
+        actor: opts.actorString,
+      }],
+      items: [],
+      vehicleInfo: opts.vehicleInfo,
+      notes: opts.internalNotes,
+      contactName: opts.contactName,
+      contactEmail: opts.contactEmail,
+      contactPhone: opts.contactPhone,
+      contactAddress: opts.contactAddress,
+    })
+    .returning();
+
+  await db.insert(schema.orderEvents).values({
+    orderId: row.id,
+    eventType: "status_change",
+    fromStatus: null,
+    toStatus: "approved",
+    actor: opts.actorString,
+    metadata: { source: "walk_in_booking_create" },
+  });
+
+  return row.id;
+}
 
 export const schedulingTools = [getAvailabilityTool, createBookingTool];
