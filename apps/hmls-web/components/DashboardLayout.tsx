@@ -52,7 +52,7 @@ export function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const guardEndpoint = adminCheck
-    ? "/api/admin/dashboard"
+    ? "/api/admin/me"
     : mechanicCheck
       ? "/api/mechanic/me"
       : null;
