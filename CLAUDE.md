@@ -155,26 +155,32 @@ webhook. `apps/agent/src/hmls/tools/stripe.ts` (dead `create_quote` tool) delete
   find_customer, list_orders)
 - `tools/` - scheduling, labor-lookup, parts-lookup, ask-user-question, admin-order-tools,
   customer-order-actions, customer-booking-actions, order-ops
-- `skills/estimate/` - Pricing engine (OLP labor + parts + fees + discount), PDF template
-- `common/tools/estimate.ts` - `create_estimate` tool — writes directly to `orders` table at
-  status=`draft`
+- `skills/estimate/` - Pricing engine (OLP labor + parts + fees + discount). Source-tree dir name
+  kept; the agent-facing skill markdown lives at `.skills/order/`.
+- `common/tools/order.ts` - **`create_order`** tool — single entry point for all order writes.
+  Modes: INSERT (no `orderId`) or UPDATE-in-place (with `orderId`). Full pricing engine. Updating an
+  `estimated` order auto-flips it back to `revised`.
   - Customer agent: `customerId` resolved from auth context (ctx.customerId), not AI-supplied
-  - Staff agent: AI passes `customerId` explicitly for walk-in order creation
+  - Staff agent: AI passes `customerId` for known customers, or `customerInfo` for walk-in
+    find-or-create
 
 ### Agent flow (customer chat)
 
 1. Customer enters `/chat` (login required)
-2. AI collects vehicle, symptoms; calls `lookup_labor_time` + `create_estimate`
-3. Estimate lands as `orders` row with status=`draft`, `pendingReview: true` returned in tool result
-4. Customer sees EstimateCard with "Pending review" badge (not "Not saved")
-5. Admin reviews in `/admin/orders?status=draft` and clicks "Send to customer" → status=`estimated`
-6. Customer approves in `/portal/orders/:id` → status=`approved`
-7. Admin assigns mechanic + confirms booking in order detail page → status=`scheduled`
+2. AI collects vehicle, symptoms; calls `lookup_labor_time` + `create_order`
+3. Order lands as `orders` row with status=`draft`, `pendingReview: true` returned in tool result
+4. If customer revises in same conversation, agent re-calls `create_order` with the same `orderId` —
+   UPDATEs in place, no duplicate draft
+5. Customer sees EstimateCard with "Pending review" badge (not "Not saved")
+6. Admin reviews in `/admin/orders?status=draft` and clicks "Send to customer" → status=`estimated`
+7. Customer approves in `/portal/orders/:id` → status=`approved`
+8. Admin assigns mechanic + confirms booking in order detail page → status=`scheduled`
 
 ### Agent flow (admin walk-in)
 
 Admin opens `/admin/chat` → tells staff agent ("create order for John, 2020 Civic, oil change") →
-staff agent calls `find_customer` / `create_order` / `create_estimate` with explicit customerId.
+staff agent calls `search_customers` + `create_order` (passing `customerId` or `customerInfo`).
+Subsequent revisions in the same chat re-call `create_order` with the captured `orderId`.
 
 **Fixo Agent** (`apps/agent/src/fixo/`): Zypher + Gemini 2.5 Flash
 
@@ -328,9 +334,14 @@ vercel env add NEXT_PUBLIC_AGENT_URL --scope spinsirrs-projects  # https://api.f
   booking flow removed (admin does it via order status transitions). Customer cancel-booking is now
   an order-level action (`scheduled → cancelled`). Stripe webhook is now a no-op (dormant).
 - **Agent UX hardened**: EstimateCard shows "Pending review" badge when order is draft.
-  `create_estimate` pulls customerId from auth context for customer chat; staff agent still passes
-  it explicitly for walk-ins. SlotPicker is date + time dropdowns, orders created unassigned (admin
-  dispatches).
+  `create_order` pulls customerId from auth context for customer chat; staff agent passes
+  `customerId` or `customerInfo` for walk-ins. SlotPicker is date + time dropdowns, orders created
+  unassigned (admin dispatches).
+- **Order tool unification (2026-04-23)**: `create_estimate` and the old `create_order` collapsed
+  into a single `create_order` ([common/tools/order.ts](apps/agent/src/common/tools/order.ts)).
+  INSERT (no orderId) or UPDATE-in-place (with orderId). Eliminates "agent creates a new draft every
+  time the customer revises" duplication. `update_order_items`/`update_order` retained for cheap
+  incremental patches. `.skills/estimate/` renamed to `.skills/order/`.
 - **Known deferred**: Multi-shop tenancy — `shops` table exists but no code path scopes by `shop_id`
   yet. BAR § 3353 compliance flow — design in the air, not implemented. Stripe auto- capture is
   dormant — needs re-implementation if a shop opts in (add payment columns back selectively, wire

@@ -9,7 +9,7 @@ import { convertTools, type LegacyTool } from "../common/convert-tools.ts";
 import { askUserQuestionTools } from "../common/tools/ask-user-question.ts";
 import { laborLookupTools } from "../common/tools/labor-lookup.ts";
 import { partsLookupTools } from "../common/tools/parts-lookup.ts";
-import { estimateTools } from "../common/tools/estimate.ts";
+import { orderTools } from "../common/tools/order.ts";
 import type { AgentConfig } from "./agent.ts";
 
 const logger = getLogger(["hmls", "agent", "staff"]);
@@ -29,7 +29,7 @@ export function runStaffAgent(options: RunStaffAgentOptions) {
 
   const allTools: LegacyTool[] = [
     ...askUserQuestionTools,
-    ...estimateTools,
+    ...orderTools,
     ...schedulingTools,
     ...laborLookupTools,
     ...partsLookupTools,

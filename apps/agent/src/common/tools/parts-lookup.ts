@@ -597,8 +597,8 @@ export const lookupPartsPrice = {
   name: "lookup_parts_price",
   description: "Look up real parts pricing from RockAuto's catalog for a specific vehicle. " +
     "Returns the recommended PREMIUM tier price to use in estimates. " +
-    "Use this BEFORE creating estimates to get accurate parts costs instead of guessing. " +
-    "Always use the recommendedPrice field as partsCost in create_estimate. " +
+    "Use this BEFORE creating orders to get accurate parts costs instead of guessing. " +
+    "Always use the recommendedPrice field as partsCost in create_order. " +
     "Supports 50+ part types: oil filter, brake pads, rotors, alternator, spark plugs, " +
     "motor oil, AC compressor, power steering pump, gaskets, sensors, and more.",
   schema: z.object({

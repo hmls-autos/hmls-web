@@ -188,7 +188,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
         }
 
         if (
-          toolName === "create_estimate" &&
+          toolName === "create_order" &&
           (part.output as Record<string, unknown>)?.success === true
         ) {
           const raw = part.output as {

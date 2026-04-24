@@ -1,5 +1,5 @@
 ---
-name: estimate
+name: order
 description: >
   This skill should be used when a customer asks "how much for...", "what would it cost...",
   "I need an estimate for...", "price for brakes/oil change/repair", or describes symptoms
@@ -9,10 +9,10 @@ description: >
   and bundled service recommendations.
 ---
 
-# Estimate Skill
+# Order Skill
 
-Create price estimates for a mobile mechanic service. OLP and RockAuto are references, not gates —
-use automotive knowledge to fill gaps.
+Create draft orders for a mobile mechanic service. OLP and RockAuto are references, not gates — use
+automotive knowledge to fill gaps.
 
 ## Tools
 
@@ -21,31 +21,44 @@ use automotive knowledge to fill gaps.
 - `lookup_parts_price` — RockAuto live pricing. Try 2+ part name variations. Use "daily driver" tier
   as default.
 - `list_vehicle_services` — Browse OLP service categories for a vehicle.
-- `create_estimate` — Generate the estimate. Accepts `services` (labor+parts model) and
-  `customItems` (flat-rate bypass).
-- `get_estimate` — Retrieve an existing estimate by ID to check status, details, or expiration.
+- `create_order` — Insert a new draft OR update an existing draft/revised/estimated order in place.
+  Accepts `services` (labor+parts model) and `customItems` (flat-rate bypass). Pass `orderId` to
+  UPDATE; omit to INSERT.
+- `get_order` — Retrieve an existing order by ID to check status, items, or expiration.
+- `update_order_items` / `update_order` — (Staff agent only) Cheaper incremental patches that don't
+  re-run the full pricing engine. Use when only one line item or contact field changes.
 - `ask_user_question` — Present structured choices. MANDATORY for any multiple-choice situation.
 
 ## Prerequisites
 
-Before creating an estimate:
+Before creating an order:
 
-1. Ensure a customer record exists (use `get_customer` or `create_customer`)
-2. Confirm vehicle info (year, make, model) — needed for labor lookup AND parts lookup
-3. Clarify the scope of services needed
+1. Confirm vehicle info (year, make, model) — needed for labor lookup AND parts lookup
+2. Clarify the scope of services needed
+3. (Staff only) Look up the customer with `search_customers` if a name is mentioned
 
-## Estimate Flow
+## Order Flow
 
 1. Gather vehicle info and understand the issue
-2. Look up or create customer record
+2. (Staff) Search for customer if applicable
 3. Try `lookup_labor_time` — if no OLP data after 2-3 search variations, estimate hours manually
 4. Try `lookup_parts_price` — if unavailable, estimate from the reference table below
 5. For flat-rate or custom work, use `customItems` instead of the labor+parts model
 6. Determine applicable fees and discounts (see Pricing Structure)
-7. Call `create_estimate` with all data
-8. Present the PDF download link and price breakdown
-9. Use `ask_user_question` to offer next steps: "Send formal quote", "Book appointment", "Adjust
-   services"
+7. Call `create_order` with all data — capture the returned `orderId`
+8. Present the price breakdown
+9. If the customer revises ANYTHING in this conversation, call `create_order` again with the same
+   `orderId` (it updates in place). DO NOT create a second order for the same vehicle.
+
+## Anti-Duplication Rule (CRITICAL)
+
+`create_order` returns an `orderId`. Hold onto it. Any revision (changed scope, different parts
+tier, fee adjustment, missed line item) goes back through `create_order` with that same `orderId` —
+this UPDATES the same row instead of creating a new draft. Updating an `estimated` order auto-flips
+it back to `revised` so the shop re-reviews.
+
+The only legitimate reason to call `create_order` twice in a conversation is when the user moves to
+a genuinely different vehicle or different customer.
 
 ### Smart Search — Try Alternate Terms
 
@@ -83,9 +96,9 @@ at the set price.
 **Labor:** hourlyRate x laborHours (from OLP or manual estimate)
 
 **Parts:** Tiered markup on cost (40% under $50, 30% $50-200, 20% $200-500, 15% over $500). Pass
-parts cost in dollars to `create_estimate` — the system applies markup automatically.
+parts cost in dollars to `create_order` — the system applies markup automatically.
 
-**Fees (set flags on `create_estimate`):**
+**Fees (set flags on `create_order`):**
 
 - `involvesHazmat: true` — $15 hazmat disposal (see Hazmat Services list)
 - `tireCount: N` — $5/tire disposal
@@ -98,7 +111,7 @@ parts cost in dollars to `create_estimate` — the system applies markup automat
 - `isSunday: true` — $50 Sunday
 - `isHoliday: true` — $100 holiday
 
-**Discounts (`discountType` on `create_estimate`):**
+**Discounts (`discountType` on `create_order`):**
 
 - `returning_customer` — 5%
 - `referral` — 10%
