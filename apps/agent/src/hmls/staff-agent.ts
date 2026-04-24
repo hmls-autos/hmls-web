@@ -19,10 +19,14 @@ const DEFAULT_MODEL = "gemini-3-flash-preview";
 export interface RunStaffAgentOptions {
   messages: ModelMessage[];
   config: AgentConfig;
+  /** Admin identity for audit trails. Threaded into every tool as
+   *  ctx.adminEmail so the order-state harness can stamp events with the
+   *  acting admin, not a generic "staff_agent" string. */
+  adminEmail?: string;
 }
 
 export function runStaffAgent(options: RunStaffAgentOptions) {
-  const { messages, config } = options;
+  const { messages, config, adminEmail } = options;
   const modelId = config.agentModel || DEFAULT_MODEL;
 
   const google = createGoogleGenerativeAI({ apiKey: config.googleApiKey });
@@ -37,7 +41,7 @@ export function runStaffAgent(options: RunStaffAgentOptions) {
     ...adminOrderTools,
   ];
 
-  const tools = convertTools(allTools);
+  const tools = convertTools(allTools, adminEmail ? { adminEmail } : undefined);
   const toolCount = Object.keys(tools).length;
   logger.info("Initializing staff agent", { model: modelId, toolCount });
 

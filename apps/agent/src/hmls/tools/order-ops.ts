@@ -2,9 +2,19 @@ import { z } from "zod";
 import { desc, eq, sql } from "drizzle-orm";
 import { db, schema } from "../../db/client.ts";
 import { toolResult } from "@hmls/shared/tool-result";
+import type { ToolContext } from "../../common/convert-tools.ts";
+import {
+  addNote,
+  allowedTransitions,
+  type OrderStatus,
+  transition,
+} from "../../services/order-state.ts";
+import {
+  customerAgentActor,
+  staffAgentActor,
+  toolResultFromOrderState,
+} from "../../services/order-state-tool.ts";
 
-// Valid order statuses matching the gateway state machine.
-// Keep this list in sync with TRANSITIONS in apps/gateway/src/routes/orders.ts.
 const ORDER_STATUSES = [
   "draft",
   "estimated",
@@ -17,31 +27,16 @@ const ORDER_STATUSES = [
   "cancelled",
 ] as const;
 
-// Mirrors the state machine in gateway/src/routes/orders.ts. Payment is
-// recorded on the row (paid_at / payment_method / payment_reference), not
-// as a lifecycle state.
-const TRANSITIONS: Record<string, string[]> = {
-  draft: ["estimated", "cancelled"],
-  estimated: ["approved", "declined", "cancelled"],
-  declined: ["revised"],
-  revised: ["estimated", "cancelled"],
-  approved: ["scheduled", "cancelled"],
-  scheduled: ["in_progress", "cancelled"],
-  in_progress: ["completed", "cancelled"],
-  // terminal
-  completed: [],
-  cancelled: [],
-};
-
 // ---------------------------------------------------------------------------
-// Tool 1: transition_order_status
+// Tool 1: transition_order_status (staff + customer fallback)
 // ---------------------------------------------------------------------------
 
 const transitionOrderStatusTool = {
   name: "transition_order_status",
   description:
-    "Transition an order to a new status. Validates the transition against the allowed state machine. " +
-    "Use get_order_status first to confirm the current status before transitioning.",
+    "Transition an order to a new status. The harness validates the transition against the " +
+    "state machine AND the caller's role permissions. Use get_order_status first to confirm " +
+    "the current status.",
   schema: z.object({
     orderId: z.string().describe("The order ID (numeric string or number)"),
     newStatus: z
@@ -50,7 +45,7 @@ const transitionOrderStatusTool = {
     reason: z
       .string()
       .optional()
-      .describe("Optional reason for the transition (e.g. cancellation reason)"),
+      .describe("Optional reason (stored on cancelled/declined orders, otherwise audit-only)"),
   }),
   execute: async (
     params: {
@@ -58,76 +53,25 @@ const transitionOrderStatusTool = {
       newStatus: (typeof ORDER_STATUSES)[number];
       reason?: string;
     },
-    _ctx: unknown,
+    ctx: ToolContext | undefined,
   ) => {
     const id = Number(params.orderId);
     if (!Number.isInteger(id) || id <= 0) {
       return toolResult({ success: false, error: "Invalid order ID" });
     }
+    // Staff chat is the primary caller; if a customer ctx is somehow set we
+    // respect it so customer-initiated transitions (approve / decline /
+    // cancel) still work through this generic entry point.
+    const actor = customerAgentActor(ctx) ?? staffAgentActor(ctx);
 
-    const [order] = await db
-      .select()
-      .from(schema.orders)
-      .where(eq(schema.orders.id, id))
-      .limit(1);
-
-    if (!order) {
-      return toolResult({ success: false, error: `Order #${id} not found` });
-    }
-
-    const allowed = TRANSITIONS[order.status] ?? [];
-    if (!allowed.includes(params.newStatus)) {
-      return toolResult({
-        success: false,
-        error:
-          `Cannot transition from '${order.status}' to '${params.newStatus}'. Allowed transitions: ${
-            allowed.join(", ") || "none (terminal state)"
-          }`,
-      });
-    }
-
-    const previousStatus = order.status;
-    const actor = "agent";
-    const updateFields: Record<string, unknown> = {
-      status: params.newStatus,
-      statusHistory: [
-        ...(Array.isArray(order.statusHistory) ? order.statusHistory : []),
-        { status: params.newStatus, timestamp: new Date().toISOString(), actor },
-      ],
-      updatedAt: new Date(),
-    };
-
-    if (params.newStatus === "cancelled" && params.reason) {
-      updateFields.cancellationReason = params.reason;
-    }
-
-    const [updated] = await db
-      .update(schema.orders)
-      .set(updateFields)
-      .where(eq(schema.orders.id, id))
-      .returning();
-
-    if (!updated) {
-      return toolResult({ success: false, error: "Update failed — concurrent modification" });
-    }
-
-    // Log the event
-    await db.insert(schema.orderEvents).values({
-      orderId: id,
-      eventType: "status_change",
-      fromStatus: previousStatus,
-      toStatus: params.newStatus,
-      actor,
-      metadata: params.reason ? { reason: params.reason } : {},
+    const result = await transition(id, params.newStatus as OrderStatus, actor, {
+      reason: params.reason,
     });
-
-    return toolResult({
-      success: true,
-      orderId: id,
-      previousStatus,
-      newStatus: params.newStatus,
-      message: `Order #${id} transitioned from '${previousStatus}' to '${params.newStatus}'`,
-    });
+    return toolResultFromOrderState(result, (row) => ({
+      orderId: row.id,
+      newStatus: row.status,
+      message: `Order #${row.id} transitioned to '${row.status}'`,
+    }));
   },
 };
 
@@ -144,48 +88,25 @@ const addOrderNoteTool = {
     note: z.string().describe("The note text to add to the order"),
   }),
   execute: async (
-    params: {
-      orderId: string;
-      note: string;
-    },
-    _ctx: unknown,
+    params: { orderId: string; note: string },
+    ctx: ToolContext | undefined,
   ) => {
     const id = Number(params.orderId);
     if (!Number.isInteger(id) || id <= 0) {
       return toolResult({ success: false, error: "Invalid order ID" });
     }
-
-    const [order] = await db
-      .select({ id: schema.orders.id })
-      .from(schema.orders)
-      .where(eq(schema.orders.id, id))
-      .limit(1);
-
-    if (!order) {
-      return toolResult({ success: false, error: `Order #${id} not found` });
-    }
-
-    const [event] = await db
-      .insert(schema.orderEvents)
-      .values({
-        orderId: id,
-        eventType: "note_added",
-        actor: "agent",
-        metadata: { note: params.note },
-      })
-      .returning();
-
-    return toolResult({
-      success: true,
-      eventId: event.id,
+    const actor = customerAgentActor(ctx) ?? staffAgentActor(ctx);
+    const result = await addNote(id, params.note, actor);
+    return toolResultFromOrderState(result, (v) => ({
+      eventId: v.eventId,
       orderId: id,
       message: `Note added to order #${id}`,
-    });
+    }));
   },
 };
 
 // ---------------------------------------------------------------------------
-// Tool 3: get_order_status
+// Tool 3: get_order_status (read-only, no harness needed)
 // ---------------------------------------------------------------------------
 
 const getOrderStatusTool = {
@@ -235,7 +156,6 @@ const getOrderStatusTool = {
         .limit(1);
       order = row;
     } else {
-      // Look up by customer
       const customer = await (async () => {
         if (params.customerEmail) {
           const [row] = await db
@@ -262,7 +182,6 @@ const getOrderStatusTool = {
         });
       }
 
-      // Get the most recent active (non-cancelled, non-completed) order
       const [row] = await db
         .select()
         .from(schema.orders)
@@ -273,7 +192,6 @@ const getOrderStatusTool = {
         .limit(1);
 
       if (!row) {
-        // Fall back to any order
         const [anyRow] = await db
           .select()
           .from(schema.orders)
@@ -290,13 +208,11 @@ const getOrderStatusTool = {
       return toolResult({ success: false, error: "No order found" });
     }
 
-    // Determine next expected step
-    const nextSteps = TRANSITIONS[order.status] ?? [];
+    const nextSteps = allowedTransitions(order.status as OrderStatus);
     const nextStepHint = nextSteps.length > 0
       ? `Next allowed transitions: ${nextSteps.join(", ")}`
       : "Order is in a terminal state";
 
-    // Summarize line items
     const items = Array.isArray(order.items) ? order.items : [];
     const itemSummary = items.map((item: Record<string, unknown>) =>
       `${item.name} (${item.category}) x${item.quantity} @ $${

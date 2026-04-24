@@ -3,42 +3,39 @@ import { renderToStream } from "@react-pdf/renderer";
 import { db, schema } from "@hmls/agent/db";
 import { and, desc, eq } from "drizzle-orm";
 import { type AdminEnv, requireAdmin } from "../middleware/admin.ts";
-import { EstimatePdf, notifyOrderStatusChange } from "@hmls/agent";
+import { EstimatePdf } from "@hmls/agent";
 import type { OrderItem } from "@hmls/agent/db";
+import {
+  type Actor,
+  addNote,
+  type OrderStatus,
+  patchItems,
+  recordPayment,
+  transition,
+} from "@hmls/agent/order-state";
+import { sendOrderStateResult } from "../lib/order-state-http.ts";
 
-// Simplified status machine — one source of truth for job lifecycle.
-// Payment is a property of a completed order (paid_at + payment_method),
-// not a lifecycle state.
-const TRANSITIONS: Record<string, string[]> = {
-  draft: ["estimated", "cancelled"],
-  estimated: ["approved", "declined", "cancelled"],
-  declined: ["revised"],
-  revised: ["estimated", "cancelled"],
-  approved: ["scheduled", "cancelled"],
-  scheduled: ["in_progress", "cancelled"],
-  in_progress: ["completed", "cancelled"],
-  // terminal
-  completed: [],
-  cancelled: [],
-};
+/** Build an admin Actor from the Hono auth context. */
+function adminActor(email: string | null | undefined): Actor {
+  return { kind: "admin", email: email ?? "admin" };
+}
 
-// Editable statuses
-const EDITABLE_STATUSES = new Set(["draft", "revised"]);
-
-async function logOrderEvent(
-  orderId: number,
-  eventType: string,
-  actor: string,
-  opts?: { fromStatus?: string; toStatus?: string; metadata?: Record<string, unknown> },
-) {
-  await db.insert(schema.orderEvents).values({
-    orderId,
-    eventType,
-    fromStatus: opts?.fromStatus ?? null,
-    toStatus: opts?.toStatus ?? null,
-    actor,
-    metadata: opts?.metadata ?? {},
-  });
+/** Legacy orders predate the shareToken column. Lazily backfill one before
+ *  a lifecycle write so the subsequent notification / PDF link has a valid
+ *  token. Separate UPDATE (not inside the harness transaction) keeps the
+ *  harness schema-agnostic. */
+async function backfillShareTokenIfMissing(orderId: number): Promise<void> {
+  const [row] = await db
+    .select({ shareToken: schema.orders.shareToken })
+    .from(schema.orders)
+    .where(eq(schema.orders.id, orderId))
+    .limit(1);
+  if (row && !row.shareToken) {
+    await db
+      .update(schema.orders)
+      .set({ shareToken: crypto.randomUUID().replace(/-/g, "") })
+      .where(eq(schema.orders.id, orderId));
+  }
 }
 
 const orders = new Hono<AdminEnv>();
@@ -145,9 +142,16 @@ orders.post("/", async (c) => {
     })
     .returning();
 
-  await logOrderEvent(order.id, "status_change", actor, {
+  // Creation is the one lifecycle write outside the harness — nothing to
+  // transition from. Emit the initial status_change event inline so the
+  // audit log still has a complete trail.
+  await db.insert(schema.orderEvents).values({
+    orderId: order.id,
+    eventType: "status_change",
+    fromStatus: null,
     toStatus: "draft",
-    metadata: { itemCount: orderItems.length },
+    actor: `admin:${actor}`,
+    metadata: { itemCount: orderItems.length, source: "admin_post_orders" },
   });
 
   return c.json(order, 201);
@@ -189,21 +193,12 @@ orders.get("/:id", async (c) => {
   return c.json({ order, customer, events });
 });
 
-// PATCH /orders/:id — edit order items/notes (only in editable statuses) or contact snapshot (any status)
+// PATCH /orders/:id — edit items (through harness, lifecycle-aware) and/or
+// contact snapshot / metadata fields (direct, status-agnostic).
 orders.patch("/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
-  }
-
-  const [order] = await db
-    .select()
-    .from(schema.orders)
-    .where(eq(schema.orders.id, id))
-    .limit(1);
-
-  if (!order) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
   const body = await c.req.json<{
@@ -212,95 +207,84 @@ orders.patch("/:id", async (c) => {
     vehicleInfo?: Record<string, unknown> | null;
     validDays?: number;
     expiresAt?: string | null;
-    // Per-order contact snapshot fields (editable regardless of status)
     contact_name?: string | null;
     contact_email?: string | null;
     contact_phone?: string | null;
     contact_address?: string | null;
   }>();
 
-  // Contact snapshot fields can be updated on any order status
-  const hasContactFields = body.contact_name !== undefined ||
-    body.contact_email !== undefined ||
-    body.contact_phone !== undefined ||
-    body.contact_address !== undefined;
+  const authUser = c.get("authUser");
+  const actor = adminActor(authUser.email);
 
-  const hasItemFields = body.items !== undefined ||
-    body.notes !== undefined ||
-    body.vehicleInfo !== undefined ||
-    body.validDays !== undefined ||
-    body.expiresAt !== undefined;
-
-  // Item/notes editing is restricted to editable statuses
-  if (hasItemFields && !EDITABLE_STATUSES.has(order.status)) {
-    return c.json({
-      error: {
-        code: "BAD_REQUEST",
-        message: `Cannot edit order items in '${order.status}' status. Editable statuses: ${
-          [...EDITABLE_STATUSES].join(", ")
-        }`,
-      },
-    }, 400);
-  }
-
-  const currentStatus = order.status;
-  const updates: Record<string, unknown> = { updatedAt: new Date() };
-
-  if (body.items !== undefined) {
-    updates.items = body.items;
-    const subtotal = body.items.reduce((sum, item) => sum + item.totalCents, 0);
-    updates.subtotalCents = subtotal;
-    updates.priceRangeLowCents = Math.round(subtotal * 0.9);
-    updates.priceRangeHighCents = Math.round(subtotal * 1.1);
-  }
-  if (body.notes !== undefined) updates.notes = body.notes;
-  if (body.vehicleInfo !== undefined) updates.vehicleInfo = body.vehicleInfo;
-  if (body.validDays !== undefined) updates.validDays = body.validDays;
-  if (body.expiresAt !== undefined) {
-    updates.expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
-  }
-  if (body.contact_name !== undefined) updates.contactName = body.contact_name;
-  if (body.contact_email !== undefined) updates.contactEmail = body.contact_email;
-  if (body.contact_phone !== undefined) updates.contactPhone = body.contact_phone;
-  if (body.contact_address !== undefined) updates.contactAddress = body.contact_address;
-
-  // For item edits use optimistic concurrency; for contact-only edits skip it
-  let updated: typeof order | undefined;
-  if (hasItemFields) {
-    const [row] = await db
-      .update(schema.orders)
-      .set(updates)
-      .where(and(eq(schema.orders.id, id), eq(schema.orders.status, currentStatus)))
-      .returning();
-    updated = row;
-
-    if (!updated) {
-      return c.json({
-        error: {
-          code: "CONFLICT",
-          message: "Order status changed concurrently — refresh and retry",
-        },
-      }, 409);
-    }
-  } else if (hasContactFields) {
-    const [row] = await db
-      .update(schema.orders)
-      .set(updates)
+  // Items + notes go through the harness so revisionNumber, events, and
+  // estimated->revised auto-flip stay consistent. `autoRevertEstimatedToRevised`
+  // is true by default so admin editing an already-sent estimate is surfaced
+  // back to the customer as a revision.
+  const wantsItemEdit = body.items !== undefined || body.notes !== undefined;
+  if (wantsItemEdit) {
+    // Need the current items if only notes is being changed — harness expects
+    // a full items replacement.
+    const [current] = await db
+      .select({ items: schema.orders.items })
+      .from(schema.orders)
       .where(eq(schema.orders.id, id))
-      .returning();
-    updated = row;
-  } else {
+      .limit(1);
+    if (!current) {
+      return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+    }
+
+    const result = await patchItems(id, {
+      items: body.items ?? (current.items as OrderItem[] ?? []),
+      notes: body.notes,
+    }, actor);
+
+    if (!result.ok) {
+      // Items path failed — do not apply the direct-field writes either.
+      return sendOrderStateResult(c, result);
+    }
+  }
+
+  // Direct-field writes for fields the harness does not own (contact
+  // snapshot, vehicleInfo, share-token expiry). These are status-agnostic,
+  // so the admin can correct them at any point in the lifecycle.
+  const directUpdates: Record<string, unknown> = {};
+  if (body.vehicleInfo !== undefined) directUpdates.vehicleInfo = body.vehicleInfo;
+  if (body.validDays !== undefined) directUpdates.validDays = body.validDays;
+  if (body.expiresAt !== undefined) {
+    directUpdates.expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
+  }
+  if (body.contact_name !== undefined) directUpdates.contactName = body.contact_name;
+  if (body.contact_email !== undefined) directUpdates.contactEmail = body.contact_email;
+  if (body.contact_phone !== undefined) directUpdates.contactPhone = body.contact_phone;
+  if (body.contact_address !== undefined) directUpdates.contactAddress = body.contact_address;
+
+  if (Object.keys(directUpdates).length > 0) {
+    directUpdates.updatedAt = new Date();
+    await db
+      .update(schema.orders)
+      .set(directUpdates)
+      .where(eq(schema.orders.id, id));
+  }
+
+  if (!wantsItemEdit && Object.keys(directUpdates).length === 1) {
+    // Only updatedAt was set — no actual fields to change.
     return c.json({ error: { code: "BAD_REQUEST", message: "No fields to update" } }, 400);
   }
 
-  const authUser = c.get("authUser");
-  const eventType = hasItemFields ? "items_edited" : "contact_edited";
-  await logOrderEvent(id, eventType, authUser.email ?? "admin");
-
-  return c.json(updated);
+  // Return the freshly-read row so clients see the consistent post-write
+  // state regardless of which branches ran.
+  const [latest] = await db
+    .select()
+    .from(schema.orders)
+    .where(eq(schema.orders.id, id))
+    .limit(1);
+  if (!latest) {
+    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+  }
+  return c.json(latest);
 });
 
-// PATCH /orders/:id/status — transition order status (atomic)
+// PATCH /orders/:id/status — generic status transition.
 orders.patch("/:id/status", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
@@ -308,186 +292,49 @@ orders.patch("/:id/status", async (c) => {
   }
 
   const body = await c.req.json<{ status: string; notes?: string; cancellationReason?: string }>();
-  const newStatus = body.status;
-
-  const [order] = await db
-    .select()
-    .from(schema.orders)
-    .where(eq(schema.orders.id, id))
-    .limit(1);
-
-  if (!order) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
-  }
-
-  const allowed = TRANSITIONS[order.status] ?? [];
-  if (!allowed.includes(newStatus)) {
-    return c.json({
-      error: {
-        code: "BAD_REQUEST",
-        message: `Cannot transition from '${order.status}' to '${newStatus}'. Allowed: ${
-          allowed.join(", ") || "none (terminal state)"
-        }`,
-      },
-    }, 400);
-  }
-
+  const newStatus = body.status as OrderStatus;
   const authUser = c.get("authUser");
-  const actor = authUser.email ?? "admin";
 
-  const updateFields: Record<string, unknown> = {
-    status: newStatus,
-    statusHistory: [
-      ...(Array.isArray(order.statusHistory) ? order.statusHistory : []),
-      { status: newStatus, timestamp: new Date().toISOString(), actor },
-    ],
-    updatedAt: new Date(),
-  };
-
-  // Backfill shareToken if missing (legacy orders created without one)
-  if (!order.shareToken) {
-    updateFields.shareToken = crypto.randomUUID().replace(/-/g, "");
+  // Drive-by adminNotes write — status-agnostic, so do it regardless of
+  // transition outcome. Backfill shareToken for legacy orders while we're
+  // here (pre-existing behavior kept for compatibility).
+  if (body.notes) {
+    await db
+      .update(schema.orders)
+      .set({ adminNotes: body.notes })
+      .where(eq(schema.orders.id, id));
   }
+  await backfillShareTokenIfMissing(id);
 
-  if (body.notes) updateFields.adminNotes = body.notes;
-  if (newStatus === "cancelled" && body.cancellationReason) {
-    updateFields.cancellationReason = body.cancellationReason;
-  }
-
-  // Atomic transition: only update if status hasn't changed
-  const [updated] = await db
-    .update(schema.orders)
-    .set(updateFields)
-    .where(and(eq(schema.orders.id, id), eq(schema.orders.status, order.status)))
-    .returning();
-
-  if (!updated) {
-    return c.json({
-      error: { code: "CONFLICT", message: "Order status changed concurrently. Please retry." },
-    }, 409);
-  }
-
-  await logOrderEvent(id, "status_change", actor, {
-    fromStatus: order.status,
-    toStatus: newStatus,
+  const result = await transition(id, newStatus, adminActor(authUser.email), {
+    reason: body.cancellationReason,
   });
-
-  // Fire-and-forget notification
-  notifyOrderStatusChange(id, newStatus);
-
-  return c.json(updated);
+  return sendOrderStateResult(c, result);
 });
 
-// POST /orders/:id/send — transition to 'estimated' + trigger notification
+// POST /orders/:id/send — draft/revised -> estimated.
 orders.post("/:id/send", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
-
-  const [order] = await db
-    .select()
-    .from(schema.orders)
-    .where(eq(schema.orders.id, id))
-    .limit(1);
-
-  if (!order) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
-  }
-
-  const validFrom = ["draft", "revised"];
-  if (!validFrom.includes(order.status)) {
-    return c.json({
-      error: { code: "BAD_REQUEST", message: `Cannot send order in '${order.status}' status` },
-    }, 400);
-  }
-
   const authUser = c.get("authUser");
-  const actor = authUser.email ?? "admin";
-
-  const [updated] = await db
-    .update(schema.orders)
-    .set({
-      status: "estimated",
-      statusHistory: [
-        ...(Array.isArray(order.statusHistory) ? order.statusHistory : []),
-        { status: "estimated", timestamp: new Date().toISOString(), actor },
-      ],
-      updatedAt: new Date(),
-    })
-    .where(and(eq(schema.orders.id, id), eq(schema.orders.status, order.status)))
-    .returning();
-
-  if (!updated) {
-    return c.json(
-      { error: { code: "CONFLICT", message: "Order status changed concurrently" } },
-      409,
-    );
-  }
-
-  await logOrderEvent(id, "status_change", actor, {
-    fromStatus: order.status,
-    toStatus: "estimated",
-  });
-  notifyOrderStatusChange(id, "estimated");
-
-  return c.json(updated);
+  await backfillShareTokenIfMissing(id);
+  const result = await transition(id, "estimated", adminActor(authUser.email));
+  return sendOrderStateResult(c, result);
 });
 
-// POST /orders/:id/revise — create revision from declined order
+// POST /orders/:id/revise — declined -> revised. revisionNumber is NOT
+// bumped here; it is an optimistic-concurrency counter owned by patchItems,
+// not a user-facing revision count.
 orders.post("/:id/revise", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
-
-  const [order] = await db
-    .select()
-    .from(schema.orders)
-    .where(eq(schema.orders.id, id))
-    .limit(1);
-
-  if (!order) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
-  }
-
-  if (order.status !== "declined") {
-    return c.json({
-      error: {
-        code: "BAD_REQUEST",
-        message: `Cannot revise order in '${order.status}' status. Must be 'declined'.`,
-      },
-    }, 400);
-  }
-
   const authUser = c.get("authUser");
-  const actor = authUser.email ?? "admin";
-
-  const [updated] = await db
-    .update(schema.orders)
-    .set({
-      status: "revised",
-      revisionNumber: (order.revisionNumber ?? 1) + 1,
-      statusHistory: [
-        ...(Array.isArray(order.statusHistory) ? order.statusHistory : []),
-        { status: "revised", timestamp: new Date().toISOString(), actor },
-      ],
-      updatedAt: new Date(),
-    })
-    .where(and(eq(schema.orders.id, id), eq(schema.orders.status, "declined")))
-    .returning();
-
-  if (!updated) {
-    return c.json(
-      { error: { code: "CONFLICT", message: "Order status changed concurrently" } },
-      409,
-    );
-  }
-
-  await logOrderEvent(id, "status_change", actor, { fromStatus: "declined", toStatus: "revised" });
-  notifyOrderStatusChange(id, "revised");
-
-  return c.json(updated);
+  const result = await transition(id, "revised", adminActor(authUser.email));
+  return sendOrderStateResult(c, result);
 });
 
 // GET /orders/:id/events — audit log for an order
@@ -506,50 +353,31 @@ orders.get("/:id/events", async (c) => {
   return c.json(events);
 });
 
-// POST /orders/:id/events — add a manual event (e.g. note_added)
+// POST /orders/:id/events — add an annotation note to an order. Scoped to
+// note_added only; the harness owns structured events (status_change,
+// items_edited, ...) so routes can't forge them.
 orders.post("/:id/events", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
-  const [order] = await db
-    .select({ id: schema.orders.id })
-    .from(schema.orders)
-    .where(eq(schema.orders.id, id))
-    .limit(1);
-
-  if (!order) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
-  }
-
   const body = await c.req.json<{
-    eventType: string;
+    note?: string;
     metadata?: Record<string, unknown>;
   }>();
-
-  if (!body.eventType) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "eventType is required" } }, 400);
+  if (!body.note) {
+    return c.json({ error: { code: "BAD_REQUEST", message: "note is required" } }, 400);
   }
 
   const authUser = c.get("authUser");
-  const actor = authUser.email ?? "admin";
-
-  const [event] = await db
-    .insert(schema.orderEvents)
-    .values({
-      orderId: id,
-      eventType: body.eventType,
-      actor,
-      metadata: body.metadata ?? {},
-    })
-    .returning();
-
-  return c.json(event, 201);
+  const result = await addNote(id, body.note, adminActor(authUser.email));
+  if (!result.ok) return sendOrderStateResult(c, result);
+  return c.json(result.value, 201);
 });
 
-// POST /orders/:id/payment — mark a completed/in-progress order as paid.
-// Payment is a property, not a lifecycle state — this only stamps the order.
+// POST /orders/:id/payment — stamp payment fields on an approved+ order.
+// Payment is a property, not a lifecycle state.
 orders.post("/:id/payment", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
@@ -563,53 +391,14 @@ orders.post("/:id/payment", async (c) => {
     paidAt?: string;
   }>();
 
-  if (!Number.isFinite(body.amountCents) || body.amountCents <= 0) {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: "amountCents must be a positive number" } },
-      400,
-    );
-  }
-  if (!body.method) {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: "method is required" } },
-      400,
-    );
-  }
-
-  const [order] = await db
-    .select()
-    .from(schema.orders)
-    .where(eq(schema.orders.id, id))
-    .limit(1);
-
-  if (!order) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
-  }
-
   const authUser = c.get("authUser");
-  const actor = authUser.email ?? "admin";
-
-  const [updated] = await db
-    .update(schema.orders)
-    .set({
-      paidAt: body.paidAt ? new Date(body.paidAt) : new Date(),
-      paymentMethod: body.method,
-      paymentReference: body.reference ?? null,
-      capturedAmountCents: body.amountCents,
-      updatedAt: new Date(),
-    })
-    .where(eq(schema.orders.id, id))
-    .returning();
-
-  await logOrderEvent(id, "payment_recorded", actor, {
-    metadata: {
-      amountCents: body.amountCents,
-      method: body.method,
-      reference: body.reference ?? null,
-    },
-  });
-
-  return c.json(updated);
+  const result = await recordPayment(id, {
+    amountCents: body.amountCents,
+    method: body.method,
+    reference: body.reference ?? null,
+    paidAt: body.paidAt ? new Date(body.paidAt) : undefined,
+  }, adminActor(authUser.email));
+  return sendOrderStateResult(c, result);
 });
 
 // PATCH /orders/:id/notes — update admin notes

@@ -31,4 +31,94 @@ if $run_deno; then
   echo "→ deno: fmt + lint"
   deno fmt --check apps/gateway apps/agent workers
   deno lint apps/gateway apps/agent workers
+
+  echo "→ order-state harness gate"
+  # Only the harness itself, plus two known legacy paths pending refactor,
+  # may write lifecycle fields or emit order_events directly. Everything
+  # else must funnel through @hmls/agent/order-state.
+  #
+  # Allowlist entries must stay narrow — if a new file needs to join, it
+  # usually means the harness is missing an API, not that the file should
+  # be exempt. Discuss before adding.
+  ORDER_STATE_ALLOWLIST=(
+    # The harness itself — obviously owns these patterns.
+    "apps/agent/src/services/order-state.ts"
+    # notifyOrderStatusChange is defined here; harness imports it.
+    "apps/agent/src/lib/notifications.ts"
+    # Mod re-exports notifyOrderStatusChange for backcompat.
+    "apps/agent/src/mod.ts"
+    # create_order INSERT path: new-order creation is not a lifecycle op.
+    # UPDATE path should route through patchItems (follow-up refactor).
+    "apps/agent/src/common/tools/order.ts"
+    # create_booking walk-in path: known architectural smell, flagged for
+    # refactor. Remove from allowlist when migrated.
+    "apps/agent/src/hmls/tools/scheduling.ts"
+    # POST /orders creation endpoint: creation is non-lifecycle, stays
+    # direct. Only the single status_change insert for the initial draft
+    # lives here.
+    "apps/gateway/src/routes/orders.ts"
+  )
+
+  # Using extended regex (POSIX ERE) — portable across macOS BSD grep and
+  # GNU grep. No Perl features, no `\b` word boundaries.
+  forbidden_patterns=(
+    # Append to statusHistory — the tell-tale of a direct lifecycle write.
+    # Any legit status change also writes statusHistory, so catching this
+    # pattern catches the full shape without needing multi-line regex.
+    'statusHistory:[[:space:]]*\['
+    # Hardcoded lifecycle-value assignments in .set({ ... })
+    'status:[[:space:]]*"(draft|estimated|revised|approved|declined|scheduled|in_progress|completed|cancelled)"'
+    # Direct insert into orderEvents — forging audit trail
+    'insert\([[:space:]]*schema\.orderEvents'
+    # Calling notifyOrderStatusChange outside the harness
+    'notifyOrderStatusChange\('
+  )
+
+  violations=""
+  for file in $STAGED; do
+    case "$file" in
+      apps/agent/src/*|apps/gateway/src/*) ;;
+      *) continue ;;
+    esac
+    # Skip tests — tests legitimately assert on events/status.
+    case "$file" in
+      *_test.ts|*.test.ts) continue ;;
+    esac
+    # Skip if in allowlist
+    skip=false
+    for allowed in "${ORDER_STATE_ALLOWLIST[@]}"; do
+      if [ "$file" = "$allowed" ]; then
+        skip=true
+        break
+      fi
+    done
+    $skip && continue
+    # File must still exist (not a deletion)
+    [ -f "$file" ] || continue
+    for pat in "${forbidden_patterns[@]}"; do
+      if grep -nE "$pat" "$file" > /dev/null 2>&1; then
+        matches=$(grep -nE "$pat" "$file" | sed "s|^|  $file:|")
+        violations+="$matches"$'\n'
+      fi
+    done
+  done
+
+  if [ -n "$violations" ]; then
+    echo ""
+    echo "✗ order-state harness gate FAILED"
+    echo ""
+    echo "The following files write order lifecycle state directly instead"
+    echo "of going through @hmls/agent/order-state. This breaks the audit"
+    echo "discipline enforced by the harness (status_change events,"
+    echo "notifyOrderStatusChange, transactional atomicity)."
+    echo ""
+    echo "$violations"
+    echo "Fix: route through transition() / patchItems() / attachSchedule() /"
+    echo "     recordPayment() / addNote() from @hmls/agent/order-state."
+    echo ""
+    echo "If you genuinely need to bypass (create paths, migrations), add"
+    echo "the file to ORDER_STATE_ALLOWLIST in .githooks/pre-commit with a"
+    echo "comment explaining why."
+    exit 1
+  fi
 fi
