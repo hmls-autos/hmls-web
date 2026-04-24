@@ -5,6 +5,10 @@ import type { OrderItem } from "../../db/schema.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 import type { LaborTimeResult, OlpVehicle } from "./olp-client.ts";
 
+// Note: `create_order` lives in apps/agent/src/common/tools/order.ts — it's the
+// only entry point for new orders (full pricing engine, INSERT-or-UPDATE-by-orderId).
+// Tools below are read/incremental-update helpers that complement it.
+
 // ---------------------------------------------------------------------------
 // Tool 1: list_orders
 // ---------------------------------------------------------------------------
@@ -77,7 +81,8 @@ const listOrdersTool = {
 const searchCustomersTool = {
   name: "search_customers",
   description: "Find customers by name, email, or phone number. Returns matching customers with " +
-    "id, name, email, phone, and address. Use before create_order to look up a customer ID.",
+    "id, name, email, phone, and address. Use before create_order to look up an existing " +
+    "customerId (avoids creating a duplicate guest customer).",
   schema: z.object({
     query: z
       .string()
@@ -119,284 +124,7 @@ const searchCustomersTool = {
 };
 
 // ---------------------------------------------------------------------------
-// Tool 3: create_order
-// ---------------------------------------------------------------------------
-
-const createOrderTool = {
-  name: "create_order",
-  description:
-    "Create a new draft order. All customer fields are optional — you can create an order with zero customer info. " +
-    "If customer_id is given, uses that customer. If customer_email is given, looks up or creates a customer. " +
-    "If only name/phone, creates a guest customer. If nothing is provided, creates an anonymous customer. " +
-    "Optionally include vehicle info and line items. Returns the new order id and status.",
-  schema: z.object({
-    customer_id: z
-      .string()
-      .optional()
-      .describe(
-        "Existing customer ID. If omitted, a customer is found or created from other fields (all optional).",
-      ),
-    customer_name: z
-      .string()
-      .optional()
-      .describe("Customer name (used to create/find customer if no customer_id)"),
-    customer_email: z
-      .string()
-      .optional()
-      .describe("Customer email (used to look up existing customer or create new one)"),
-    customer_phone: z
-      .string()
-      .optional()
-      .describe("Customer phone number"),
-    vehicle_year: z
-      .number()
-      .int()
-      .optional()
-      .describe("Vehicle year, e.g. 2019"),
-    vehicle_make: z
-      .string()
-      .optional()
-      .describe("Vehicle make, e.g. 'Ford'"),
-    vehicle_model: z
-      .string()
-      .optional()
-      .describe("Vehicle model, e.g. 'F-150'"),
-    description: z
-      .string()
-      .optional()
-      .describe("General description / notes for the order"),
-    items: z
-      .array(
-        z.object({
-          description: z.string().describe(
-            "Line item description (e.g., 'Front brake pad replacement')",
-          ),
-          labor_hours: z.number().optional().describe(
-            "Labor hours for this item (optional — will auto-lookup if omitted)",
-          ),
-          parts_cost: z.number().optional().describe(
-            "Parts cost in dollars (optional — defaults to $0)",
-          ),
-        }),
-      )
-      .min(1, "At least one item is required to create an order")
-      .describe("Line items to add to the order (required)"),
-  }),
-  execute: async (
-    params: {
-      customer_id?: string;
-      customer_name?: string;
-      customer_email?: string;
-      customer_phone?: string;
-      vehicle_year?: number;
-      vehicle_make?: string;
-      vehicle_model?: string;
-      description?: string;
-      items?: Array<{ description: string; labor_hours?: number; parts_cost?: number }>;
-    },
-    _ctx: unknown,
-  ) => {
-    let customer: {
-      id: number;
-      name: string | null;
-      email: string | null;
-      phone: string | null;
-      address: string | null;
-    } | null = null;
-
-    if (params.customer_id) {
-      // Existing customer by ID
-      const customerId = Number(params.customer_id);
-      if (!Number.isInteger(customerId) || customerId <= 0) {
-        return toolResult({ success: false, error: "Invalid customer_id" });
-      }
-      const [found] = await db
-        .select()
-        .from(schema.customers)
-        .where(eq(schema.customers.id, customerId))
-        .limit(1);
-      if (!found) {
-        return toolResult({ success: false, error: `Customer #${customerId} not found` });
-      }
-      customer = found;
-    } else if (params.customer_name || params.customer_email || params.customer_phone) {
-      // Try to find by email first
-      if (params.customer_email) {
-        const [existing] = await db
-          .select()
-          .from(schema.customers)
-          .where(ilike(schema.customers.email, params.customer_email))
-          .limit(1);
-        if (existing) {
-          customer = existing;
-        } else {
-          // Create new customer
-          const [created] = await db
-            .insert(schema.customers)
-            .values({
-              name: params.customer_name || null,
-              email: params.customer_email,
-              phone: params.customer_phone || null,
-            })
-            .returning();
-          customer = created;
-        }
-      } else {
-        // No email — create guest customer with name/phone
-        const [created] = await db
-          .insert(schema.customers)
-          .values({
-            name: params.customer_name || null,
-            email: null,
-            phone: params.customer_phone || null,
-          })
-          .returning();
-        customer = created;
-      }
-    }
-    // No customer info at all → order created without a customer link
-
-    // Build vehicle info if provided
-    const vehicleInfo = (params.vehicle_year || params.vehicle_make || params.vehicle_model)
-      ? {
-        year: params.vehicle_year ? String(params.vehicle_year) : undefined,
-        make: params.vehicle_make ?? undefined,
-        model: params.vehicle_model ?? undefined,
-      }
-      : null;
-
-    // Auto-lookup labor hours if not provided and vehicle info available
-    const itemsForOrder: Array<{
-      description: string;
-      labor_hours: number;
-      parts_cost?: number;
-      sourceMeta?: LaborTimeResult["sourceMeta"];
-    }> = [];
-
-    for (const item of params.items ?? []) {
-      let laborHours = item.labor_hours;
-      let sourceMeta: LaborTimeResult["sourceMeta"] | undefined;
-
-      // Auto-lookup labor time if not provided and we have vehicle info
-      if (
-        laborHours === undefined && vehicleInfo?.year && vehicleInfo?.make && vehicleInfo?.model
-      ) {
-        try {
-          const { searchLaborTimes, findVehicles } = await import("./olp-client.ts");
-          const vehicles = await findVehicles(
-            vehicleInfo.make,
-            vehicleInfo.model,
-            Number(vehicleInfo.year),
-          );
-
-          if (vehicles.length > 0) {
-            const serviceWords = item.description
-              .split(/\s+/)
-              .filter((w) => w.length > 1);
-
-            const laborTimes = await searchLaborTimes(
-              vehicles.map((v: OlpVehicle) => v.id),
-              serviceWords,
-              undefined, // category
-            );
-
-            if (laborTimes.length > 0) {
-              laborHours = Number(laborTimes[0].labor_hours);
-              sourceMeta = laborTimes[0].sourceMeta;
-            }
-          }
-        } catch (_e) {
-          // Fallback: leave labor_hours as 0
-          laborHours = 0;
-        }
-      }
-
-      itemsForOrder.push({
-        description: item.description,
-        labor_hours: laborHours ?? 0,
-        parts_cost: item.parts_cost,
-        ...(sourceMeta ? { sourceMeta } : {}),
-      });
-    }
-
-    if (itemsForOrder.length === 0) {
-      return toolResult({
-        success: false,
-        error:
-          "At least one line item is required. Describe the service (e.g., 'Front brake pad replacement') and include vehicle year/make/model for auto labor lookup.",
-      });
-    }
-
-    const orderItems: OrderItem[] = itemsForOrder.map((item) => {
-      const laborCents = Math.round(item.labor_hours * 140 * 100); // $140/hr
-      const partsCents = Math.round((item.parts_cost ?? 0) * 100);
-      const totalCents = laborCents + partsCents;
-      const meta: Record<string, unknown> = {};
-      if (item.sourceMeta) meta.sourceMeta = item.sourceMeta;
-      return {
-        id: crypto.randomUUID(),
-        category: "labor" as const,
-        name: item.description,
-        quantity: 1,
-        unitPriceCents: totalCents,
-        totalCents,
-        taxable: true,
-        ...(item.labor_hours > 0 ? { laborHours: item.labor_hours } : {}),
-        ...(Object.keys(meta).length > 0 ? { metadata: meta } : {}),
-      };
-    });
-
-    const subtotalCents = orderItems.reduce((sum, i) => sum + i.totalCents, 0);
-
-    const [order] = await db
-      .insert(schema.orders)
-      .values({
-        customerId: customer?.id ?? null,
-        status: "draft",
-        statusHistory: [
-          { status: "draft", timestamp: new Date().toISOString(), actor: "agent" },
-        ],
-        items: orderItems,
-        notes: params.description ?? null,
-        subtotalCents,
-        priceRangeLowCents: Math.round(subtotalCents * 0.9),
-        priceRangeHighCents: Math.round(subtotalCents * 1.1),
-        vehicleInfo: vehicleInfo ?? undefined,
-        contactName: customer?.name ?? null,
-        contactEmail: customer?.email ?? null,
-        contactPhone: customer?.phone ?? null,
-        contactAddress: customer?.address ?? null,
-      })
-      .returning();
-
-    // Audit event
-    await db.insert(schema.orderEvents).values({
-      orderId: order.id,
-      eventType: "status_change",
-      fromStatus: null,
-      toStatus: "draft",
-      actor: "agent",
-      metadata: {
-        itemCount: orderItems.length,
-        ...(vehicleInfo ? { vehicleInfo } : {}),
-      },
-    });
-
-    return toolResult({
-      success: true,
-      orderId: order.id,
-      status: order.status,
-      customerName: customer?.name ?? null,
-      vehicleInfo: vehicleInfo
-        ? [vehicleInfo.year, vehicleInfo.make, vehicleInfo.model].filter(Boolean).join(" ")
-        : null,
-      subtotalFormatted: `$${(subtotalCents / 100).toFixed(2)}`,
-      message: `Draft order #${order.id} created${customer?.name ? ` for ${customer.name}` : ""}`,
-    });
-  },
-};
-// ---------------------------------------------------------------------------
-// Tool 4: update_order_items -- PATCH mode with stable item IDs
+// Tool 3: update_order_items -- PATCH mode with stable item IDs
 // ---------------------------------------------------------------------------
 
 const EDITABLE_STATUSES = new Set(["draft", "revised", "estimated"]);
@@ -751,7 +479,7 @@ const updateOrderItemsTool = {
 };
 
 // ---------------------------------------------------------------------------
-// Tool 5: update_order -- generic order metadata update
+// Tool 4: update_order -- generic order metadata update
 // ---------------------------------------------------------------------------
 
 const updateOrderTool = {
@@ -940,7 +668,6 @@ const updateOrderTool = {
 export const adminOrderTools = [
   listOrdersTool,
   searchCustomersTool,
-  createOrderTool,
   updateOrderItemsTool,
   updateOrderTool,
 ];
