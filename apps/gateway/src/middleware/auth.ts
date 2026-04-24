@@ -1,5 +1,6 @@
 import type { Env } from "hono";
 import { createMiddleware } from "hono/factory";
+import { withContext } from "@logtape/logtape";
 import { type AuthUser, verifyToken } from "../lib/supabase.ts";
 import { db, schema } from "@hmls/agent/db";
 import { eq } from "drizzle-orm";
@@ -56,7 +57,7 @@ export const requireAuth = createMiddleware<AuthEnv>(async (c, next) => {
 
   c.set("authUser", user);
   c.set("customerId", customer.id);
-  await next();
+  await withContext({ userId: user.id, customerId: customer.id }, next);
 });
 
 /**
@@ -70,6 +71,8 @@ export const optionalAuth = createMiddleware<OptionalAuthEnv>(async (c, next) =>
     const user = await verifyToken(token);
     if (user) {
       c.set("authUser", user);
+      await withContext({ userId: user.id }, next);
+      return;
     }
   }
   await next();
@@ -109,5 +112,5 @@ export const requireAuthUser = createMiddleware<AuthUserEnv>(async (c, next) => 
   }
 
   c.set("authUser", user);
-  await next();
+  await withContext({ userId: user.id }, next);
 });

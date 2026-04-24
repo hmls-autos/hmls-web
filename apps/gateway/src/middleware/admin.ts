@@ -1,5 +1,6 @@
 import type { Env } from "hono";
 import { createMiddleware } from "hono/factory";
+import { withContext } from "@logtape/logtape";
 import { type AuthUser, verifyToken } from "../lib/supabase.ts";
 
 /** Env type for admin routes. */
@@ -17,8 +18,9 @@ export type AdminEnv = Env & {
 export const requireAdmin = createMiddleware<AdminEnv>(async (c, next) => {
   // Dev bypass: SKIP_AUTH=true skips all auth checks locally
   if (Deno.env.get("SKIP_AUTH") === "true") {
-    c.set("authUser", { id: "dev", email: "dev@localhost", role: "admin" });
-    await next();
+    const devUser = { id: "dev", email: "dev@localhost", role: "admin" as const };
+    c.set("authUser", devUser);
+    await withContext({ userId: devUser.id, role: "admin" }, next);
     return;
   }
 
@@ -46,5 +48,5 @@ export const requireAdmin = createMiddleware<AdminEnv>(async (c, next) => {
   }
 
   c.set("authUser", user);
-  await next();
+  await withContext({ userId: user.id, role: user.role }, next);
 });

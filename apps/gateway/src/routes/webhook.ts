@@ -1,5 +1,8 @@
 import { Hono } from "hono";
 import Stripe from "stripe";
+import { getLogger } from "@logtape/logtape";
+
+const logger = getLogger(["hmls", "gateway", "webhook"]);
 
 // Stripe webhook — currently dormant.
 //
@@ -20,7 +23,7 @@ export function createWebhookRoute(stripeSecretKey: string) {
   webhook.post("/stripe", async (c) => {
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     if (!webhookSecret) {
-      console.error("[webhook] STRIPE_WEBHOOK_SECRET not set");
+      logger.error("STRIPE_WEBHOOK_SECRET not set");
       return c.json({ error: "Webhook not configured" }, 500);
     }
 
@@ -38,13 +41,16 @@ export function createWebhookRoute(stripeSecretKey: string) {
         webhookSecret,
       ) as Stripe.Event;
     } catch (err) {
-      console.error("[webhook] Signature verification failed:", err);
+      logger.error("Signature verification failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       return c.json({ error: "Invalid signature" }, 400);
     }
 
-    console.log(
-      `[webhook] Received event (no-op): ${event.type} (${event.id})`,
-    );
+    logger.info("Received event (no-op) {eventType} {eventId}", {
+      eventType: event.type,
+      eventId: event.id,
+    });
     return c.json({ received: true, note: "Stripe flow dormant" });
   });
 

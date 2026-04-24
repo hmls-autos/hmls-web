@@ -2,10 +2,10 @@ import { Hono } from "hono";
 import { convertToModelMessages } from "ai";
 import { type AgentConfig, runStaffAgent } from "@hmls/agent";
 import { Errors } from "@hmls/shared/errors";
+import { getLogger } from "@logtape/logtape";
 import { type AdminEnv, requireAdmin } from "../middleware/admin.ts";
-import { getGatewayLogger } from "../logger.ts";
 
-const logger = getGatewayLogger("staff-chat");
+const logger = getLogger(["hmls", "gateway", "staff-chat"]);
 
 let _config: AgentConfig;
 

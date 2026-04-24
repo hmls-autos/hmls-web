@@ -4,10 +4,10 @@ import { eq } from "drizzle-orm";
 import { type AgentConfig, runHmlsAgent, type UserContext } from "@hmls/agent";
 import { db, schema } from "@hmls/agent/db";
 import { Errors } from "@hmls/shared/errors";
+import { getLogger } from "@logtape/logtape";
 import { type AuthUserEnv, requireAuthUser } from "../middleware/auth.ts";
-import { getGatewayLogger } from "../logger.ts";
 
-const logger = getGatewayLogger("chat");
+const logger = getLogger(["hmls", "gateway", "chat"]);
 
 let _config: AgentConfig;
 
