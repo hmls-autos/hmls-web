@@ -8,6 +8,14 @@ const admin = new Hono<AdminEnv>();
 // All admin routes require admin role
 admin.use("*", requireAdmin);
 
+// GET /me — lightweight role check (no DB). Used as the admin guard in the
+// web DashboardLayout; keeps the heavy /dashboard query for the dashboard page
+// alone instead of running it on every admin page.
+admin.get("/me", (c) => {
+  const user = c.get("authUser");
+  return c.json({ id: user.id, email: user.email, role: user.role });
+});
+
 // GET /dashboard — KPI stats
 admin.get("/dashboard", async (c) => {
   const now = new Date();
