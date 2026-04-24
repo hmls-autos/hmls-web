@@ -1,5 +1,8 @@
 import { z } from "zod";
+import { getLogger } from "@logtape/logtape";
 import { toolResult } from "@hmls/shared/tool-result";
+
+const logger = getLogger(["hmls", "agent", "parts-lookup"]);
 
 // ── RockAuto AJAX API client ──
 // Uses the internal catalogapi.php endpoint (same as the browser's JS)
@@ -252,7 +255,9 @@ async function resolveEngine(
       }
     }
   } catch (err) {
-    console.warn("[parts-lookup] AJAX engine resolution failed, falling back to page fetch:", err);
+    logger.warn("AJAX engine resolution failed, falling back to page fetch", {
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   // Fallback: fetch the catalog page directly
@@ -266,7 +271,9 @@ async function resolveEngine(
     engineCache.set(cacheKey, entry);
     return entry;
   } catch (err) {
-    console.error("[parts-lookup] Engine resolution failed:", err);
+    logger.error("Engine resolution failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return null;
   }
 }
@@ -435,7 +442,10 @@ async function fetchPartsForParttype(
       return parsePartsFromHtml(htmlContent);
     }
   } catch (err) {
-    console.warn(`[parts-lookup] AJAX parts fetch failed for parttype ${parttypeId}:`, err);
+    logger.warn("AJAX parts fetch failed for parttype {parttypeId}", {
+      parttypeId,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 
   // Fallback: direct page fetch
@@ -661,7 +671,11 @@ export const lookupPartsPrice = {
 
       return formatResults(vehicle, params.partName, allResults);
     } catch (error) {
-      console.error(`[parts-lookup] Error looking up "${params.partName}":`, error);
+      logger.error("Error looking up {partName}", {
+        partName: params.partName,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       return toolResult({
         found: false,
         vehicle,

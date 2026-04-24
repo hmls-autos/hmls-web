@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { getLogger } from "@logtape/logtape";
 import { db, schema } from "../../db/client.ts";
 import { toolResult } from "@hmls/shared/tool-result";
+
+const logger = getLogger(["hmls", "agent", "scheduling"]);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -564,8 +567,9 @@ const createBookingTool = {
         order = row;
       }
 
-      console.log(
-        `[scheduling] Order #${order.id} scheduled (unassigned — awaiting shop dispatch)`,
+      logger.info(
+        "Order #{orderId} scheduled (unassigned — awaiting shop dispatch)",
+        { orderId: order.id },
       );
 
       return toolResult({
@@ -586,7 +590,7 @@ const createBookingTool = {
         : undefined;
 
       if (code === "23P01") {
-        console.log(`[scheduling] Overlap detected on unassigned booking attempt`);
+        logger.info("Overlap detected on unassigned booking attempt");
         return toolResult({
           success: false,
           error: "time_conflict",
@@ -595,7 +599,10 @@ const createBookingTool = {
         });
       }
 
-      console.error(`[scheduling] Unexpected error creating booking`, error);
+      logger.error("Unexpected error creating booking", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       return toolResult({
         success: false,
         error: "booking_failed",

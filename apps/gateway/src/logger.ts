@@ -1,28 +1,18 @@
-import { configure, getConsoleSink, getLogger, getTextFormatter } from "@logtape/logtape";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { configure, getConsoleSink, getJsonLinesFormatter } from "@logtape/logtape";
 
 export async function setupLogging() {
+  const level = Deno.env.get("LOG_LEVEL") === "debug" ? "debug" : "info";
+
   await configure({
+    reset: true,
     sinks: {
-      console: getConsoleSink({
-        // deno-lint-ignore no-explicit-any
-        formatter: getTextFormatter({ category: "." } as any),
-      }),
+      console: getConsoleSink({ formatter: getJsonLinesFormatter() }),
     },
-    filters: {},
     loggers: [
-      {
-        category: ["hmls"],
-        level: Deno.env.get("LOG_LEVEL") === "debug" ? "debug" : "info",
-        sinks: ["console"],
-      },
+      { category: ["hmls"], lowestLevel: level, sinks: ["console"] },
+      { category: ["logtape", "meta"], lowestLevel: "warning", sinks: ["console"] },
     ],
+    contextLocalStorage: new AsyncLocalStorage(),
   });
-}
-
-export function getGatewayLogger(name: string) {
-  return getLogger(["hmls", "gateway", name]);
-}
-
-export function getAgentLogger(name: string) {
-  return getLogger(["hmls", "agent", name]);
 }

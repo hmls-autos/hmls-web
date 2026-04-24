@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type Stripe from "stripe";
+import { getLogger } from "@logtape/logtape";
 import type { AuthContext } from "../../middleware/fixo/auth.ts";
 import {
   createCheckoutSession,
@@ -7,6 +8,8 @@ import {
   handleSubscriptionWebhook,
   stripe,
 } from "@hmls/agent";
+
+const logger = getLogger(["hmls", "gateway", "fixo", "billing"]);
 
 type Variables = { auth: AuthContext };
 
@@ -30,7 +33,10 @@ billing.post("/checkout", async (c) => {
 
     return c.json({ url: checkoutUrl });
   } catch (err) {
-    console.error("[billing] Checkout error:", err);
+    logger.error("Checkout error", {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return c.json({ error: "Failed to create checkout session" }, 500);
   }
 });
@@ -51,7 +57,10 @@ billing.get("/portal", async (c) => {
     );
     return c.json({ url: portalUrl });
   } catch (err) {
-    console.error("[billing] Portal error:", err);
+    logger.error("Portal error", {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return c.json({ error: "Failed to create portal session" }, 500);
   }
 });
@@ -63,7 +72,7 @@ webhookHandler.post("/", async (c) => {
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
 
   if (!webhookSecret) {
-    console.error("[billing] STRIPE_WEBHOOK_SECRET not set");
+    logger.error("STRIPE_WEBHOOK_SECRET not set");
     return c.json({ error: "Webhook not configured" }, 500);
   }
 
@@ -83,7 +92,10 @@ webhookHandler.post("/", async (c) => {
     await handleSubscriptionWebhook(event);
     return c.json({ received: true });
   } catch (err) {
-    console.error("[billing] Webhook error:", err);
+    logger.error("Webhook error", {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return c.json({ error: "Webhook verification failed" }, 400);
   }
 });

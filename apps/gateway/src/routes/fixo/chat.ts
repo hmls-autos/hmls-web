@@ -2,10 +2,10 @@ import { Hono } from "hono";
 import { convertToModelMessages } from "ai";
 import { runFixoAgent } from "@hmls/agent";
 import { checkFreeTierLimit } from "../../middleware/fixo/tier.ts";
+import { getLogger } from "@logtape/logtape";
 import type { AuthContext } from "../../middleware/fixo/auth.ts";
-import { getGatewayLogger } from "../../logger.ts";
 
-const logger = getGatewayLogger("fixo-chat");
+const logger = getLogger(["hmls", "gateway", "fixo", "chat"]);
 
 type Variables = { auth: AuthContext };
 

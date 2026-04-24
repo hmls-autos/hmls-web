@@ -1,6 +1,9 @@
+import { getLogger } from "@logtape/logtape";
 import { db } from "../db/client.ts";
 import * as schema from "../db/schema.ts";
 import { eq } from "drizzle-orm";
+
+const logger = getLogger(["hmls", "agent", "notifications"]);
 
 // --- Types ---
 
@@ -332,7 +335,10 @@ async function sendEmail(
 ): Promise<boolean> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
-    console.log(`[notify] RESEND_API_KEY not set — skipping email to ${to}: ${subject}`);
+    logger.warn("RESEND_API_KEY not set — skipping email to {to}: {subject}", {
+      to,
+      subject,
+    });
     return false;
   }
 
@@ -352,15 +358,24 @@ async function sendEmail(
     });
 
     if (!res.ok) {
-      const err = await res.text();
-      console.error(`[notify] Resend error (${res.status}): ${err}`);
+      const errBody = await res.text();
+      logger.error("Resend error {status}: {errBody}", {
+        status: res.status,
+        errBody,
+        to,
+        subject,
+      });
       return false;
     }
 
-    console.log(`[notify] Email sent to ${to}: ${subject}`);
+    logger.info("Email sent to {to}: {subject}", { to, subject });
     return true;
   } catch (err) {
-    console.error(`[notify] Failed to send email:`, err);
+    logger.error("Failed to send email", {
+      to,
+      subject,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return false;
   }
 }
@@ -379,7 +394,7 @@ export async function notifyOrderStatusChange(
       .limit(1);
 
     if (!order) {
-      console.warn(`[notify] Order ${orderId} not found`);
+      logger.warn("Order {orderId} not found", { orderId });
       return;
     }
 
@@ -395,7 +410,10 @@ export async function notifyOrderStatusChange(
         .limit(1);
 
       if (!customer?.email) {
-        console.warn(`[notify] No email for order ${orderId} / customer ${order.customerId}`);
+        logger.warn("No email for order {orderId} / customer {customerId}", {
+          orderId,
+          customerId: order.customerId,
+        });
         return;
       }
       toEmail = customer.email;
@@ -403,7 +421,7 @@ export async function notifyOrderStatusChange(
     }
 
     if (!toEmail) {
-      console.warn(`[notify] No email for order ${orderId} — no customer linked`);
+      logger.warn("No email for order {orderId} — no customer linked", { orderId });
       return;
     }
 
@@ -464,6 +482,10 @@ export async function notifyOrderStatusChange(
       }
     }
   } catch (err) {
-    console.error(`[notify] Error for order ${orderId}:`, err);
+    logger.error("Error for order {orderId}", {
+      orderId,
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
   }
 }

@@ -1,9 +1,10 @@
+import { getLogger } from "@logtape/logtape";
 import { createHmlsApp } from "./hmls-app.ts";
 import { createFixoApp } from "./fixo-app.ts";
-import { getGatewayLogger, setupLogging } from "./logger.ts";
+import { setupLogging } from "./logger.ts";
 
 await setupLogging();
-const serverLogger = getGatewayLogger("server");
+const serverLogger = getLogger(["hmls", "gateway", "server"]);
 
 // ── Fail fast on required env vars ──
 const DATABASE_URL = Deno.env.get("DATABASE_URL");

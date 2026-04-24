@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
+import { getLogger } from "@logtape/logtape";
 import { AppError } from "@hmls/shared/errors";
+import { requestContext } from "./middleware/request-context.ts";
 import { estimates } from "./routes/estimates.ts";
 import { portal } from "./routes/portal.ts";
 import { admin } from "./routes/admin.ts";
@@ -15,6 +16,8 @@ import { createWebhookRoute } from "./routes/webhook.ts";
 interface HmlsAppOptions {
   googleApiKey: string;
 }
+
+const logger = getLogger(["hmls", "gateway", "app"]);
 
 export function createHmlsApp(options: HmlsAppOptions) {
   const { googleApiKey } = options;
@@ -38,20 +41,28 @@ export function createHmlsApp(options: HmlsAppOptions) {
         "http://localhost:3000",
       ],
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization"],
+      allowHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
+      exposeHeaders: ["X-Request-Id"],
     }),
   );
-  app.use("*", logger());
+  app.use("*", requestContext);
 
   app.onError((err, c) => {
     if (err instanceof AppError) {
-      console.error(`[error] ${err.code}: ${err.message}`);
+      logger.warn("AppError {code}: {message}", {
+        code: err.code,
+        message: err.message,
+        status: err.status,
+      });
       return c.json(
         err.toJSON(),
         err.status as 400 | 401 | 403 | 404 | 422 | 500 | 502,
       );
     }
-    console.error(`[error] Unhandled:`, err);
+    logger.error("Unhandled error", {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return c.json({
       error: { code: "INTERNAL_ERROR", message: "Internal server error" },
     }, 500);

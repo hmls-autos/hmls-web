@@ -1,7 +1,8 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
+import { getLogger, withContext } from "@logtape/logtape";
 import { AppError } from "@hmls/shared/errors";
+import { requestContext } from "./middleware/request-context.ts";
 import { type AuthContext, authenticateRequest } from "./middleware/fixo/auth.ts";
 import { sessions } from "./routes/fixo/sessions.ts";
 import { input } from "./routes/fixo/input.ts";
@@ -11,6 +12,8 @@ import { reports } from "./routes/fixo/reports.ts";
 import { vehicleRoutes } from "./routes/fixo/vehicles.ts";
 
 const DEV_MODE = Deno.env.get("DEV_MODE") === "true";
+
+const logger = getLogger(["hmls", "gateway", "fixo"]);
 
 export function createFixoApp() {
   const app = new Hono<{ Variables: { auth: AuthContext } }>();
@@ -25,21 +28,29 @@ export function createFixoApp() {
         "http://localhost:3001",
       ],
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization"],
+      allowHeaders: ["Content-Type", "Authorization", "X-Request-Id"],
+      exposeHeaders: ["X-Request-Id"],
     }),
   );
-  app.use("*", logger());
+  app.use("*", requestContext);
 
   // Global error handler
   app.onError((err, c) => {
     if (err instanceof AppError) {
-      console.error(`[fixo] ${err.code}: ${err.message}`);
+      logger.warn("AppError {code}: {message}", {
+        code: err.code,
+        message: err.message,
+        status: err.status,
+      });
       return c.json(
         err.toJSON(),
         err.status as 400 | 401 | 403 | 404 | 422 | 500 | 502,
       );
     }
-    console.error(`[fixo] Unhandled:`, err);
+    logger.error("Unhandled error", {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return c.json({
       error: { code: "INTERNAL_ERROR", message: "Internal server error" },
     }, 500);
@@ -67,7 +78,10 @@ export function createFixoApp() {
     const authResult = await authenticateRequest(c.req.raw);
     if (authResult instanceof Response) return authResult;
     c.set("auth", authResult);
-    await next();
+    await withContext(
+      { userId: authResult.userId, tier: authResult.tier },
+      next,
+    );
   };
 
   app.use("/sessions/*", requireAuth);
@@ -75,10 +89,9 @@ export function createFixoApp() {
   app.use("/billing/portal", requireAuth);
   app.use("/vehicles", requireAuth);
   app.use("/vehicles/*", requireAuth);
-  // deno-lint-ignore require-await -- Hono middleware requires async signature
   app.use("/task", async (c, next) => {
     if (DEV_MODE) {
-      console.log("[fixo] DEV_MODE: skipping auth");
+      logger.info("DEV_MODE: skipping auth");
       c.set("auth", {
         userId: "dev-user",
         email: "dev@localhost",
@@ -86,7 +99,8 @@ export function createFixoApp() {
         stripeCustomerId: null,
         stripeSubscriptionId: null,
       });
-      return next();
+      await withContext({ userId: "dev-user", tier: "plus" }, next);
+      return;
     }
     return requireAuth(c, next);
   });
