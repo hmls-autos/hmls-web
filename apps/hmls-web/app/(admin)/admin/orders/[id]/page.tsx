@@ -654,7 +654,11 @@ export default function OrderDetailPage() {
   const showBookingPanel =
     BOOKING_STATUSES.has(order.status) ||
     order.scheduledAt != null ||
-    order.status === "approved";
+    order.status === "approved" ||
+    // Chat-flow drafts accumulate the appointment + auto-assigned mechanic
+    // and wait on shop Confirm — admin needs the BookingPanel to set time
+    // (if customer didn't), reassign, or confirm.
+    order.status === "draft";
   const bookingProviderName =
     order.providerId != null
       ? (mechanics.find((m) => m.id === order.providerId)?.name ?? null)
