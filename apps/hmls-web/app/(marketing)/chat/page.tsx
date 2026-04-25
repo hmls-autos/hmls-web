@@ -17,11 +17,14 @@ function ChatPageInner() {
   const { session, isLoading: authLoading, isAdmin } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const skipAuth = process.env.NEXT_PUBLIC_SKIP_AUTH === "true";
 
   // Redirect unauthenticated visitors to /login so they never hit the
   // gateway's 401 on send. Admins are funneled to their own chat at
   // /admin/chat — the gateway would reject them with 403 otherwise.
+  // `NEXT_PUBLIC_SKIP_AUTH=true` bypasses the redirect for local dev.
   useEffect(() => {
+    if (skipAuth) return;
     if (authLoading) return;
     if (!session) {
       router.replace("/login");
@@ -30,7 +33,7 @@ function ChatPageInner() {
     if (isAdmin) {
       router.replace("/admin/chat");
     }
-  }, [authLoading, session, isAdmin, router]);
+  }, [skipAuth, authLoading, session, isAdmin, router]);
 
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -107,7 +110,7 @@ function ChatPageInner() {
 
   // Show loading state while auth resolves, or while redirecting
   // unauthenticated users to /login / admins to /admin/chat.
-  if (authLoading || !session || isAdmin) {
+  if (!skipAuth && (authLoading || !session || isAdmin)) {
     return (
       <main className="flex flex-col flex-1 bg-background text-text">
         <div className="flex-1 flex flex-col items-center justify-center px-4">

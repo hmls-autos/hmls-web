@@ -132,6 +132,7 @@ interface PriceServicesInput {
   isHoliday?: boolean;
   travelMiles?: number;
   discountType?: DiscountType;
+  vehicle?: { year: number; make: string; model: string };
 }
 
 async function priceServices(input: PriceServicesInput): Promise<{
@@ -140,8 +141,9 @@ async function priceServices(input: PriceServicesInput): Promise<{
   rangeLow: number;
   rangeHigh: number;
 }> {
+  const services = input.services;
   const serviceLineItems = await Promise.all(
-    input.services.map((s) => calculatePrice(s)),
+    services.map((s) => calculatePrice(s)),
   );
 
   const customLineItems: LineItem[] = (input.customItems ?? []).map((c) => ({
@@ -151,7 +153,7 @@ async function priceServices(input: PriceServicesInput): Promise<{
   }));
 
   const config = await getPricingConfig();
-  const laborCents = input.services.reduce(
+  const laborCents = services.reduce(
     (sum, s) => sum + Math.round((s.laborHours ?? 0) * config.hourlyRate),
     0,
   );
@@ -165,12 +167,12 @@ async function priceServices(input: PriceServicesInput): Promise<{
     isEarlyMorning: input.isEarlyMorning,
     travelMiles: input.travelMiles,
     totalLaborCents: laborCents,
-    services: input.services,
+    services,
   });
 
   const items: OrderItem[] = [
     ...serviceLineItems.map((li, i) =>
-      toOrderItem(li, "labor", { laborHours: input.services[i]?.laborHours })
+      toOrderItem(li, "labor", { laborHours: services[i]?.laborHours })
     ),
     ...customLineItems.map((li) => toOrderItem(li, "labor")),
     ...feeLineItems.map((li) => toOrderItem(li, "fee")),
@@ -181,7 +183,7 @@ async function priceServices(input: PriceServicesInput): Promise<{
     config,
     subtotalBeforeDiscount,
     input.discountType,
-    input.services.length,
+    services.length,
   );
 
   if (discount && discount.amount > 0) {
@@ -284,6 +286,12 @@ export const createOrderTool = {
             .boolean()
             .default(false)
             .describe("True if service involves battery replacement"),
+          customerSuppliedParts: z
+            .boolean()
+            .default(false)
+            .describe(
+              "Customer is bringing their own parts. Skips parts pricing; bills labor only.",
+            ),
         }),
       )
       .describe("Services to include in the order"),
@@ -339,8 +347,32 @@ export const createOrderTool = {
     },
     ctx: ToolContext | undefined,
   ) => {
+    // Customer-side guard: drop the modifier knobs a customer could try to
+    // jailbreak the agent into applying (flat-rate items, discounts, time/
+    // travel surcharges). Labor hours and parts cost still come from the
+    // LLM after it calls lookup_labor_time / lookup_parts_price — the order
+    // skill's anti-jailbreak section forbids fabricated values.
+    const isCustomerSide = customerAgentActor(ctx) != null;
+    if (isCustomerSide) {
+      params = {
+        ...params,
+        customItems: undefined,
+        discountType: undefined,
+        isRush: false,
+        isAfterHours: false,
+        isEarlyMorning: false,
+        isWeekend: false,
+        isSunday: false,
+        isHoliday: false,
+        travelMiles: undefined,
+      };
+    }
+
     // 1. Run the pricing engine first (cheap, side-effect-free).
-    const { items, subtotal, rangeLow, rangeHigh } = await priceServices(params);
+    const { items, subtotal, rangeLow, rangeHigh } = await priceServices({
+      ...params,
+      vehicle: params.vehicle,
+    });
 
     const vehicleInfo = {
       year: String(params.vehicle.year),

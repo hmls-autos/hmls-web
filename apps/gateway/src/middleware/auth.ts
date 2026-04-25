@@ -25,6 +25,21 @@ export type OptionalAuthEnv = Env & {
  * Returns 401 if missing/invalid token, 403 if no customer record found.
  */
 export const requireAuth = createMiddleware<AuthEnv>(async (c, next) => {
+  // Dev bypass: SKIP_AUTH=true uses a fixed test customer (id from
+  // DEV_CUSTOMER_ID, defaults to 1). Mirrors the admin/mechanic bypass.
+  if (Deno.env.get("SKIP_AUTH") === "true") {
+    const devCustomerId = Number(Deno.env.get("DEV_CUSTOMER_ID") ?? "1");
+    const devUser: AuthUser = {
+      id: "dev-customer",
+      email: "customer@localhost",
+      role: "customer",
+    };
+    c.set("authUser", devUser);
+    c.set("customerId", devCustomerId);
+    await withContext({ userId: devUser.id, customerId: devCustomerId }, next);
+    return;
+  }
+
   const auth = c.req.header("Authorization");
   if (!auth?.startsWith("Bearer ")) {
     return c.json(
@@ -94,6 +109,17 @@ export type AuthUserEnv = Env & {
  * (e.g. first-contact chat). Returns 401 on missing/invalid token.
  */
 export const requireAuthUser = createMiddleware<AuthUserEnv>(async (c, next) => {
+  if (Deno.env.get("SKIP_AUTH") === "true") {
+    const devUser: AuthUser = {
+      id: "dev-customer",
+      email: "customer@localhost",
+      role: "customer",
+    };
+    c.set("authUser", devUser);
+    await withContext({ userId: devUser.id }, next);
+    return;
+  }
+
   const auth = c.req.header("Authorization");
   if (!auth?.startsWith("Bearer ")) {
     return c.json(

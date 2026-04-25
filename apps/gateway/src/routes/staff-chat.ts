@@ -4,6 +4,7 @@ import { type AgentConfig, runStaffAgent } from "@hmls/agent";
 import { Errors } from "@hmls/shared/errors";
 import { getLogger } from "@logtape/logtape";
 import { type AdminEnv, requireAdmin } from "../middleware/admin.ts";
+import { stripProviderMetadata } from "../lib/strip-provider-metadata.ts";
 
 const logger = getLogger(["hmls", "gateway", "staff-chat"]);
 
@@ -48,7 +49,7 @@ staffChat.post("/", requireAdmin, async (c) => {
       adminEmail: authUser.email ?? undefined,
     });
 
-    const response = result.toUIMessageStreamResponse();
+    const response = stripProviderMetadata(result.toUIMessageStreamResponse());
     const duration = Date.now() - startTime;
     logger.info("Request finished", {
       userId: authUser.id,
