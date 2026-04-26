@@ -17,11 +17,7 @@ import {
   useState,
 } from "react";
 import { AGENT_URL } from "@/lib/config";
-import {
-  clearStoredSessionId,
-  ensureSession,
-  loadStoredSessionId,
-} from "@/lib/session";
+import { clearStoredSessionId, loadStoredSessionId } from "@/lib/session";
 
 export interface FixoEstimateData {
   success: true;
@@ -112,17 +108,19 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   // Load persisted messages once on mount, scoped to this user.
   const [initialMessages] = useState(() => loadStoredMessages(userId));
 
-  // Re-pair the restored transcript with its backend session id so the next
-  // /complete and /report call hits the right fixoMedia rows. Tracked as
-  // both a ref (the transport reads it on every send, can't trigger renders)
-  // and reactive state (the Report button gates on it).
-  const [sessionId, setSessionId] = useState<number | null>(() => {
-    const restored = loadStoredSessionId(userId);
-    if (restored !== null && sessionIdRef && !sessionIdRef.current) {
-      sessionIdRef.current = restored;
+  // Re-pair the restored transcript with its backend session id so /complete
+  // and /report hit the right fixoMedia rows. Ref-only — the chat page reads
+  // it directly when it builds the Report URL; the transport reads it on
+  // every send for hydration. No reactive state needed because the Report
+  // button no longer gates on sessionId presence.
+  const sessionRestoredRef = useRef(false);
+  if (!sessionRestoredRef.current) {
+    sessionRestoredRef.current = true;
+    if (sessionIdRef && !sessionIdRef.current) {
+      const restored = loadStoredSessionId(userId);
+      if (restored !== null) sessionIdRef.current = restored;
     }
-    return restored;
-  });
+  }
   // Tracks imageUrls by message index for new messages whose IDs aren't
   // known until after AI SDK v6 assigns them internally.
   const pendingImageUrlRef = useRef<{ index: number; url: string } | null>(
@@ -272,36 +270,21 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           url: options.imageUrl,
         };
       }
-      // Fire-and-forget session creation so text-only and OBD-only chats also
-      // get a session id (needed for /complete and /report). Concurrent callers
-      // share one in-flight POST via the helper. The .then mirrors the new id
-      // into React state so the Report button rerenders without waiting for
-      // the next chatMessages update (closes the timing race codex flagged).
-      if (accessToken && sessionIdRef && !sessionIdRef.current) {
-        void ensureSession(accessToken, sessionIdRef, userId).then((id) => {
-          if (id !== null) setSessionId(id);
-        });
-      }
+      // Intentionally NOT creating a session here. The free-tier quota counts
+      // session rows, so creating one on every chat send would have the third
+      // chat fail with "limit_reached" before /task even runs. Sessions are
+      // created lazily by useMediaUpload (on first upload) or by the chat
+      // page's report flow (on first Report click) — both are concrete
+      // moments where the session id is actually needed.
       chatSendMessage({ text: content });
     },
-    [chatSendMessage, chatMessages, accessToken, sessionIdRef, userId],
+    [chatSendMessage, chatMessages],
   );
-
-  // Catch session creation that originated from useMediaUpload (it shares the
-  // same ref but doesn't know about our state setter). Cheap: fires on every
-  // chat update, but the no-op branch is just a ref read.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: chatMessages is the trigger; the effect body only reads the ref and current sessionId
-  useEffect(() => {
-    if (sessionIdRef?.current && sessionIdRef.current !== sessionId) {
-      setSessionId(sessionIdRef.current);
-    }
-  }, [chatMessages, sessionId, sessionIdRef]);
 
   const clearMessages = useCallback(() => {
     setChatMessages([]);
     imageUrlMapRef.current.clear();
     if (sessionIdRef) sessionIdRef.current = null;
-    setSessionId(null);
     try {
       localStorage.removeItem(chatHistoryKey(userId));
     } catch {
@@ -317,7 +300,6 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   return {
     messages,
     uiMessages: chatMessages,
-    sessionId,
     isLoading,
     error,
     currentTool,

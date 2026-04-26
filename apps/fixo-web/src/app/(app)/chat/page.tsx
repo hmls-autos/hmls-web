@@ -16,6 +16,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { useAgentChat } from "@/hooks/useAgentChat";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { AGENT_URL } from "@/lib/config";
+import { ensureSession } from "@/lib/session";
 
 function WelcomeScreen() {
   return (
@@ -76,7 +77,6 @@ function ChatPageInner({
   const {
     messages,
     uiMessages,
-    sessionId,
     isLoading,
     sendMessage,
     currentTool,
@@ -102,55 +102,59 @@ function ChatPageInner({
       userId,
     });
 
-  const handleDownloadReport = useCallback(
-    async (sessionId: number) => {
-      if (isFinalizing) return;
-      setReportError(null);
-      setIsFinalizing(true);
-      try {
-        // Finalize the session first: this calls generateObject server-side and
-        // populates fixo_sessions.result + status='complete'. The chat history
-        // lives in client state, so we must hand it to the server explicitly.
-        const completeRes = await fetch(
-          `${AGENT_URL}/sessions/${sessionId}/complete`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({ messages: uiMessages }),
-          },
-        );
-        if (!completeRes.ok) {
-          const detail = await completeRes
-            .json()
-            .catch(() => ({ error: completeRes.statusText }));
-          throw new Error(detail.error ?? "Failed to finalize session");
-        }
+  const handleDownloadReport = useCallback(async () => {
+    if (isFinalizing) return;
+    setReportError(null);
+    setIsFinalizing(true);
+    try {
+      // Lazy session creation: text-only chats don't have a session id until
+      // the user actually needs one. The Report click is that moment. This
+      // keeps the free-tier session-count quota gated on report generation,
+      // not on every chat send.
+      const sid = await ensureSession(
+        session.access_token,
+        sessionIdRef,
+        userId,
+      );
+      if (!sid) throw new Error("Failed to start a session");
 
-        const reportRes = await fetch(
-          `${AGENT_URL}/sessions/${sessionId}/report`,
-          { headers: { Authorization: `Bearer ${session.access_token}` } },
-        );
-        if (!reportRes.ok) {
-          throw new Error("Failed to generate report PDF");
-        }
-        const blob = await reportRes.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Fixo-Report-${sessionId}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-      } catch (e) {
-        setReportError(e instanceof Error ? e.message : String(e));
-      } finally {
-        setIsFinalizing(false);
+      // Finalize the session first: this calls generateObject server-side and
+      // populates fixo_sessions.result + status='complete'. The chat history
+      // lives in client state, so we must hand it to the server explicitly.
+      const completeRes = await fetch(`${AGENT_URL}/sessions/${sid}/complete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ messages: uiMessages }),
+      });
+      if (!completeRes.ok) {
+        const detail = await completeRes
+          .json()
+          .catch(() => ({ error: completeRes.statusText }));
+        throw new Error(detail.error ?? "Failed to finalize session");
       }
-    },
-    [session.access_token, uiMessages, isFinalizing],
-  );
+
+      const reportRes = await fetch(`${AGENT_URL}/sessions/${sid}/report`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!reportRes.ok) {
+        throw new Error("Failed to generate report PDF");
+      }
+      const blob = await reportRes.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Fixo-Report-${sid}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setReportError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsFinalizing(false);
+    }
+  }, [session.access_token, uiMessages, isFinalizing, userId]);
 
   const handleObdSubmit = useCallback(
     (codes: string[]) => {
@@ -179,11 +183,11 @@ function ChatPageInner({
         <h1 className="text-lg font-semibold">
           Fixo<span className="text-primary">.</span>
         </h1>
-        {messages.length > 0 && !isLoading && sessionId !== null && (
+        {messages.length > 0 && !isLoading && (
           <button
             type="button"
             disabled={isFinalizing}
-            onClick={() => handleDownloadReport(sessionId)}
+            onClick={handleDownloadReport}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             aria-label="Finish session and download report"
           >
