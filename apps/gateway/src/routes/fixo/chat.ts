@@ -65,7 +65,13 @@ chat.post("/", async (c) => {
     if (parsedSessionId !== null && Number.isInteger(parsedSessionId)) {
       // Follow-up activity after a finalized session re-opens it so the
       // next Report click regenerates the diagnosis from the fuller chat.
-      await reopenIfComplete(parsedSessionId);
+      // Ownership is folded into the UPDATE so an attacker can't wipe
+      // someone else's completed report by guessing their session id.
+      await reopenIfComplete(
+        parsedSessionId,
+        auth.userId,
+        auth.customerId,
+      );
       attachedMedia = await hydrateSessionMedia(
         messages,
         parsedSessionId,

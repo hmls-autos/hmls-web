@@ -102,11 +102,6 @@ input.post("/:id/input", async (c) => {
     creditCharged = creditResult.charged;
   }
 
-  // New activity on a finalized session re-opens it so the next Report click
-  // generates a fresh diagnosis off the updated transcript instead of serving
-  // the cached pre-upload result.
-  await reopenIfComplete(sessionId);
-
   // Bump session credit counter.
   await db
     .update(schema.fixoSessions)
@@ -176,6 +171,14 @@ input.post("/:id/input", async (c) => {
       spectrogramMediaId = specRow.id;
     }
   }
+
+  // Reopen AFTER the new input is durably stored. If uploadMedia or the
+  // insert above failed, we'd have nulled out the user's report (status
+  // back to processing, result=null) for an upload that never persisted.
+  // Now the reopen only happens once we know there's new evidence to
+  // justify regenerating the diagnosis. Auth-gated so an attacker can't
+  // wipe someone else's report by passing their session id.
+  await reopenIfComplete(sessionId, auth.userId, auth.customerId);
 
   return c.json({
     sessionId,
