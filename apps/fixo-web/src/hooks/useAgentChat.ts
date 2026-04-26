@@ -113,12 +113,22 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   // it directly when it builds the Report URL; the transport reads it on
   // every send for hydration. No reactive state needed because the Report
   // button no longer gates on sessionId presence.
+  //
+  // Critically, only restore the session id when chat history was ALSO
+  // restored. If the history key is missing or corrupt, the surviving
+  // session-id key is orphaned: a fresh chat would otherwise inherit the
+  // previous session's photos and OBD codes server-side, leaking evidence
+  // into a brand-new report. Clear orphaned ids on the spot.
   const sessionRestoredRef = useRef(false);
   if (!sessionRestoredRef.current) {
     sessionRestoredRef.current = true;
     if (sessionIdRef && !sessionIdRef.current) {
-      const restored = loadStoredSessionId(userId);
-      if (restored !== null) sessionIdRef.current = restored;
+      if (initialMessages && initialMessages.length > 0) {
+        const restored = loadStoredSessionId(userId);
+        if (restored !== null) sessionIdRef.current = restored;
+      } else {
+        clearStoredSessionId(userId);
+      }
     }
   }
   // Tracks imageUrls by message index for new messages whose IDs aren't

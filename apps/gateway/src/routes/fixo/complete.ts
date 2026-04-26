@@ -60,10 +60,10 @@ complete.post("/:id/complete", async (c) => {
   // Tier gate runs AFTER the cache check so re-downloads work even at the
   // limit. POST /sessions itself isn't tier-gated, so without this a free
   // user could create unlimited fresh sessions and call /complete on each
-  // for unlimited Gemini usage. checkFreeTierLimit counts sessions per
-  // month, capping first-time completions at the same 3-per-month bound
-  // /task already enforces.
-  const tierBlock = await checkFreeTierLimit(auth, "text");
+  // for unlimited Gemini usage. We exclude the current session from the
+  // count: it was already created (and counted) by ensureSession on the
+  // Report click; double-counting it would block the third report at 3≥3.
+  const tierBlock = await checkFreeTierLimit(auth, "text", sessionId);
   if (tierBlock) {
     logger.warn("Tier limit reached on first-time completion", {
       userId: auth.userId,
