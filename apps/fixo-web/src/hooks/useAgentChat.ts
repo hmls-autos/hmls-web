@@ -9,6 +9,7 @@ import {
   type UIMessage,
 } from "ai";
 import {
+  type MutableRefObject,
   type RefObject,
   useCallback,
   useEffect,
@@ -50,8 +51,9 @@ interface UseAgentChatOptions {
   accessToken?: string | null;
   /** Source of truth for the current Fixo session id. The transport reads
    * this on every request so the gateway can hydrate uploaded media as
-   * FileUIParts on the latest turn. */
-  sessionIdRef?: RefObject<number | null>;
+   * FileUIParts on the latest turn. The hook also writes to it during
+   * restore-from-localStorage and clear flows, so it must be mutable. */
+  sessionIdRef?: MutableRefObject<number | null>;
   /** Authenticated user id, used to scope persisted session/transcript so a
    * sign-out/sign-in on the same browser doesn't leak across accounts. */
   userId?: string | null;

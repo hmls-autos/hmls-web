@@ -56,7 +56,12 @@ export default function ChatPage() {
     redirect("/login");
   }
 
-  return <ChatPageInner session={session} userId={user.id} />;
+  // Key by user.id so a cross-tab auth swap (Supabase broadcasts to all tabs
+  // on sign-in/sign-out) forces a full remount of the chat subtree. Without
+  // this, useAgentChat would hold user A's chatMessages and sessionIdRef
+  // while userId flipped to B, persisting A's transcript under B's storage
+  // key and aiming uploads at A's session.
+  return <ChatPageInner key={user.id} session={session} userId={user.id} />;
 }
 
 function ChatPageInner({
