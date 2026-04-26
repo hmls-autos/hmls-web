@@ -5,6 +5,7 @@ import { type InputType, uploadMedia } from "@hmls/agent";
 import { processCredits } from "../../middleware/fixo/credits.ts";
 import { checkFreeTierLimit } from "../../middleware/fixo/tier.ts";
 import type { AuthContext } from "../../middleware/fixo/auth.ts";
+import { reopenIfComplete } from "./lib/session-lifecycle.ts";
 
 type Variables = { auth: AuthContext };
 
@@ -101,9 +102,12 @@ input.post("/:id/input", async (c) => {
     creditCharged = creditResult.charged;
   }
 
-  // Bump session credit counter. Session.status is intentionally NOT changed
-  // here — Bug B (status lifecycle) will own session-boundary semantics in a
-  // follow-up PR.
+  // New activity on a finalized session re-opens it so the next Report click
+  // generates a fresh diagnosis off the updated transcript instead of serving
+  // the cached pre-upload result.
+  await reopenIfComplete(sessionId);
+
+  // Bump session credit counter.
   await db
     .update(schema.fixoSessions)
     .set({ creditsCharged: session.creditsCharged + creditCharged })

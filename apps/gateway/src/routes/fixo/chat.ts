@@ -6,6 +6,7 @@ import { getLogger } from "@logtape/logtape";
 import type { AuthContext } from "../../middleware/fixo/auth.ts";
 import { stripProviderMetadata } from "../../lib/strip-provider-metadata.ts";
 import { hydrateSessionMedia } from "./lib/hydrate-media.ts";
+import { reopenIfComplete } from "./lib/session-lifecycle.ts";
 
 const logger = getLogger(["hmls", "gateway", "fixo", "chat"]);
 
@@ -62,6 +63,9 @@ chat.post("/", async (c) => {
   try {
     let attachedMedia = 0;
     if (parsedSessionId !== null && Number.isInteger(parsedSessionId)) {
+      // Follow-up activity after a finalized session re-opens it so the
+      // next Report click regenerates the diagnosis from the fuller chat.
+      await reopenIfComplete(parsedSessionId);
       attachedMedia = await hydrateSessionMedia(
         messages,
         parsedSessionId,

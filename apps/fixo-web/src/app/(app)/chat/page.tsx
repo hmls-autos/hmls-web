@@ -16,6 +16,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { useAgentChat } from "@/hooks/useAgentChat";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { AGENT_URL } from "@/lib/config";
+import { downloadReportPdf } from "@/lib/download-report";
 import { ensureSession } from "@/lib/session";
 
 function WelcomeScreen() {
@@ -141,19 +142,7 @@ function ChatPageInner({
         throw new Error(detail.error ?? "Failed to finalize session");
       }
 
-      const reportRes = await fetch(`${AGENT_URL}/sessions/${sid}/report`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (!reportRes.ok) {
-        throw new Error("Failed to generate report PDF");
-      }
-      const blob = await reportRes.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Fixo-Report-${sid}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadReportPdf(sid, session.access_token);
     } catch (e) {
       setReportError(e instanceof Error ? e.message : String(e));
     } finally {
