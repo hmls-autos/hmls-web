@@ -17,7 +17,11 @@ import {
   useState,
 } from "react";
 import { AGENT_URL } from "@/lib/config";
-import { ensureSession } from "@/lib/session";
+import {
+  clearStoredSessionId,
+  ensureSession,
+  loadStoredSessionId,
+} from "@/lib/session";
 
 export interface FixoEstimateData {
   success: true;
@@ -92,6 +96,17 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
 
   // Load persisted messages once on mount
   const [initialMessages] = useState(loadStoredMessages);
+
+  // Re-pair the restored transcript with its backend session id so the next
+  // /complete and /report call hits the right fixoMedia rows. Runs once.
+  const sessionRestoredRef = useRef(false);
+  if (!sessionRestoredRef.current) {
+    sessionRestoredRef.current = true;
+    if (sessionIdRef && !sessionIdRef.current) {
+      const restored = loadStoredSessionId();
+      if (restored !== null) sessionIdRef.current = restored;
+    }
+  }
   // Tracks imageUrls by message index for new messages whose IDs aren't
   // known until after AI SDK v6 assigns them internally.
   const pendingImageUrlRef = useRef<{ index: number; url: string } | null>(
@@ -253,12 +268,14 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const clearMessages = useCallback(() => {
     setChatMessages([]);
     imageUrlMapRef.current.clear();
+    if (sessionIdRef) sessionIdRef.current = null;
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
       /* ignore */
     }
-  }, [setChatMessages]);
+    clearStoredSessionId();
+  }, [setChatMessages, sessionIdRef]);
 
   const clearError = useCallback(() => {
     chatClearError();
