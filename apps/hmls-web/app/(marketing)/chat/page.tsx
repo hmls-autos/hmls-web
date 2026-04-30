@@ -253,7 +253,7 @@ function ChatPageInner() {
             )}
           </AnimatePresence>
 
-          {messages.map((msg) => {
+          {messages.map((msg, idx) => {
             if (msg.role === "estimate-card" && msg.estimateData) {
               return (
                 <motion.div
@@ -297,6 +297,11 @@ function ChatPageInner() {
                     <Markdown
                       content={msg.content}
                       className="text-sm leading-relaxed"
+                      isStreaming={
+                        isLoading &&
+                        idx === messages.length - 1 &&
+                        msg.role === "assistant"
+                      }
                     />
                   )}
                 </motion.div>

@@ -3,7 +3,13 @@
 import { Markdown } from "@/components/ui/Markdown";
 import type { Message } from "@/hooks/useAgentChat";
 
-export function MessageBubble({ message }: { message: Message }) {
+export function MessageBubble({
+  message,
+  isStreaming,
+}: {
+  message: Message;
+  isStreaming?: boolean;
+}) {
   const isUser = message.role === "user";
 
   return (
@@ -26,7 +32,7 @@ export function MessageBubble({ message }: { message: Message }) {
         {isUser ? (
           <p>{message.content}</p>
         ) : (
-          <Markdown content={message.content} />
+          <Markdown content={message.content} isStreaming={isStreaming} />
         )}
       </div>
     </div>
