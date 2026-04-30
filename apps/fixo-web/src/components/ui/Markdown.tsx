@@ -12,6 +12,12 @@ export function Markdown({
   return (
     <Streamdown
       mode={isStreaming ? "streaming" : "static"}
+      animated={
+        isStreaming
+          ? { animation: "fadeIn", sep: "word", duration: 200 }
+          : undefined
+      }
+      isAnimating={isStreaming}
       components={{
         p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
         ul: ({ children }) => (
