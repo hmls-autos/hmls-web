@@ -17,6 +17,12 @@ export function Markdown({
     <div className={`prose dark:prose-invert prose-sm max-w-none ${className}`}>
       <Streamdown
         mode={isStreaming ? "streaming" : "static"}
+        animated={
+          isStreaming
+            ? { animation: "fadeIn", sep: "word", duration: 200 }
+            : undefined
+        }
+        isAnimating={isStreaming}
         components={{
           p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
           ul: ({ children }) => (
