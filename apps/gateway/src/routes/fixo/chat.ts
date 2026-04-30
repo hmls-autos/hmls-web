@@ -100,35 +100,38 @@ chat.post("/", async (c) => {
 
     const response = result.toUIMessageStreamResponse({
       originalMessages,
-      onFinish: async ({ messages: finalMessages }) => {
+      // Sync onFinish — `handleUIMessageStreamFinish` AWAITS this in the
+      // stream's `flush()`, so any await here delays stream close on the
+      // wire. The client sees `status === "streaming"` until we return,
+      // even though the model already finished. Kick the persistence off
+      // and let it run after the response has been flushed; localStorage
+      // still has the transcript, so a transient DB error never costs the
+      // user data.
+      onFinish: ({ messages: finalMessages }) => {
         if (parsedSessionId === null) return;
-        // Ownership-scoped UPDATE — guessing another user's session id can't
-        // overwrite their transcript. No-op if they don't own this row.
         const ownerPredicate = auth.customerId !== undefined
           ? or(
             eq(schema.fixoSessions.userId, auth.userId),
             eq(schema.fixoSessions.customerId, auth.customerId),
           )
           : eq(schema.fixoSessions.userId, auth.userId);
-        try {
-          await db
-            .update(schema.fixoSessions)
-            .set({ messages: finalMessages })
-            .where(
-              and(
-                eq(schema.fixoSessions.id, parsedSessionId),
-                ownerPredicate,
-              ),
-            );
-        } catch (err) {
-          // Persistence is best-effort: localStorage on the client still has
-          // the same transcript, so a transient DB hiccup doesn't lose user
-          // data. Log so we notice if it becomes systematic.
-          logger.warn("Failed to persist chat transcript", {
-            sessionId: parsedSessionId,
-            error: err instanceof Error ? err.message : String(err),
+        // Fire-and-forget. Surface failures via logs so we notice if the
+        // pattern is systematic, not via a hung stream.
+        db
+          .update(schema.fixoSessions)
+          .set({ messages: finalMessages })
+          .where(
+            and(
+              eq(schema.fixoSessions.id, parsedSessionId),
+              ownerPredicate,
+            ),
+          )
+          .catch((err: unknown) => {
+            logger.warn("Failed to persist chat transcript", {
+              sessionId: parsedSessionId,
+              error: err instanceof Error ? err.message : String(err),
+            });
           });
-        }
       },
     });
     const duration = Date.now() - startTime;
