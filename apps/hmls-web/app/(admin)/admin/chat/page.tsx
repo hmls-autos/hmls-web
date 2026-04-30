@@ -186,7 +186,7 @@ export default function AdminChatPage() {
             )}
           </AnimatePresence>
 
-          {messages.map((msg) => {
+          {messages.map((msg, idx) => {
             if (msg.role === "estimate-card" && msg.estimateData) {
               return (
                 <motion.div
@@ -228,6 +228,11 @@ export default function AdminChatPage() {
                     <Markdown
                       content={msg.content}
                       className="text-sm leading-relaxed"
+                      isStreaming={
+                        isLoading &&
+                        idx === messages.length - 1 &&
+                        msg.role === "assistant"
+                      }
                     />
                   )}
                 </motion.div>

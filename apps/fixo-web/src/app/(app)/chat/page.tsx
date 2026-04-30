@@ -194,8 +194,16 @@ function ChatPageInner({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 pb-36 space-y-3">
         {messages.length === 0 && <WelcomeScreen />}
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+        {messages.map((msg, idx) => (
+          <MessageBubble
+            key={msg.id}
+            message={msg}
+            isStreaming={
+              isLoading &&
+              idx === messages.length - 1 &&
+              msg.role === "assistant"
+            }
+          />
         ))}
         {pendingEstimate && (
           <div className="px-1">
