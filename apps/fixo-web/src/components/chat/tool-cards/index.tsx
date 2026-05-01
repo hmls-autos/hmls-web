@@ -9,10 +9,6 @@ import { AskUserQuestionCard } from "./AskUserQuestionCard";
 import { LaborLookupCard, type LaborLookupOutput } from "./LaborLookupCard";
 import { ObdCodeCard, type ObdLookupOutput } from "./ObdCodeCard";
 import { type PartsLookupOutput, PartsPriceCard } from "./PartsPriceCard";
-import {
-  VehicleServicesCard,
-  type VehicleServicesOutput,
-} from "./VehicleServicesCard";
 
 type ToolPart = Extract<
   UIMessage["parts"][number],
@@ -103,14 +99,6 @@ export function renderToolCard(
       />
     );
   }
-  if (toolName === "list_vehicle_services") {
-    return (
-      <VehicleServicesCard
-        isLoading={isLoading}
-        output={output as VehicleServicesOutput | undefined}
-      />
-    );
-  }
   return null;
 }
 
@@ -122,6 +110,4 @@ export {
   type ObdLookupOutput,
   type PartsLookupOutput,
   PartsPriceCard,
-  VehicleServicesCard,
-  type VehicleServicesOutput,
 };
