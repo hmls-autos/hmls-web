@@ -336,6 +336,18 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     chatClearError();
   }, [chatClearError]);
 
+  // Expose a stable lookup from UIMessage id → preview image URL. The chat
+  // page renders UIMessages directly (parts-based) with AI Elements, so it
+  // reads imageUrl out-of-band rather than from the simplified `messages`
+  // array. The ref is mutated by the `messages` useMemo above as a side
+  // effect — that's intentional: keeping the population there preserves the
+  // index→id resolution that handles the AI-SDK-assigns-own-ids case.
+  const getImageUrl = useCallback(
+    (messageId: string): string | undefined =>
+      imageUrlMapRef.current.get(messageId),
+    [],
+  );
+
   return {
     messages,
     uiMessages: chatMessages,
@@ -346,5 +358,6 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     sendMessage,
     clearMessages,
     clearError,
+    getImageUrl,
   };
 }

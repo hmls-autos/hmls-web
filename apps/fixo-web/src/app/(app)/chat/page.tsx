@@ -1,15 +1,39 @@
 "use client";
 
 import type { Session } from "@supabase/supabase-js";
-import type { UIMessage } from "ai";
+import {
+  getToolOrDynamicToolName,
+  isToolOrDynamicToolUIPart,
+  type UIMessage,
+} from "ai";
 import { Car, FileDown } from "lucide-react";
 import { redirect, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { FixoEstimateCard } from "@/components/chat/FixoEstimateCard";
-import { MessageBubble } from "@/components/chat/MessageBubble";
-import { ToolIndicator } from "@/components/chat/ToolIndicator";
 import { AudioRecorder } from "@/components/media/AudioRecorder";
 import { CameraCapture } from "@/components/media/CameraCapture";
 import { ObdInput } from "@/components/media/ObdInput";
@@ -193,14 +217,13 @@ function ChatPageInner({
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
 
   const {
-    messages,
     uiMessages,
     isLoading,
     sendMessage,
-    currentTool,
     pendingEstimate,
     error,
     clearError,
+    getImageUrl,
   } = useAgentChat({
     scrollRef,
     inputRef,
@@ -284,6 +307,18 @@ function ChatPageInner({
     }
   }, [isUpgradeError, error, upgradeMessage, clearError]);
 
+  // Filter out empty (no-text, no-tool) messages so a transient assistant
+  // chunk before the model emits anything doesn't render an empty bubble.
+  const renderable = uiMessages.filter((msg) => {
+    if (msg.role !== "user" && msg.role !== "assistant") return false;
+    return msg.parts.some(
+      (p) =>
+        (p.type === "text" && p.text.trim().length > 0) ||
+        p.type === "reasoning" ||
+        isToolOrDynamicToolUIPart(p),
+    );
+  });
+
   return (
     <div className="flex flex-col h-dvh">
       {/* Header */}
@@ -291,7 +326,7 @@ function ChatPageInner({
         <h1 className="text-lg font-semibold">
           Fixo<span className="text-primary">.</span>
         </h1>
-        {messages.length > 0 && !isLoading && (
+        {renderable.length > 0 && !isLoading && (
           <button
             type="button"
             disabled={isFinalizing}
@@ -305,36 +340,102 @@ function ChatPageInner({
         )}
       </header>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 pb-36 space-y-3">
-        {messages.length === 0 && <WelcomeScreen />}
-        {messages.map((msg, idx) => (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            isStreaming={
-              isLoading &&
-              idx === messages.length - 1 &&
-              msg.role === "assistant"
-            }
-          />
-        ))}
-        {pendingEstimate && (
-          <div className="px-1">
-            <FixoEstimateCard data={pendingEstimate} />
-          </div>
-        )}
-        {currentTool && <ToolIndicator tool={currentTool} />}
-        {error && !isUpgradeError && (
-          <div className="text-center text-sm text-red-500 py-2">{error}</div>
-        )}
-        {reportError && (
-          <div className="text-center text-sm text-red-500 py-2">
-            {reportError}
-          </div>
-        )}
-        <div ref={scrollRef} />
-      </div>
+      {/* Messages — AI Elements <Conversation> handles stick-to-bottom and the
+          floating "scroll to latest" button without us re-implementing it. */}
+      <Conversation className="flex-1 pb-36">
+        <ConversationContent>
+          {renderable.length === 0 && <WelcomeScreen />}
+          {renderable.map((msg, idx) => {
+            const isLastAssistant =
+              idx === renderable.length - 1 && msg.role === "assistant";
+            const previewImage =
+              msg.role === "user" ? getImageUrl(msg.id) : undefined;
+            return (
+              <Message from={msg.role} key={msg.id}>
+                <MessageContent>
+                  {previewImage && (
+                    // biome-ignore lint/performance/noImgElement: data URL preview, not a static asset
+                    <img
+                      alt="Uploaded"
+                      className="rounded-lg max-w-full"
+                      src={previewImage}
+                    />
+                  )}
+                  {msg.parts.map((part, i) => {
+                    const partKey = `${msg.id}-${i}`;
+                    if (part.type === "text") {
+                      return (
+                        <MessageResponse key={partKey}>
+                          {part.text}
+                        </MessageResponse>
+                      );
+                    }
+                    if (part.type === "reasoning") {
+                      return (
+                        <Reasoning
+                          isStreaming={isLastAssistant && isLoading}
+                          key={partKey}
+                        >
+                          <ReasoningTrigger />
+                          <ReasoningContent>{part.text}</ReasoningContent>
+                        </Reasoning>
+                      );
+                    }
+                    if (isToolOrDynamicToolUIPart(part)) {
+                      const headerProps =
+                        part.type === "dynamic-tool"
+                          ? {
+                              type: "dynamic-tool" as const,
+                              state: part.state,
+                              toolName: getToolOrDynamicToolName(part),
+                            }
+                          : { type: part.type, state: part.state };
+                      return (
+                        <Tool key={partKey}>
+                          <ToolHeader {...headerProps} />
+                          <ToolContent>
+                            <ToolInput input={part.input} />
+                            {(part.state === "output-available" ||
+                              part.state === "output-error") && (
+                              <ToolOutput
+                                errorText={
+                                  part.state === "output-error"
+                                    ? part.errorText
+                                    : undefined
+                                }
+                                output={
+                                  part.state === "output-available"
+                                    ? part.output
+                                    : undefined
+                                }
+                              />
+                            )}
+                          </ToolContent>
+                        </Tool>
+                      );
+                    }
+                    return null;
+                  })}
+                </MessageContent>
+              </Message>
+            );
+          })}
+          {pendingEstimate && (
+            <div className="px-1">
+              <FixoEstimateCard data={pendingEstimate} />
+            </div>
+          )}
+          {error && !isUpgradeError && (
+            <div className="text-center text-sm text-red-500 py-2">{error}</div>
+          )}
+          {reportError && (
+            <div className="text-center text-sm text-red-500 py-2">
+              {reportError}
+            </div>
+          )}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
 
       {/* Input */}
       <ChatInput
