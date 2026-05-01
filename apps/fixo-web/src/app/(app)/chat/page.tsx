@@ -34,6 +34,7 @@ import {
 } from "@/components/ai-elements/tool";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { FixoEstimateCard } from "@/components/chat/FixoEstimateCard";
+import { renderToolCard } from "@/components/chat/tool-cards";
 import { AudioRecorder } from "@/components/media/AudioRecorder";
 import { CameraCapture } from "@/components/media/CameraCapture";
 import { ObdInput } from "@/components/media/ObdInput";
@@ -350,6 +351,19 @@ function ChatPageInner({
               idx === renderable.length - 1 && msg.role === "assistant";
             const previewImage =
               msg.role === "user" ? getImageUrl(msg.id) : undefined;
+
+            // Detect if a later user message has already responded to this
+            // assistant turn's ask_user_question. The agent's prompt asks one
+            // question at a time, so the immediate next user message IS the
+            // answer (regardless of which option button was tapped vs. typed).
+            const nextUserMsg =
+              msg.role === "assistant"
+                ? renderable.slice(idx + 1).find((m) => m.role === "user")
+                : undefined;
+            const nextUserAnswer = nextUserMsg?.parts.find(
+              (p): p is { type: "text"; text: string } => p.type === "text",
+            )?.text;
+
             return (
               <Message from={msg.role} key={msg.id}>
                 <MessageContent>
@@ -382,6 +396,22 @@ function ChatPageInner({
                       );
                     }
                     if (isToolOrDynamicToolUIPart(part)) {
+                      // Custom card if we have one for this tool name —
+                      // ObdCode / Labor / Parts / VehicleServices / AskUser.
+                      const card = renderToolCard(part, {
+                        isAnswered: !!nextUserAnswer,
+                        answer: nextUserAnswer,
+                        onAnswer: sendMessage,
+                      });
+                      if (card) {
+                        return (
+                          <div key={partKey} className="px-1">
+                            {card}
+                          </div>
+                        );
+                      }
+                      // Fallback: generic AI Elements <Tool> for tools we
+                      // haven't designed a card for yet.
                       const headerProps =
                         part.type === "dynamic-tool"
                           ? {
