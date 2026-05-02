@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +37,17 @@ export function AddTimeOffDialog({
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Reset form on open so reopening after a cancel doesn't show old values.
+  useEffect(() => {
+    if (!open) return;
+    setDate("");
+    setIsAvailable(false);
+    setStartTime("");
+    setEndTime("");
+    setReason("");
+    setError(null);
+  }, [open]);
 
   async function handleSave() {
     if (!date) {

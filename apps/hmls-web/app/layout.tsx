@@ -8,6 +8,8 @@ import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { JsonLd } from "@/components/JsonLd";
 import { PageEnter } from "@/components/PageEnter";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ReasonDialog } from "@/components/ui/ReasonDialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const barlow = Barlow({
@@ -89,6 +91,8 @@ export default function RootLayout({
             <TooltipProvider>
               <PageEnter>{children}</PageEnter>
               <Toaster richColors position="bottom-right" />
+              <ReasonDialog />
+              <ConfirmDialog />
             </TooltipProvider>
           </AuthProvider>
         </ThemeProvider>

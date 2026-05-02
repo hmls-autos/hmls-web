@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
+import { useStableArray } from "@/lib/swr-stable";
 import type { Customer, Order, OrderDetail } from "@/lib/types";
 
 export type PortalCustomer = Customer;
@@ -18,7 +19,7 @@ export function usePortalOrders() {
     "/api/portal/me/orders",
     fetcher,
   );
-  return { orders: data ?? [], isLoading, isError: !!error, mutate };
+  return { orders: useStableArray(data), isLoading, isError: !!error, mutate };
 }
 
 export function usePortalOrder(id: string | number | null) {
@@ -37,5 +38,10 @@ export function usePortalBookings() {
     "/api/portal/me/bookings",
     fetcher,
   );
-  return { bookings: data ?? [], isLoading, isError: !!error, mutate };
+  return {
+    bookings: useStableArray(data),
+    isLoading,
+    isError: !!error,
+    mutate,
+  };
 }

@@ -12,6 +12,7 @@ import {
   type RefObject,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -75,13 +76,17 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       : {};
   }, [accessToken]);
 
-  const transportRef = useRef<DefaultChatTransport<UIMessage> | null>(null);
-  if (!transportRef.current) {
-    transportRef.current = new DefaultChatTransport<UIMessage>({
-      api: endpoint,
-      headers: () => headersRef.current,
-    });
-  }
+  // Recreate the transport when the endpoint changes; a single hook
+  // instance might be repointed at a different surface (customer ↔ staff)
+  // by the consumer. Headers stay fresh via headersRef without recreation.
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport<UIMessage>({
+        api: endpoint,
+        headers: () => headersRef.current,
+      }),
+    [endpoint],
+  );
 
   const {
     messages: uiMessages,
@@ -92,7 +97,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     clearError: chatClearError,
   } = useChat({
     messages: initialMessages,
-    transport: transportRef.current,
+    transport,
     sendAutomaticallyWhen: sendAutomaticallyWhenNotAskUser,
     onFinish: () => {
       focusInput();

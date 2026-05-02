@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { authFetch } from "@/lib/fetcher";
 import type { OrderItem } from "@/lib/types";
 
@@ -30,7 +31,7 @@ export function useOrderMutations(
       });
       revalidate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to update status");
+      toast.error(e instanceof Error ? e.message : "Failed to update status");
       throw e;
     } finally {
       setTransitioning(false);
@@ -46,7 +47,7 @@ export function useOrderMutations(
       });
       revalidate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to save items");
+      toast.error(e instanceof Error ? e.message : "Failed to save items");
       throw e;
     } finally {
       setSavingItems(false);
@@ -62,7 +63,9 @@ export function useOrderMutations(
       });
       revalidate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to save contact info");
+      toast.error(
+        e instanceof Error ? e.message : "Failed to save contact info",
+      );
       throw e;
     } finally {
       setSavingCustomer(false);
@@ -82,7 +85,9 @@ export function useOrderMutations(
       });
       revalidate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to set appointment time");
+      toast.error(
+        e instanceof Error ? e.message : "Failed to set appointment time",
+      );
       throw e;
     } finally {
       setSavingSchedule(false);

@@ -236,8 +236,9 @@ export default function MechanicDetailPage({
     );
   }
 
+  const nowMs = Date.now();
   const upcoming = mechanicOrders.filter(
-    (b) => b.scheduledAt && new Date(b.scheduledAt) >= new Date(),
+    (b) => b.scheduledAt && new Date(b.scheduledAt).getTime() >= nowMs,
   );
   const recentCompleted = mechanicOrders
     .filter((b) => b.status === "completed")

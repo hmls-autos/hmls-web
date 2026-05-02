@@ -10,9 +10,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import { DateTime } from "@/components/ui/DateTime";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminDashboard } from "@/hooks/useAdmin";
-import { formatCents, formatDate } from "@/lib/format";
+import { formatCents } from "@/lib/format";
 
 function StatCard({
   label,
@@ -221,7 +222,7 @@ export default function AdminDashboard() {
                         {vehicleStr ? ` · ${vehicleStr}` : ""}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {o.scheduledAt ? formatDate(o.scheduledAt) : ""}{" "}
+                        <DateTime value={o.scheduledAt} format="date" />{" "}
                         &middot; {o.contactName ?? "Unknown"}
                       </p>
                     </Link>

@@ -2,7 +2,10 @@
 
 import { Car, Check, Clock, FileText, Wrench, X as XIcon } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { toast } from "sonner";
+import useSWR from "swr";
+import { askConfirm } from "@/components/ui/ConfirmDialog";
 import { AGENT_URL } from "@/lib/config";
 
 interface LineItem {
@@ -46,46 +49,41 @@ export default function EstimateReviewPage() {
   const id = params.id as string;
   const token = searchParams.get("token");
 
-  const [data, setData] = useState<EstimateReview | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [result, setResult] = useState<"approved" | "declined" | null>(null);
 
-  const fetchEstimate = useCallback(async () => {
-    if (!token) {
-      setError("Missing token");
-      setLoading(false);
-      return;
+  const swrKey = token
+    ? `${AGENT_URL}/api/estimates/${id}/review?token=${encodeURIComponent(token)}`
+    : null;
+  const {
+    data,
+    error: swrError,
+    isLoading: swrLoading,
+  } = useSWR<EstimateReview>(swrKey, async (url: string) => {
+    const res = await fetch(url);
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error?.message ?? "Estimate not found");
     }
-    try {
-      const res = await fetch(
-        `${AGENT_URL}/api/estimates/${id}/review?token=${encodeURIComponent(token)}`,
-      );
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        setError(body?.error?.message ?? "Estimate not found");
-        return;
-      }
-      setData(await res.json());
-    } catch {
-      setError("Failed to load estimate");
-    } finally {
-      setLoading(false);
-    }
-  }, [id, token]);
-
-  useEffect(() => {
-    fetchEstimate();
-  }, [fetchEstimate]);
+    return res.json();
+  });
+  const error = !token
+    ? "Missing token"
+    : swrError instanceof Error
+      ? swrError.message
+      : null;
+  const loading = !!swrKey && swrLoading;
 
   async function handleAction(action: "approve" | "decline") {
     if (!token) return;
 
     if (action === "decline") {
-      const confirmed = confirm(
-        "Are you sure you want to decline this estimate?",
-      );
+      const confirmed = await askConfirm({
+        title: "Decline this estimate?",
+        description: "You can always restart the chat for a new estimate.",
+        confirmLabel: "Decline",
+        destructive: true,
+      });
       if (!confirmed) return;
     }
 
@@ -101,12 +99,12 @@ export default function EstimateReviewPage() {
       );
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        alert(body?.error?.message ?? `Failed to ${action}`);
+        toast.error(body?.error?.message ?? `Failed to ${action}`);
         return;
       }
       setResult(action === "approve" ? "approved" : "declined");
     } catch {
-      alert(`Failed to ${action} estimate`);
+      toast.error(`Failed to ${action} estimate`);
     } finally {
       setActionLoading(false);
     }

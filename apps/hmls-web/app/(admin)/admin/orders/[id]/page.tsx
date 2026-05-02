@@ -20,7 +20,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { ReassignBookingDialog } from "@/components/admin/mechanics/ReassignBookingDialog";
 import { SetTimeDialog } from "@/components/admin/orders/SetTimeDialog";
 import { OrderProgressBar } from "@/components/OrderProgressBar";
@@ -35,12 +36,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DateTime } from "@/components/ui/DateTime";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { askReason } from "@/components/ui/ReasonDialog";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminOrder } from "@/hooks/useAdmin";
@@ -50,7 +53,7 @@ import {
   useOrderMutations,
 } from "@/hooks/useOrderMutations";
 import { AGENT_URL } from "@/lib/config";
-import { formatCents, formatDate, formatDateTime } from "@/lib/format";
+import { formatCents } from "@/lib/format";
 import {
   EDITABLE_STATUSES,
   ORDER_STATUS,
@@ -214,7 +217,7 @@ function EstimatePanel({
           )}
           {order.expiresAt && (
             <p className="text-xs text-muted-foreground">
-              Expires {formatDate(order.expiresAt)}
+              Expires <DateTime value={order.expiresAt} format="date" />
             </p>
           )}
         </CardContent>
@@ -599,6 +602,21 @@ export default function OrderDetailPage() {
     savingSchedule,
   } = useOrderMutations(orderId, mutate);
 
+  // Hooks must run before any early return.
+  const orderItems = data?.order.items ?? [];
+  const suggestedDurationMinutes = useMemo(
+    () =>
+      Math.max(
+        60,
+        Math.round(
+          orderItems
+            .filter((it) => it.category === "labor")
+            .reduce((sum, it) => sum + (it.laborHours ?? 0) * 60, 0),
+        ) || 60,
+      ),
+    [orderItems],
+  );
+
   if (isLoading) {
     return (
       <div className="space-y-6 py-6">
@@ -672,21 +690,24 @@ export default function OrderDetailPage() {
       await transitionStatus("scheduled");
       await mutate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to confirm booking");
+      toast.error(e instanceof Error ? e.message : "Failed to confirm booking");
     } finally {
       setBookingBusy(false);
     }
   }
 
   async function handleBookingReject() {
-    const reason = prompt("Reason (optional):");
+    const reason = await askReason({
+      title: "Reject booking",
+      description: "Optional reason for the customer.",
+    });
     if (reason === null) return;
     setBookingBusy(true);
     try {
       await transitionStatus("cancelled", reason || undefined);
       await mutate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to reject booking");
+      toast.error(e instanceof Error ? e.message : "Failed to reject booking");
     } finally {
       setBookingBusy(false);
     }
@@ -695,7 +716,10 @@ export default function OrderDetailPage() {
   async function handleTransition(newStatus: string) {
     let reason: string | undefined;
     if (newStatus === "cancelled") {
-      const input = prompt("Cancellation reason (optional):");
+      const input = await askReason({
+        title: "Cancel order",
+        description: "Optional cancellation reason.",
+      });
       if (input === null) return;
       reason = input || undefined;
     }
@@ -755,7 +779,7 @@ export default function OrderDetailPage() {
           )}
         </div>
         <span className="text-xs text-muted-foreground">
-          Created {formatDateTime(order.createdAt)}
+          Created <DateTime value={order.createdAt} format="datetime" />
         </span>
       </div>
 
@@ -1056,7 +1080,7 @@ export default function OrderDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Updated</span>
                   <span className="text-foreground">
-                    {formatDateTime(order.updatedAt)}
+                    <DateTime value={order.updatedAt} format="datetime" />
                   </span>
                 </div>
               </div>
@@ -1082,25 +1106,20 @@ export default function OrderDetailPage() {
         onAssigned={() => mutate()}
       />
 
-      <SetTimeDialog
-        open={setTimeOpen}
-        onOpenChange={setSetTimeOpen}
-        initialScheduledAt={
-          order.scheduledAt ? new Date(order.scheduledAt).toISOString() : null
-        }
-        initialDurationMinutes={order.durationMinutes}
-        suggestedDurationMinutes={Math.max(
-          60,
-          Math.round(
-            order.items
-              .filter((it) => it.category === "labor")
-              .reduce((sum, it) => sum + (it.laborHours ?? 0) * 60, 0),
-          ) || 60,
-        )}
-        initialLocation={order.location}
-        saving={savingSchedule}
-        onSave={setSchedule}
-      />
+      {setTimeOpen && (
+        <SetTimeDialog
+          open
+          onOpenChange={setSetTimeOpen}
+          initialScheduledAt={
+            order.scheduledAt ? new Date(order.scheduledAt).toISOString() : null
+          }
+          initialDurationMinutes={order.durationMinutes}
+          suggestedDurationMinutes={suggestedDurationMinutes}
+          initialLocation={order.location}
+          saving={savingSchedule}
+          onSave={setSchedule}
+        />
+      )}
     </div>
   );
 }

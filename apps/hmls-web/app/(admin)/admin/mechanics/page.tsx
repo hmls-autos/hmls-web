@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { AddMechanicDialog } from "@/components/admin/mechanics/AddMechanicDialog";
 import { MechanicCard } from "@/components/admin/mechanics/MechanicCard";
 import { Button } from "@/components/ui/button";
@@ -87,15 +88,19 @@ export default function MechanicsPage() {
   }, [mechanics]);
 
   async function toggleActive(m: MechanicListRow) {
-    if (m.isActive) {
-      await authFetch(`/api/admin/mechanics/${m.id}`, { method: "DELETE" });
-    } else {
-      await authFetch(`/api/admin/mechanics/${m.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ isActive: true }),
-      });
+    try {
+      if (m.isActive) {
+        await authFetch(`/api/admin/mechanics/${m.id}`, { method: "DELETE" });
+      } else {
+        await authFetch(`/api/admin/mechanics/${m.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ isActive: true }),
+        });
+      }
+      await mutate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to update mechanic");
     }
-    await mutate();
   }
 
   if (isLoading) {

@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { DateTime } from "@/components/ui/DateTime";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminDashboard, useAdminOrders } from "@/hooks/useAdmin";
-import { formatCents, formatDateTime } from "@/lib/format";
+import { formatCents } from "@/lib/format";
 import { ORDER_STATUS, type StatusConfig } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
@@ -199,7 +200,7 @@ export default function OrdersPage() {
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="text-xs text-muted-foreground hidden sm:inline">
-                    {formatDateTime(order.createdAt)}
+                    <DateTime value={order.createdAt} format="datetime" />
                   </span>
                   {items.length > 0 && (
                     <span className="text-xs font-medium text-foreground">

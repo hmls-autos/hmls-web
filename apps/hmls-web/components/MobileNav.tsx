@@ -79,7 +79,7 @@ export default function MobileNav({
     <div className="md:hidden">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setIsOpen((prev) => !prev)}
         className={`p-2 focus-visible:ring-2 focus-visible:ring-red-primary rounded-lg transition-colors ${
           isTransparent && !isOpen ? "text-white" : "text-text"
         }`}

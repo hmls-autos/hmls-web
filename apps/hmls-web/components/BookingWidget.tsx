@@ -29,12 +29,14 @@ export function BookingWidget() {
     router.push(`/chat${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
-  // Today's date in YYYY-MM-DD for min attribute
-  const today = new Date().toISOString().split("T")[0];
-  // 14 days from now for max
-  const maxDate = new Date(Date.now() + 14 * 86400000)
-    .toISOString()
-    .split("T")[0];
+  // Local-TZ today / today+14. ISO splitting picks UTC and would disable
+  // "today" for users west of UTC during evening hours.
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate(),
+    ).padStart(2, "0")}`;
+  const today = fmt(new Date());
+  const maxDate = fmt(new Date(Date.now() + 14 * 86400000));
 
   return (
     <motion.form

@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import { authFetch, fetcher } from "@/lib/fetcher";
+import { useStableArray } from "@/lib/swr-stable";
 import type { Order } from "@/lib/types";
 
 export interface ProviderSelf {
@@ -56,7 +57,7 @@ export function useMechanicAvailability() {
   }
 
   return {
-    availability: data ?? [],
+    availability: useStableArray(data),
     isLoading,
     isError: !!error,
     mutate,
@@ -94,7 +95,7 @@ export function useMechanicOverrides(from?: string, to?: string) {
   }
 
   return {
-    overrides: data ?? [],
+    overrides: useStableArray(data),
     isLoading,
     isError: !!error,
     mutate,
@@ -116,7 +117,7 @@ export function useMechanicOrders(from?: string, to?: string) {
   );
 
   return {
-    orders: data ?? [],
+    orders: useStableArray(data),
     isLoading,
     isError: !!error,
     mutate,

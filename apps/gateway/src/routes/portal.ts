@@ -26,13 +26,15 @@ portal.get("/me", async (c) => {
 
 // PUT /me — update customer profile
 const updateProfileSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  phone: z.string().max(20).optional(),
-  address: z.string().optional(),
+  // Nullable so the customer can clear a previously-set field. Frontend
+  // trims and sends `null` for empty input rather than empty string.
+  name: z.string().min(1).max(255).nullable().optional(),
+  phone: z.string().max(20).nullable().optional(),
+  address: z.string().nullable().optional(),
   vehicleInfo: z.object({
-    make: z.string().optional(),
-    model: z.string().optional(),
-    year: z.string().optional(),
+    make: z.string().nullable().optional(),
+    model: z.string().nullable().optional(),
+    year: z.string().nullable().optional(),
   }).optional(),
 });
 

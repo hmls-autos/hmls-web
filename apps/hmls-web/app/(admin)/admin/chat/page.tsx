@@ -3,7 +3,7 @@
 import { isToolOrDynamicToolUIPart } from "ai";
 import { motion, useReducedMotion } from "framer-motion";
 import { Loader2, Send, Wrench } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import {
   Conversation,
@@ -13,6 +13,7 @@ import {
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { Button } from "@/components/ui/button";
+import { askConfirm } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/input";
 import { useAgentChat } from "@/hooks/useAgentChat";
 import { STAFF_CHAT_ENDPOINT } from "@/lib/config";
@@ -115,15 +116,40 @@ export default function AdminChatPage() {
     setInput("");
   };
 
-  const renderable = uiMessages.filter((msg) => {
-    if (msg.role !== "user" && msg.role !== "assistant") return false;
-    return msg.parts.some(
-      (p) =>
-        (p.type === "text" && p.text.trim().length > 0) ||
-        p.type === "reasoning" ||
-        isToolOrDynamicToolUIPart(p),
-    );
-  });
+  const renderable = useMemo(
+    () =>
+      uiMessages.filter((msg) => {
+        if (msg.role !== "user" && msg.role !== "assistant") return false;
+        return msg.parts.some(
+          (p) =>
+            (p.type === "text" && p.text.trim().length > 0) ||
+            p.type === "reasoning" ||
+            isToolOrDynamicToolUIPart(p),
+        );
+      }),
+    [uiMessages],
+  );
+
+  // Map each assistant message id to the text of the first user message
+  // that follows it. Replaces an O(n²) slice+find inside the render loop.
+  const nextUserAnswerByAssistantId = useMemo(() => {
+    const map = new Map<string, string>();
+    let pendingAssistantIds: string[] = [];
+    for (const msg of renderable) {
+      if (msg.role === "assistant") {
+        pendingAssistantIds.push(msg.id);
+      } else if (msg.role === "user") {
+        const text = msg.parts.find(
+          (p): p is { type: "text"; text: string } => p.type === "text",
+        )?.text;
+        if (text) {
+          for (const id of pendingAssistantIds) map.set(id, text);
+        }
+        pendingAssistantIds = [];
+      }
+    }
+    return map;
+  }, [renderable]);
 
   return (
     <main className="flex flex-col flex-1 bg-background text-foreground">
@@ -162,10 +188,15 @@ export default function AdminChatPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
+            onClick={async () => {
               if (
                 uiMessages.length === 0 ||
-                window.confirm("Clear chat history?")
+                (await askConfirm({
+                  title: "Clear chat history?",
+                  description: "This removes all messages from this device.",
+                  confirmLabel: "Clear",
+                  destructive: true,
+                }))
               ) {
                 clearMessages();
               }
@@ -182,13 +213,10 @@ export default function AdminChatPage() {
             {renderable.map((msg, idx) => {
               const isLastAssistant =
                 idx === renderable.length - 1 && msg.role === "assistant";
-              const nextUserMsg =
+              const nextUserAnswer =
                 msg.role === "assistant"
-                  ? renderable.slice(idx + 1).find((m) => m.role === "user")
+                  ? nextUserAnswerByAssistantId.get(msg.id)
                   : undefined;
-              const nextUserAnswer = nextUserMsg?.parts.find(
-                (p): p is { type: "text"; text: string } => p.type === "text",
-              )?.text;
               return (
                 <ChatMessage
                   key={msg.id}

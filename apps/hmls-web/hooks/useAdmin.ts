@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import { fetcher } from "@/lib/fetcher";
+import { useStableArray } from "@/lib/swr-stable";
 import type { Customer, Order, OrderDetail } from "@/lib/types";
 
 export type { Customer };
@@ -48,7 +49,12 @@ export function useAdminCustomers(search?: string) {
     `/api/admin/customers${params}`,
     fetcher,
   );
-  return { customers: data ?? [], isLoading, isError: !!error, mutate };
+  return {
+    customers: useStableArray(data),
+    isLoading,
+    isError: !!error,
+    mutate,
+  };
 }
 
 export function useAdminCustomer(id: number | null) {
@@ -73,5 +79,5 @@ export function useAdminOrders(status?: string) {
     `/api/admin/orders${params}`,
     fetcher,
   );
-  return { orders: data ?? [], isLoading, isError: !!error, mutate };
+  return { orders: useStableArray(data), isLoading, isError: !!error, mutate };
 }

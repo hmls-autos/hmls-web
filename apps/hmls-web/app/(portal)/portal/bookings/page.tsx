@@ -3,13 +3,15 @@
 import { Calendar, Clock, MapPin, X as XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { toast } from "sonner";
+import { DateTime } from "@/components/ui/DateTime";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { askReason } from "@/components/ui/ReasonDialog";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { type PortalOrder, usePortalBookings } from "@/hooks/usePortal";
 import { authFetch } from "@/lib/fetcher";
-import { formatDate, formatTime } from "@/lib/format";
 import { PORTAL_ORDER_STATUS } from "@/lib/status";
 
 function BookingCard({
@@ -54,12 +56,12 @@ function BookingCard({
           <>
             <div className="flex items-center gap-2 text-xs text-text-secondary">
               <Calendar className="w-3.5 h-3.5 shrink-0" />
-              <span>{formatDate(order.scheduledAt)}</span>
+              <DateTime value={order.scheduledAt} format="date" />
             </div>
             <div className="flex items-center gap-2 text-xs text-text-secondary">
               <Clock className="w-3.5 h-3.5 shrink-0" />
               <span>
-                {formatTime(order.scheduledAt)}
+                <DateTime value={order.scheduledAt} format="time" />
                 {order.durationMinutes ? ` (${order.durationMinutes} min)` : ""}
               </span>
             </div>
@@ -107,7 +109,10 @@ export default function PortalBookingsPage() {
   const [loading, setLoading] = useState<number | null>(null);
 
   async function handleCancel(orderId: number) {
-    const reason = prompt("Reason for cancelling (optional):");
+    const reason = await askReason({
+      title: "Cancel appointment",
+      description: "Optional: tell us why so we can improve.",
+    });
     if (reason === null) return;
 
     setLoading(orderId);
@@ -118,7 +123,9 @@ export default function PortalBookingsPage() {
       });
       mutate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to cancel appointment");
+      toast.error(
+        e instanceof Error ? e.message : "Failed to cancel appointment",
+      );
     } finally {
       setLoading(null);
     }

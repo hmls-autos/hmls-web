@@ -2,6 +2,7 @@
 
 import { Check, Pencil, User } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Spinner } from "@/components/ui/Spinner";
 import { usePortalCustomer } from "@/hooks/usePortal";
 import { authFetch } from "@/lib/fetcher";
@@ -34,18 +35,20 @@ export default function ProfilePage() {
       await authFetch("/api/portal/me", {
         method: "PUT",
         body: JSON.stringify({
-          name: name || undefined,
-          phone: phone || undefined,
-          address: address || undefined,
+          name: name.trim() || null,
+          phone: phone.trim() || null,
+          address: address.trim() || null,
           vehicleInfo: {
-            make: vehicleMake || undefined,
-            model: vehicleModel || undefined,
-            year: vehicleYear || undefined,
+            make: vehicleMake.trim() || null,
+            model: vehicleModel.trim() || null,
+            year: vehicleYear.trim() || null,
           },
         }),
       });
       await mutate();
       setEditing(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save profile");
     } finally {
       setSaving(false);
     }

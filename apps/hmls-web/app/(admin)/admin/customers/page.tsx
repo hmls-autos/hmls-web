@@ -13,9 +13,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useState,
+} from "react";
+import { useSWRConfig } from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateTime } from "@/components/ui/DateTime";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +41,7 @@ import {
   useAdminCustomers,
 } from "@/hooks/useAdmin";
 import { authFetch } from "@/lib/fetcher";
-import { formatCents, formatDate } from "@/lib/format";
+import { formatCents } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 // ---------- Shared form fields ----------
@@ -240,7 +248,17 @@ function CustomerDetail({
   onDeleted: () => void;
 }) {
   const { data, isLoading, mutate: mutateDetail } = useAdminCustomer(id);
-  const { mutate: mutateList } = useAdminCustomers();
+  // Refresh every variant of the customer list (including the parent's
+  // search-filtered fetch) by mutating all `/api/admin/customers...` keys.
+  const { mutate: globalMutate } = useSWRConfig();
+  const refreshList = useCallback(
+    () =>
+      globalMutate(
+        (key) =>
+          typeof key === "string" && key.startsWith("/api/admin/customers"),
+      ),
+    [globalMutate],
+  );
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<CustomerFormData>(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -277,7 +295,7 @@ function CustomerDetail({
         method: "PATCH",
         body: JSON.stringify(formToPayload(form)),
       });
-      await Promise.all([mutateDetail(), mutateList()]);
+      await Promise.all([mutateDetail(), refreshList()]);
       setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
@@ -291,7 +309,7 @@ function CustomerDetail({
     setError(null);
     try {
       await authFetch(`/api/admin/customers/${id}`, { method: "DELETE" });
-      await mutateList();
+      await refreshList();
       onDeleted();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Delete failed");
@@ -407,7 +425,7 @@ function CustomerDetail({
         {error && <p className="text-xs text-destructive mb-3">{error}</p>}
 
         <span className="text-xs text-muted-foreground">
-          Since {formatDate(customer.createdAt)}
+          Since <DateTime value={customer.createdAt} format="date" />
         </span>
 
         {vehicle && (vehicle.year || vehicle.make || vehicle.model) && (
@@ -535,13 +553,16 @@ function CreateCustomerModal({
 
 // ---------- Main Page ----------
 
-export default function CustomersPage() {
+function CustomersPageInner() {
   const [search, setSearch] = useState("");
+  // Defer the value used to key the SWR fetch so fast typing doesn't
+  // hit the API on every keystroke; the input itself stays responsive.
+  const deferredSearch = useDeferredValue(search);
   const {
     customers,
     isLoading,
     mutate: mutateList,
-  } = useAdminCustomers(search || undefined);
+  } = useAdminCustomers(deferredSearch || undefined);
   const searchParams = useSearchParams();
   const router = useRouter();
   const selectedId = searchParams.get("id")
@@ -618,7 +639,7 @@ export default function CustomersPage() {
                       {c.name ?? "Unnamed"}
                     </p>
                     <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                      {formatDate(c.createdAt)}
+                      <DateTime value={c.createdAt} format="date" />
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground truncate mt-0.5">
@@ -653,5 +674,13 @@ export default function CustomersPage() {
         onCreated={handleCreated}
       />
     </div>
+  );
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense fallback={<CustomerListSkeleton />}>
+      <CustomersPageInner />
+    </Suspense>
   );
 }
