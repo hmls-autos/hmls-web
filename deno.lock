@@ -13,6 +13,7 @@
     "jsr:@std/path@1.0": "1.0.9",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "npm:@ai-sdk/google@^3.0.65": "3.0.65_zod@4.3.6",
+    "npm:@hono/zod-validator@~0.4.3": "0.4.3_hono@4.12.14_zod@4.3.6",
     "npm:@react-pdf/renderer@^4.3.2": "4.3.2_react@19.2.4",
     "npm:@supabase/supabase-js@^2.99.1": "2.99.1",
     "npm:ai@^6.0.169": "6.0.169_zod@4.3.6",
@@ -493,6 +494,13 @@
       "integrity": "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA==",
       "os": ["win32"],
       "cpu": ["x64"]
+    },
+    "@hono/zod-validator@0.4.3_hono@4.12.14_zod@4.3.6": {
+      "integrity": "sha512-xIgMYXDyJ4Hj6ekm9T9Y27s080Nl9NXHcJkOvkXPhubOLj8hZkOL8pDnnXfvCf5xEE8Q4oMFenQUZZREUY2gqQ==",
+      "dependencies": [
+        "hono",
+        "zod"
+      ]
     },
     "@opentelemetry/api@1.9.0": {
       "integrity": "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="
@@ -1176,6 +1184,7 @@
       "jsr:@logtape/logtape@^2.0.5",
       "jsr:@std/assert@1",
       "npm:@ai-sdk/google@^3.0.65",
+      "npm:@hono/zod-validator@~0.4.3",
       "npm:ai@^6.0.169",
       "npm:drizzle-orm@~0.45.2",
       "npm:hono@^4.12.14",

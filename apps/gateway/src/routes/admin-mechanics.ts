@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
 import { and, asc, between, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { db, schema } from "@hmls/agent/db";
 import { type Actor, assignProvider } from "@hmls/agent/order-state";
@@ -11,6 +12,15 @@ import {
   endOfWeek,
   isOnJobNow,
 } from "../lib/mechanic-stats.ts";
+import {
+  assignProviderInput,
+  createMechanicInput,
+  createOverrideInput,
+  listMechanicOrdersQuery,
+  listOverridesQuery,
+  setAvailabilityInput,
+  updateMechanicInput,
+} from "../contracts/admin-mechanics.ts";
 
 function adminActor(email: string | null | undefined): Actor {
   return { kind: "admin", email: email ?? "admin" };
@@ -213,26 +223,8 @@ adminMechanics.get("/", async (c) => {
 });
 
 // POST / — create a new mechanic
-adminMechanics.post("/", async (c) => {
-  const body = await c.req.json<{
-    name?: string;
-    email?: string;
-    phone?: string;
-    timezone?: string;
-    serviceRadiusMiles?: number;
-    homeBaseLat?: number | string | null;
-    homeBaseLng?: number | string | null;
-    specialties?: unknown;
-    isActive?: boolean;
-    authUserId?: string;
-  }>().catch(() => null);
-
-  if (!body?.name) {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: "name is required" } },
-      400,
-    );
-  }
+adminMechanics.post("/", zValidator("json", createMechanicInput), async (c) => {
+  const body = c.req.valid("json");
 
   const [created] = await db
     .insert(schema.providers)
@@ -279,7 +271,7 @@ adminMechanics.get("/:id", async (c) => {
 });
 
 // PATCH /:id — edit profile fields
-adminMechanics.patch("/:id", async (c) => {
+adminMechanics.patch("/:id", zValidator("json", updateMechanicInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json(
@@ -288,19 +280,7 @@ adminMechanics.patch("/:id", async (c) => {
     );
   }
 
-  type PatchBody = {
-    name?: string;
-    email?: string | null;
-    phone?: string | null;
-    timezone?: string;
-    serviceRadiusMiles?: number;
-    homeBaseLat?: number | string | null;
-    homeBaseLng?: number | string | null;
-    specialties?: unknown;
-    isActive?: boolean;
-    authUserId?: string | null;
-  };
-  const body: PatchBody = await c.req.json<PatchBody>().catch(() => ({}));
+  const body = c.req.valid("json");
 
   const updates: Record<string, unknown> = {};
   if (body.name !== undefined) updates.name = body.name;
@@ -386,7 +366,7 @@ adminMechanics.get("/:id/availability", async (c) => {
 });
 
 // PUT /:id/availability — replace weekly hours atomically
-adminMechanics.put("/:id/availability", async (c) => {
+adminMechanics.put("/:id/availability", zValidator("json", setAvailabilityInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json(
@@ -395,42 +375,10 @@ adminMechanics.put("/:id/availability", async (c) => {
     );
   }
 
-  const body = await c.req.json<{
-    availability: Array<
-      { dayOfWeek: number; startTime: string; endTime: string }
-    >;
-  }>().catch(() => null);
+  const body = c.req.valid("json");
 
-  if (!body?.availability || !Array.isArray(body.availability)) {
-    return c.json(
-      {
-        error: {
-          code: "BAD_REQUEST",
-          message: "availability array required",
-        },
-      },
-      400,
-    );
-  }
-
+  // Business rule beyond shape: endTime must be after startTime
   for (const row of body.availability) {
-    if (
-      !Number.isInteger(row.dayOfWeek) ||
-      row.dayOfWeek < 0 ||
-      row.dayOfWeek > 6 ||
-      !/^\d{2}:\d{2}(:\d{2})?$/.test(row.startTime) ||
-      !/^\d{2}:\d{2}(:\d{2})?$/.test(row.endTime)
-    ) {
-      return c.json(
-        {
-          error: {
-            code: "BAD_REQUEST",
-            message: "Invalid row: dayOfWeek 0-6, HH:MM[:SS] times required",
-          },
-        },
-        400,
-      );
-    }
     if (row.endTime <= row.startTime) {
       return c.json(
         {
@@ -464,7 +412,7 @@ adminMechanics.put("/:id/availability", async (c) => {
 });
 
 // GET /:id/overrides — read schedule overrides
-adminMechanics.get("/:id/overrides", async (c) => {
+adminMechanics.get("/:id/overrides", zValidator("query", listOverridesQuery), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json(
@@ -472,8 +420,7 @@ adminMechanics.get("/:id/overrides", async (c) => {
       400,
     );
   }
-  const from = c.req.query("from");
-  const to = c.req.query("to");
+  const { from, to } = c.req.valid("query");
 
   const conditions = [eq(schema.providerScheduleOverrides.providerId, id)];
   if (from) {
@@ -492,7 +439,7 @@ adminMechanics.get("/:id/overrides", async (c) => {
 });
 
 // POST /:id/overrides — upsert override (one per date)
-adminMechanics.post("/:id/overrides", async (c) => {
+adminMechanics.post("/:id/overrides", zValidator("json", createOverrideInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json(
@@ -501,36 +448,9 @@ adminMechanics.post("/:id/overrides", async (c) => {
     );
   }
 
-  const body = await c.req.json<{
-    overrideDate: string;
-    isAvailable: boolean;
-    startTime?: string;
-    endTime?: string;
-    reason?: string;
-  }>().catch(() => null);
+  const body = c.req.valid("json");
 
-  if (!body?.overrideDate || typeof body.isAvailable !== "boolean") {
-    return c.json(
-      {
-        error: {
-          code: "BAD_REQUEST",
-          message: "overrideDate (YYYY-MM-DD) and isAvailable required",
-        },
-      },
-      400,
-    );
-  }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(body.overrideDate)) {
-    return c.json(
-      {
-        error: {
-          code: "BAD_REQUEST",
-          message: "overrideDate must be YYYY-MM-DD",
-        },
-      },
-      400,
-    );
-  }
+  // Business rule beyond shape: if isAvailable, times are required
   if (body.isAvailable && (!body.startTime || !body.endTime)) {
     return c.json(
       {
@@ -600,7 +520,7 @@ adminMechanics.delete("/:id/overrides/:overrideId", async (c) => {
 });
 
 // GET /:id/orders — scheduled orders assigned to this mechanic, with customer join
-adminMechanics.get("/:id/orders", async (c) => {
+adminMechanics.get("/:id/orders", zValidator("query", listMechanicOrdersQuery), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json(
@@ -608,8 +528,7 @@ adminMechanics.get("/:id/orders", async (c) => {
       400,
     );
   }
-  const from = c.req.query("from");
-  const to = c.req.query("to");
+  const { from, to } = c.req.valid("query");
 
   const conditions = [eq(schema.orders.providerId, id)];
   if (from && to) {
@@ -653,54 +572,45 @@ adminMechanics.get("/:id/orders", async (c) => {
 // POST /orders/:orderId/assign — assign / reassign the mechanic on an order.
 // Routes through the order-state harness so the write is audited
 // (order_events row) and passes the same validation as other lifecycle ops.
-adminMechanics.post("/orders/:orderId/assign", async (c) => {
-  const orderId = Number(c.req.param("orderId"));
-  if (!Number.isInteger(orderId) || orderId <= 0) {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: "Invalid order ID" } },
-      400,
+adminMechanics.post(
+  "/orders/:orderId/assign",
+  zValidator("json", assignProviderInput),
+  async (c) => {
+    const orderId = Number(c.req.param("orderId"));
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+      return c.json(
+        { error: { code: "BAD_REQUEST", message: "Invalid order ID" } },
+        400,
+      );
+    }
+
+    const body = c.req.valid("json");
+
+    // Pre-check the provider here so the "mechanic not found" error keeps its
+    // specific wording — the harness's `not_found` path is keyed on the id we
+    // pass in, so routing this through `sendOrderStateResult` alone would
+    // surface it as "Order #<providerId> not found" in the admin dialog.
+    const [provider] = await db
+      .select({ id: schema.providers.id })
+      .from(schema.providers)
+      .where(eq(schema.providers.id, body.providerId))
+      .limit(1);
+    if (!provider) {
+      return c.json(
+        { error: { code: "NOT_FOUND", message: "Target mechanic not found" } },
+        404,
+      );
+    }
+
+    const authUser = c.get("authUser");
+    const result = await assignProvider(
+      orderId,
+      body.providerId,
+      adminActor(authUser.email),
+      { force: body.force },
     );
-  }
-
-  const body = await c.req.json<{ providerId: number; force?: boolean }>()
-    .catch(() => null);
-
-  if (!body || !Number.isInteger(body.providerId) || body.providerId <= 0) {
-    return c.json(
-      {
-        error: {
-          code: "BAD_REQUEST",
-          message: "providerId (positive integer) is required",
-        },
-      },
-      400,
-    );
-  }
-
-  // Pre-check the provider here so the "mechanic not found" error keeps its
-  // specific wording — the harness's `not_found` path is keyed on the id we
-  // pass in, so routing this through `sendOrderStateResult` alone would
-  // surface it as "Order #<providerId> not found" in the admin dialog.
-  const [provider] = await db
-    .select({ id: schema.providers.id })
-    .from(schema.providers)
-    .where(eq(schema.providers.id, body.providerId))
-    .limit(1);
-  if (!provider) {
-    return c.json(
-      { error: { code: "NOT_FOUND", message: "Target mechanic not found" } },
-      404,
-    );
-  }
-
-  const authUser = c.get("authUser");
-  const result = await assignProvider(
-    orderId,
-    body.providerId,
-    adminActor(authUser.email),
-    { force: body.force },
-  );
-  return sendOrderStateResult(c, result);
-});
+    return sendOrderStateResult(c, result);
+  },
+);
 
 export { adminMechanics };

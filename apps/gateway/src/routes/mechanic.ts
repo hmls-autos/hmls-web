@@ -1,7 +1,14 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
 import { and, asc, between, eq, gte, lte } from "drizzle-orm";
 import { db, schema } from "@hmls/agent/db";
 import { type MechanicEnv, requireMechanic } from "../middleware/mechanic.ts";
+import {
+  createMechanicOverrideInput,
+  listMechanicOverridesQuery,
+  listMyOrdersQuery,
+  setMechanicAvailabilityInput,
+} from "../contracts/mechanic.ts";
 
 const mechanic = new Hono<MechanicEnv>();
 
@@ -40,38 +47,12 @@ mechanic.get("/availability", async (c) => {
 });
 
 // Replace the full weekly schedule atomically
-mechanic.put("/availability", async (c) => {
+mechanic.put("/availability", zValidator("json", setMechanicAvailabilityInput), async (c) => {
   const providerId = c.get("providerId");
-  const body = await c.req.json<{
-    availability: Array<{ dayOfWeek: number; startTime: string; endTime: string }>;
-  }>().catch(() => null);
+  const body = c.req.valid("json");
 
-  if (!body?.availability || !Array.isArray(body.availability)) {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: "availability array required" } },
-      400,
-    );
-  }
-
-  // Validate
+  // Business rule beyond shape: endTime must be after startTime
   for (const row of body.availability) {
-    if (
-      !Number.isInteger(row.dayOfWeek) ||
-      row.dayOfWeek < 0 ||
-      row.dayOfWeek > 6 ||
-      !/^\d{2}:\d{2}(:\d{2})?$/.test(row.startTime) ||
-      !/^\d{2}:\d{2}(:\d{2})?$/.test(row.endTime)
-    ) {
-      return c.json(
-        {
-          error: {
-            code: "BAD_REQUEST",
-            message: "Invalid row: dayOfWeek 0-6, HH:MM[:SS] times required",
-          },
-        },
-        400,
-      );
-    }
     if (row.endTime <= row.startTime) {
       return c.json(
         { error: { code: "BAD_REQUEST", message: "endTime must be after startTime" } },
@@ -103,10 +84,9 @@ mechanic.put("/availability", async (c) => {
 // Date-specific overrides (time off, extra hours)
 // ---------------------------------------------------------------------------
 
-mechanic.get("/overrides", async (c) => {
+mechanic.get("/overrides", zValidator("query", listMechanicOverridesQuery), async (c) => {
   const providerId = c.get("providerId");
-  const from = c.req.query("from");
-  const to = c.req.query("to");
+  const { from, to } = c.req.valid("query");
 
   const conditions = [eq(schema.providerScheduleOverrides.providerId, providerId)];
   if (from) conditions.push(gte(schema.providerScheduleOverrides.overrideDate, from));
@@ -120,33 +100,11 @@ mechanic.get("/overrides", async (c) => {
   return c.json(rows);
 });
 
-mechanic.post("/overrides", async (c) => {
+mechanic.post("/overrides", zValidator("json", createMechanicOverrideInput), async (c) => {
   const providerId = c.get("providerId");
-  const body = await c.req.json<{
-    overrideDate: string;
-    isAvailable: boolean;
-    startTime?: string;
-    endTime?: string;
-    reason?: string;
-  }>().catch(() => null);
+  const body = c.req.valid("json");
 
-  if (!body?.overrideDate || typeof body.isAvailable !== "boolean") {
-    return c.json(
-      {
-        error: {
-          code: "BAD_REQUEST",
-          message: "overrideDate (YYYY-MM-DD) and isAvailable required",
-        },
-      },
-      400,
-    );
-  }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(body.overrideDate)) {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: "overrideDate must be YYYY-MM-DD" } },
-      400,
-    );
-  }
+  // Business rule beyond shape: if isAvailable, times are required
   if (body.isAvailable && (!body.startTime || !body.endTime)) {
     return c.json(
       {
@@ -210,10 +168,9 @@ mechanic.delete("/overrides/:id", async (c) => {
 // My orders (mechanic's assigned work)
 // ---------------------------------------------------------------------------
 
-mechanic.get("/orders", async (c) => {
+mechanic.get("/orders", zValidator("query", listMyOrdersQuery), async (c) => {
   const providerId = c.get("providerId");
-  const from = c.req.query("from");
-  const to = c.req.query("to");
+  const { from, to } = c.req.valid("query");
 
   const conditions = [eq(schema.orders.providerId, providerId)];
   if (from && to) {

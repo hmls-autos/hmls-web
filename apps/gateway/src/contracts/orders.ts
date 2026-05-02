@@ -55,12 +55,12 @@ export const createOrderInput = z.object({
  *  The route accepts the full array from the client as-is; the harness
  *  validates semantics. Keeping this loose (passthrough-ish) avoids
  *  maintaining a duplicate of the DB type here. */
-export const orderItemPatchInput = z.record(z.unknown());
+export const orderItemPatchInput = z.record(z.string(), z.unknown());
 
 export const updateOrderInput = z.object({
   items: z.array(orderItemPatchInput).optional(),
   notes: z.string().nullish(),
-  vehicleInfo: z.record(z.unknown()).nullish(),
+  vehicleInfo: z.record(z.string(), z.unknown()).nullish(),
   validDays: z.number().int().positive().optional(),
   expiresAt: z.string().nullish(),
   contact_name: z.string().nullish(),
@@ -95,7 +95,7 @@ export const transitionOrderInput = z.object({
 
 export const addOrderNoteInput = z.object({
   note: z.string(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ---------------------------------------------------------------------------

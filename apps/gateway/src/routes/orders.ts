@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
 import { renderToStream } from "@react-pdf/renderer";
 import { db, schema } from "@hmls/agent/db";
 import { and, desc, eq } from "drizzle-orm";
@@ -16,6 +17,17 @@ import {
 } from "@hmls/agent/order-state";
 import { autoAssignProvider } from "@hmls/agent/auto-assign";
 import { sendOrderStateResult } from "../lib/order-state-http.ts";
+import {
+  addOrderNoteInput,
+  createOrderInput,
+  listOrdersQuery,
+  orderPdfQuery,
+  recordPaymentInput,
+  scheduleOrderInput,
+  transitionOrderInput,
+  updateAdminNotesInput,
+  updateOrderInput,
+} from "../contracts/orders.ts";
 
 /** Build an admin Actor from the Hono auth context. */
 function adminActor(email: string | null | undefined): Actor {
@@ -45,10 +57,10 @@ const orders = new Hono<AdminEnv>();
 orders.use("*", requireAdmin);
 
 // GET /orders — list all orders (with pagination)
-orders.get("/", async (c) => {
-  const status = c.req.query("status");
-  const page = Math.max(1, Number(c.req.query("page")) || 1);
-  const limit = Math.min(200, Math.max(1, Number(c.req.query("limit")) || 50));
+orders.get("/", zValidator("query", listOrdersQuery), async (c) => {
+  const { status, page: rawPage, limit: rawLimit } = c.req.valid("query");
+  const page = Math.max(1, rawPage ?? 1);
+  const limit = Math.min(200, Math.max(1, rawLimit ?? 50));
   const offset = (page - 1) * limit;
 
   let query = db
@@ -66,24 +78,10 @@ orders.get("/", async (c) => {
 });
 
 // POST /orders — create a new draft order
-orders.post("/", async (c) => {
-  const body = await c.req.json<{
-    customer_id: number;
-    vehicle_year?: number;
-    vehicle_make?: string;
-    vehicle_model?: string;
-    description?: string;
-    items?: Array<{ description: string; labor_hours?: number; parts_cost?: number }>;
-  }>();
+orders.post("/", zValidator("json", createOrderInput), async (c) => {
+  const body = c.req.valid("json");
 
-  if (!body.customer_id) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "customer_id is required" } }, 400);
-  }
-
-  const customerId = Number(body.customer_id);
-  if (!Number.isInteger(customerId) || customerId <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid customer_id" } }, 400);
-  }
+  const customerId = body.customer_id;
 
   const [customer] = await db
     .select()
@@ -197,23 +195,13 @@ orders.get("/:id", async (c) => {
 
 // PATCH /orders/:id — edit items (through harness, lifecycle-aware) and/or
 // contact snapshot / metadata fields (direct, status-agnostic).
-orders.patch("/:id", async (c) => {
+orders.patch("/:id", zValidator("json", updateOrderInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
-  const body = await c.req.json<{
-    items?: OrderItem[];
-    notes?: string | null;
-    vehicleInfo?: Record<string, unknown> | null;
-    validDays?: number;
-    expiresAt?: string | null;
-    contact_name?: string | null;
-    contact_email?: string | null;
-    contact_phone?: string | null;
-    contact_address?: string | null;
-  }>();
+  const body = c.req.valid("json");
 
   const authUser = c.get("authUser");
   const actor = adminActor(authUser.email);
@@ -236,7 +224,7 @@ orders.patch("/:id", async (c) => {
     }
 
     const result = await patchItems(id, {
-      items: body.items ?? (current.items as OrderItem[] ?? []),
+      items: (body.items as unknown as OrderItem[]) ?? (current.items as OrderItem[] ?? []),
       notes: body.notes,
     }, actor);
 
@@ -290,24 +278,14 @@ orders.patch("/:id", async (c) => {
 // Routes through `attachSchedule` so the write is audited and the harness
 // auto-advances `approved` orders to `scheduled` (existing semantics).
 // `scheduled` / `in_progress` orders get a pure field update.
-orders.post("/:id/schedule", async (c) => {
+orders.post("/:id/schedule", zValidator("json", scheduleOrderInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
-  const body = await c.req.json<{
-    scheduledAt: string;
-    durationMinutes: number;
-    location?: string | null;
-  }>().catch(() => null);
+  const body = c.req.valid("json");
 
-  if (!body || typeof body.scheduledAt !== "string") {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: "scheduledAt (ISO string) is required" } },
-      400,
-    );
-  }
   const when = new Date(body.scheduledAt);
   if (Number.isNaN(when.getTime())) {
     return c.json(
@@ -354,13 +332,13 @@ orders.post("/:id/schedule", async (c) => {
 });
 
 // PATCH /orders/:id/status — generic status transition.
-orders.patch("/:id/status", async (c) => {
+orders.patch("/:id/status", zValidator("json", transitionOrderInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
-  const body = await c.req.json<{ status: string; notes?: string; cancellationReason?: string }>();
+  const body = c.req.valid("json");
   const newStatus = body.status as OrderStatus;
   const authUser = c.get("authUser");
 
@@ -425,19 +403,13 @@ orders.get("/:id/events", async (c) => {
 // POST /orders/:id/events — add an annotation note to an order. Scoped to
 // note_added only; the harness owns structured events (status_change,
 // items_edited, ...) so routes can't forge them.
-orders.post("/:id/events", async (c) => {
+orders.post("/:id/events", zValidator("json", addOrderNoteInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
-  const body = await c.req.json<{
-    note?: string;
-    metadata?: Record<string, unknown>;
-  }>();
-  if (!body.note) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "note is required" } }, 400);
-  }
+  const body = c.req.valid("json");
 
   const authUser = c.get("authUser");
   const result = await addNote(id, body.note, adminActor(authUser.email));
@@ -447,18 +419,13 @@ orders.post("/:id/events", async (c) => {
 
 // POST /orders/:id/payment — stamp payment fields on an approved+ order.
 // Payment is a property, not a lifecycle state.
-orders.post("/:id/payment", async (c) => {
+orders.post("/:id/payment", zValidator("json", recordPaymentInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
-  const body = await c.req.json<{
-    amountCents: number;
-    method: string;
-    reference?: string;
-    paidAt?: string;
-  }>();
+  const body = c.req.valid("json");
 
   const authUser = c.get("authUser");
   const result = await recordPayment(id, {
@@ -471,13 +438,13 @@ orders.post("/:id/payment", async (c) => {
 });
 
 // PATCH /orders/:id/notes — update admin notes
-orders.patch("/:id/notes", async (c) => {
+orders.patch("/:id/notes", zValidator("json", updateAdminNotesInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
-  const body = await c.req.json<{ notes: string }>();
+  const body = c.req.valid("json");
 
   const [updated] = await db
     .update(schema.orders)
@@ -497,13 +464,13 @@ export { orders };
 // Public order PDF route (token-based, no admin auth required)
 const ordersPdf = new Hono();
 
-ordersPdf.get("/:id/pdf", async (c) => {
+ordersPdf.get("/:id/pdf", zValidator("query", orderPdfQuery), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
-  const token = c.req.query("token");
+  const { token } = c.req.valid("query");
 
   const [order] = await db
     .select()

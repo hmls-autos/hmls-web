@@ -1,7 +1,13 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
 import { db, schema } from "@hmls/agent/db";
 import { and, count, desc, eq, gte, sql } from "drizzle-orm";
 import { type AdminEnv, requireAdmin } from "../middleware/admin.ts";
+import {
+  createCustomerInput,
+  listCustomersQuery,
+  updateCustomerInput,
+} from "../contracts/admin.ts";
 
 const admin = new Hono<AdminEnv>();
 
@@ -97,8 +103,8 @@ admin.get("/dashboard", async (c) => {
 });
 
 // GET /customers — all customers
-admin.get("/customers", async (c) => {
-  const search = c.req.query("search");
+admin.get("/customers", zValidator("query", listCustomersQuery), async (c) => {
+  const { search } = c.req.valid("query");
   let query = db
     .select()
     .from(schema.customers)
@@ -146,19 +152,13 @@ admin.get("/customers/:id", async (c) => {
 });
 
 // PATCH /customers/:id — update customer
-admin.patch("/customers/:id", async (c) => {
+admin.patch("/customers/:id", zValidator("json", updateCustomerInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
     return c.json({ error: { code: "BAD_REQUEST", message: "Invalid customer ID" } }, 400);
   }
 
-  const body = await c.req.json<{
-    name?: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-    vehicleInfo?: Record<string, unknown>;
-  }>();
+  const body = c.req.valid("json");
 
   const updates: Record<string, unknown> = {};
   if (body.name !== undefined) updates.name = body.name;
@@ -185,14 +185,8 @@ admin.patch("/customers/:id", async (c) => {
 });
 
 // POST /customers — create customer
-admin.post("/customers", async (c) => {
-  const body = await c.req.json<{
-    name?: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-    vehicleInfo?: Record<string, unknown>;
-  }>();
+admin.post("/customers", zValidator("json", createCustomerInput), async (c) => {
+  const body = c.req.valid("json");
 
   if (!body.name && !body.email && !body.phone) {
     return c.json({

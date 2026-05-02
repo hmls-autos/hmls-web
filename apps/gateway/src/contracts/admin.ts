@@ -17,7 +17,7 @@ export const createCustomerInput = z.object({
   phone: z.string().optional(),
   email: z.string().optional(),
   address: z.string().optional(),
-  vehicleInfo: z.record(z.unknown()).optional(),
+  vehicleInfo: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -29,5 +29,5 @@ export const updateCustomerInput = z.object({
   phone: z.string().optional(),
   email: z.string().optional(),
   address: z.string().optional(),
-  vehicleInfo: z.record(z.unknown()).optional(),
+  vehicleInfo: z.record(z.string(), z.unknown()).optional(),
 });
