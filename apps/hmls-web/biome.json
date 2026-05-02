@@ -26,6 +26,19 @@
       "recommended": true
     }
   },
+  "overrides": [
+    {
+      "includes": ["components/ui/**", "components/ai-elements/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useSemanticElements": "off",
+            "useKeyWithClickEvents": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "double"
