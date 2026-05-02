@@ -3,9 +3,10 @@
 import { CheckCircle, ClipboardList, Loader } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import { DateTime } from "@/components/ui/DateTime";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePortalCustomer, usePortalOrders } from "@/hooks/usePortal";
-import { formatCents, formatDateTime } from "@/lib/format";
+import { formatCents } from "@/lib/format";
 import { PORTAL_ORDER_STATUS } from "@/lib/status";
 
 function SummaryCard({
@@ -182,7 +183,7 @@ export default function PortalDashboard() {
                     </p>
                   </div>
                   <span className="text-xs text-muted-foreground shrink-0">
-                    {formatDateTime(order.updatedAt)}
+                    <DateTime value={order.updatedAt} format="datetime" />
                   </span>
                 </Link>
               );

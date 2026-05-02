@@ -36,6 +36,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DateTime } from "@/components/ui/DateTime";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +53,7 @@ import {
   useOrderMutations,
 } from "@/hooks/useOrderMutations";
 import { AGENT_URL } from "@/lib/config";
-import { formatCents, formatDate, formatDateTime } from "@/lib/format";
+import { formatCents } from "@/lib/format";
 import {
   EDITABLE_STATUSES,
   ORDER_STATUS,
@@ -216,7 +217,7 @@ function EstimatePanel({
           )}
           {order.expiresAt && (
             <p className="text-xs text-muted-foreground">
-              Expires {formatDate(order.expiresAt)}
+              Expires <DateTime value={order.expiresAt} format="date" />
             </p>
           )}
         </CardContent>
@@ -763,7 +764,7 @@ export default function OrderDetailPage() {
           )}
         </div>
         <span className="text-xs text-muted-foreground">
-          Created {formatDateTime(order.createdAt)}
+          Created <DateTime value={order.createdAt} format="datetime" />
         </span>
       </div>
 
@@ -1064,7 +1065,7 @@ export default function OrderDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Updated</span>
                   <span className="text-foreground">
-                    {formatDateTime(order.updatedAt)}
+                    <DateTime value={order.updatedAt} format="datetime" />
                   </span>
                 </div>
               </div>

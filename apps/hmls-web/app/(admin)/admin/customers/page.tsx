@@ -13,10 +13,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSWRConfig } from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DateTime } from "@/components/ui/DateTime";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +35,7 @@ import {
   useAdminCustomers,
 } from "@/hooks/useAdmin";
 import { authFetch } from "@/lib/fetcher";
-import { formatCents, formatDate } from "@/lib/format";
+import { formatCents } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 // ---------- Shared form fields ----------
@@ -418,7 +419,7 @@ function CustomerDetail({
         {error && <p className="text-xs text-destructive mb-3">{error}</p>}
 
         <span className="text-xs text-muted-foreground">
-          Since {formatDate(customer.createdAt)}
+          Since <DateTime value={customer.createdAt} format="date" />
         </span>
 
         {vehicle && (vehicle.year || vehicle.make || vehicle.model) && (
@@ -546,7 +547,7 @@ function CreateCustomerModal({
 
 // ---------- Main Page ----------
 
-export default function CustomersPage() {
+function CustomersPageInner() {
   const [search, setSearch] = useState("");
   const {
     customers,
@@ -629,7 +630,7 @@ export default function CustomersPage() {
                       {c.name ?? "Unnamed"}
                     </p>
                     <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                      {formatDate(c.createdAt)}
+                      <DateTime value={c.createdAt} format="date" />
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground truncate mt-0.5">
@@ -664,5 +665,13 @@ export default function CustomersPage() {
         onCreated={handleCreated}
       />
     </div>
+  );
+}
+
+export default function CustomersPage() {
+  return (
+    <Suspense fallback={<CustomerListSkeleton />}>
+      <CustomersPageInner />
+    </Suspense>
   );
 }

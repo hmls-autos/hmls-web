@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
       method: "POST",
       headers,
       body: JSON.stringify(json),
+      signal: req.signal,
     });
 
     if (!upstream.ok) {

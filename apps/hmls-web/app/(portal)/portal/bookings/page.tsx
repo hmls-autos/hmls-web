@@ -4,6 +4,7 @@ import { Calendar, Clock, MapPin, X as XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DateTime } from "@/components/ui/DateTime";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { askReason } from "@/components/ui/ReasonDialog";
@@ -11,7 +12,6 @@ import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { type PortalOrder, usePortalBookings } from "@/hooks/usePortal";
 import { authFetch } from "@/lib/fetcher";
-import { formatDate, formatTime } from "@/lib/format";
 import { PORTAL_ORDER_STATUS } from "@/lib/status";
 
 function BookingCard({
@@ -56,12 +56,12 @@ function BookingCard({
           <>
             <div className="flex items-center gap-2 text-xs text-text-secondary">
               <Calendar className="w-3.5 h-3.5 shrink-0" />
-              <span>{formatDate(order.scheduledAt)}</span>
+              <DateTime value={order.scheduledAt} format="date" />
             </div>
             <div className="flex items-center gap-2 text-xs text-text-secondary">
               <Clock className="w-3.5 h-3.5 shrink-0" />
               <span>
-                {formatTime(order.scheduledAt)}
+                <DateTime value={order.scheduledAt} format="time" />
                 {order.durationMinutes ? ` (${order.durationMinutes} min)` : ""}
               </span>
             </div>

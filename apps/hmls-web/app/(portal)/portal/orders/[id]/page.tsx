@@ -6,12 +6,13 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { OrderProgressBar } from "@/components/OrderProgressBar";
+import { DateTime } from "@/components/ui/DateTime";
 import { askReason } from "@/components/ui/ReasonDialog";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { usePortalOrder } from "@/hooks/usePortal";
 import { authFetch } from "@/lib/fetcher";
-import { formatCents, formatDate, formatDateTime } from "@/lib/format";
+import { formatCents } from "@/lib/format";
 import { PORTAL_ORDER_STATUS } from "@/lib/status";
 import type { OrderEvent, OrderItem } from "@/lib/types";
 
@@ -54,7 +55,7 @@ function StatusTimeline({ events }: { events: OrderEvent[] }) {
               {eventDescription(event)}
             </p>
             <span className="text-[10px] text-text-secondary">
-              {formatDateTime(event.createdAt)}
+              <DateTime value={event.createdAt} format="datetime" />
             </span>
           </div>
         </div>
@@ -100,7 +101,9 @@ function PrintReceipt({
         </div>
         <div className="text-right text-sm">
           <p className="font-semibold">Order #{order.id}</p>
-          <p className="text-gray-500">{formatDate(order.createdAt)}</p>
+          <p className="text-gray-500">
+            <DateTime value={order.createdAt} format="date" />
+          </p>
           <p className="text-gray-500">{statusLabel}</p>
         </div>
       </div>
@@ -322,7 +325,7 @@ export default function PortalOrderDetailPage() {
             <StatusBadge status={order.status} config={PORTAL_ORDER_STATUS} />
           </div>
           <span className="text-xs text-text-secondary">
-            Created {formatDateTime(order.createdAt)}
+            Created <DateTime value={order.createdAt} format="datetime" />
           </span>
         </div>
 
@@ -539,14 +542,14 @@ export default function PortalOrderDetailPage() {
                       Estimate expires
                     </span>
                     <span className="text-text">
-                      {formatDate(order.expiresAt)}
+                      <DateTime value={order.expiresAt} format="date" />
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Updated</span>
                   <span className="text-text">
-                    {formatDateTime(order.updatedAt)}
+                    <DateTime value={order.updatedAt} format="datetime" />
                   </span>
                 </div>
               </div>

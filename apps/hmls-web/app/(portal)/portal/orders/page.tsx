@@ -4,6 +4,7 @@ import { Check, ClipboardList, X as XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DateTime } from "@/components/ui/DateTime";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { askReason } from "@/components/ui/ReasonDialog";
@@ -11,7 +12,6 @@ import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { type PortalOrder, usePortalOrders } from "@/hooks/usePortal";
 import { authFetch } from "@/lib/fetcher";
-import { formatDateTime } from "@/lib/format";
 import { PORTAL_ORDER_STATUS } from "@/lib/status";
 
 function OrderCard({
@@ -39,7 +39,7 @@ function OrderCard({
             <StatusBadge status={order.status} config={PORTAL_ORDER_STATUS} />
           </div>
           <p className="text-xs text-text-secondary mt-0.5">
-            {formatDateTime(order.createdAt)}
+            <DateTime value={order.createdAt} format="datetime" />
           </p>
         </div>
         <Link
