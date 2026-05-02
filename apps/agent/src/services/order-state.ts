@@ -28,7 +28,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { getLogger } from "@logtape/logtape";
 import { db, schema } from "../db/client.ts";
-import type { OrderItem } from "../db/schema.ts";
+import type { OrderItem } from "@hmls/shared/db/schema";
 import { notifyOrderStatusChange } from "../lib/notifications.ts";
 import {
   type Actor,

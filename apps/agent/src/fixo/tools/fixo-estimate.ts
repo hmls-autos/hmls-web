@@ -14,7 +14,7 @@ import {
 } from "../../hmls/skills/estimate/pricing.ts";
 import { toolResult } from "@hmls/shared/tool-result";
 import type { DiscountType, LineItem, ServiceInput } from "../../hmls/skills/estimate/types.ts";
-import type { OrderItem } from "../../db/schema.ts";
+import type { OrderItem } from "@hmls/shared/db/schema";
 import type { ToolContext } from "../../common/convert-tools.ts";
 
 function asToolContext(ctx: unknown): ToolContext | undefined {

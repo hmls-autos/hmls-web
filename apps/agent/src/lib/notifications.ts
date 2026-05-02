@@ -1,6 +1,6 @@
 import { getLogger } from "@logtape/logtape";
 import { db } from "../db/client.ts";
-import * as schema from "../db/schema.ts";
+import * as schema from "@hmls/shared/db/schema";
 import { eq } from "drizzle-orm";
 
 const logger = getLogger(["hmls", "agent", "notifications"]);

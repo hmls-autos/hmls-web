@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db, schema } from "../../db/client.ts";
-import type { OrderItem } from "../../db/schema.ts";
+import type { OrderItem } from "@hmls/shared/db/schema";
 import { toolResult } from "@hmls/shared/tool-result";
 import { randomUUID } from "node:crypto";
 import type { ToolContext } from "../../common/convert-tools.ts";

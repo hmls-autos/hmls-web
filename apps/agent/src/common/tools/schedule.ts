@@ -16,7 +16,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { db, schema } from "../../db/client.ts";
 import { toolResult } from "@hmls/shared/tool-result";
-import type { OrderItem } from "../../db/schema.ts";
+import type { OrderItem } from "@hmls/shared/db/schema";
 import { autoAssignProvider } from "../../services/auto-assign.ts";
 import { attachSchedule } from "../../services/order-state.ts";
 import {
