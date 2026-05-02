@@ -244,6 +244,10 @@ function ChatPageInner({
       sessionIdRef,
       sendMessage,
       userId,
+      // Free-tier users get a 403 from /sessions/:id/input on photo/audio.
+      // Route that to the same UpgradeModal the chat error path uses so the
+      // user sees a real explanation instead of a generic "upload failed".
+      onUpgradeRequired: setUpgradeMessage,
     });
 
   const handleDownloadReport = useCallback(async () => {
