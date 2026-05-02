@@ -2,6 +2,7 @@ import { z } from "zod";
 import { desc, eq, ilike, or } from "drizzle-orm";
 import { db, schema } from "../../db/client.ts";
 import type { OrderItem } from "@hmls/shared/db/schema";
+import { EDITABLE_STATUSES, isOrderStatus } from "@hmls/shared/order/status";
 import { toolResult } from "@hmls/shared/tool-result";
 import type { LaborTimeResult, OlpVehicle } from "./olp-client.ts";
 import type { ToolContext } from "../../common/convert-tools.ts";
@@ -129,8 +130,6 @@ const searchCustomersTool = {
 // ---------------------------------------------------------------------------
 // Tool 3: update_order_items -- PATCH mode with stable item IDs
 // ---------------------------------------------------------------------------
-
-const EDITABLE_STATUSES = new Set(["draft", "revised", "estimated"]);
 
 // In-memory idempotency set. Narrow purpose: dedupe tool-call retries in a
 // single process. Optimistic concurrency across processes is handled by
@@ -268,7 +267,7 @@ const updateOrderItemsTool = {
       .where(eq(schema.orders.id, id))
       .limit(1);
     if (!order) return toolResult({ success: false, error: `Order #${id} not found` });
-    if (!EDITABLE_STATUSES.has(order.status)) {
+    if (!isOrderStatus(order.status) || !EDITABLE_STATUSES.has(order.status)) {
       return toolResult({
         success: false,
         error:
