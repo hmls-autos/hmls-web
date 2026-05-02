@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { useSWRConfig } from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -240,7 +241,17 @@ function CustomerDetail({
   onDeleted: () => void;
 }) {
   const { data, isLoading, mutate: mutateDetail } = useAdminCustomer(id);
-  const { mutate: mutateList } = useAdminCustomers();
+  // Refresh every variant of the customer list (including the parent's
+  // search-filtered fetch) by mutating all `/api/admin/customers...` keys.
+  const { mutate: globalMutate } = useSWRConfig();
+  const refreshList = useCallback(
+    () =>
+      globalMutate(
+        (key) =>
+          typeof key === "string" && key.startsWith("/api/admin/customers"),
+      ),
+    [globalMutate],
+  );
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<CustomerFormData>(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -277,7 +288,7 @@ function CustomerDetail({
         method: "PATCH",
         body: JSON.stringify(formToPayload(form)),
       });
-      await Promise.all([mutateDetail(), mutateList()]);
+      await Promise.all([mutateDetail(), refreshList()]);
       setEditing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed");
@@ -291,7 +302,7 @@ function CustomerDetail({
     setError(null);
     try {
       await authFetch(`/api/admin/customers/${id}`, { method: "DELETE" });
-      await mutateList();
+      await refreshList();
       onDeleted();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Delete failed");

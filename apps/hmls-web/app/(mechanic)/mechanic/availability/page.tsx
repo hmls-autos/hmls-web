@@ -1,7 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,7 +28,15 @@ export default function AvailabilityPage() {
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
+  // Initialize slots once when availability first loads. After that, slots
+  // is user-owned — SWR revalidations (focus, reconnect) don't blow away
+  // in-progress edits. Saves call `saveAvailability` which mutates SWR,
+  // and the local state stays in sync because we just sent it.
+  const initializedRef = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional one-shot init from SWR data
   useEffect(() => {
+    if (initializedRef.current || isLoading) return;
+    initializedRef.current = true;
     setSlots(
       availability.map((a) => ({
         dayOfWeek: a.dayOfWeek,
@@ -36,7 +44,7 @@ export default function AvailabilityPage() {
         endTime: normalizeTime(a.endTime),
       })),
     );
-  }, [availability]);
+  }, [isLoading]);
 
   function updateSlot(idx: number, patch: Partial<Slot>) {
     setSlots((prev) =>

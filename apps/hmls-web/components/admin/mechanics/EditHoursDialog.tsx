@@ -1,7 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,8 +37,14 @@ export function EditHoursDialog({ mechanicId, open, onOpenChange }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Reset only on the closed → open transition, not on every availability
+  // ref change. SWR revalidation while the dialog is open would otherwise
+  // discard the user's in-progress edits.
+  const wasOpenRef = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only reset on open transition
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpenRef.current) {
+      wasOpenRef.current = true;
       setSlots(
         availability.map((a) => ({
           dayOfWeek: a.dayOfWeek,
@@ -47,8 +53,10 @@ export function EditHoursDialog({ mechanicId, open, onOpenChange }: Props) {
         })),
       );
       setError(null);
+    } else if (!open) {
+      wasOpenRef.current = false;
     }
-  }, [open, availability]);
+  }, [open]);
 
   function update(idx: number, patch: Partial<Slot>) {
     setSlots((prev) =>
