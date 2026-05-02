@@ -209,7 +209,32 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   } = useChat({
     messages: initialMessages,
     transport: transportRef.current,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    // Default `lastAssistantMessageIsCompleteWithToolCalls` would loop here:
+    // ask_user_question's execute() returns synchronously ("question_presented")
+    // so the tool call ships back to the client already "complete." The
+    // server then `stopWhen: hasToolCall("ask_user_question")` halts the
+    // stream, but the helper still sees a finished tool call on the last
+    // assistant turn → auto-resubmits → agent has no new input, emits 0
+    // tokens, finishReason=stop, last assistant message unchanged → fires
+    // again. The loop only breaks when the user actually replies. Skip
+    // auto-continuation when the latest tool call is one that explicitly
+    // hands control back to the user.
+    sendAutomaticallyWhen: ({ messages }) => {
+      if (!lastAssistantMessageIsCompleteWithToolCalls({ messages })) {
+        return false;
+      }
+      const last = messages[messages.length - 1];
+      if (last?.role !== "assistant") return false;
+      for (const part of last.parts) {
+        if (
+          isToolOrDynamicToolUIPart(part) &&
+          getToolOrDynamicToolName(part) === "ask_user_question"
+        ) {
+          return false;
+        }
+      }
+      return true;
+    },
     onFinish: () => {
       setCurrentTool(null);
       focusInput();
