@@ -5,8 +5,8 @@
 // through this module. Do NOT bypass.
 //
 // Pure state-machine rules, types, and read helpers live in
-// `./order-state-core.ts` and are re-exported from here — UI and auth
-// layers should import from core directly to avoid pulling in the DB
+// `@hmls/shared/order/status` and are re-exported from here — UI and auth
+// layers should import from shared directly to avoid pulling in the DB
 // client.
 //
 // Invariants (enforced by the implementations below):
