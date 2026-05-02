@@ -9,6 +9,14 @@ import {
   listMyOrdersQuery,
   setMechanicAvailabilityInput,
 } from "../contracts/mechanic.ts";
+import type {
+  Order,
+  Provider,
+  ProviderAvailability,
+  ProviderScheduleOverride,
+} from "@hmls/shared/db/types";
+
+type ApiError = { error: { code: string; message: string } };
 
 const mechanic = new Hono<MechanicEnv>();
 
@@ -27,9 +35,9 @@ mechanic.get("/me", async (c) => {
     .limit(1);
 
   if (!provider) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Provider not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Provider not found" } }, 404);
   }
-  return c.json(provider);
+  return c.json<Provider>(provider);
 });
 
 // ---------------------------------------------------------------------------
@@ -43,7 +51,7 @@ mechanic.get("/availability", async (c) => {
     .from(schema.providerAvailability)
     .where(eq(schema.providerAvailability.providerId, providerId))
     .orderBy(asc(schema.providerAvailability.dayOfWeek));
-  return c.json(rows);
+  return c.json<ProviderAvailability[]>(rows);
 });
 
 // Replace the full weekly schedule atomically
@@ -54,7 +62,7 @@ mechanic.put("/availability", zValidator("json", setMechanicAvailabilityInput), 
   // Business rule beyond shape: endTime must be after startTime
   for (const row of body.availability) {
     if (row.endTime <= row.startTime) {
-      return c.json(
+      return c.json<ApiError>(
         { error: { code: "BAD_REQUEST", message: "endTime must be after startTime" } },
         400,
       );
@@ -77,7 +85,7 @@ mechanic.put("/availability", zValidator("json", setMechanicAvailabilityInput), 
     .from(schema.providerAvailability)
     .where(eq(schema.providerAvailability.providerId, providerId))
     .orderBy(asc(schema.providerAvailability.dayOfWeek));
-  return c.json(rows);
+  return c.json<ProviderAvailability[]>(rows);
 });
 
 // ---------------------------------------------------------------------------
@@ -97,7 +105,7 @@ mechanic.get("/overrides", zValidator("query", listMechanicOverridesQuery), asyn
     .from(schema.providerScheduleOverrides)
     .where(and(...conditions))
     .orderBy(asc(schema.providerScheduleOverrides.overrideDate));
-  return c.json(rows);
+  return c.json<ProviderScheduleOverride[]>(rows);
 });
 
 mechanic.post("/overrides", zValidator("json", createMechanicOverrideInput), async (c) => {
@@ -106,7 +114,7 @@ mechanic.post("/overrides", zValidator("json", createMechanicOverrideInput), asy
 
   // Business rule beyond shape: if isAvailable, times are required
   if (body.isAvailable && (!body.startTime || !body.endTime)) {
-    return c.json(
+    return c.json<ApiError>(
       {
         error: {
           code: "BAD_REQUEST",
@@ -138,14 +146,17 @@ mechanic.post("/overrides", zValidator("json", createMechanicOverrideInput), asy
       reason: body.reason ?? null,
     })
     .returning();
-  return c.json(created, 201);
+  return c.json<ProviderScheduleOverride>(created, 201);
 });
 
 mechanic.delete("/overrides/:id", async (c) => {
   const providerId = c.get("providerId");
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid override ID" } }, 400);
+    return c.json<ApiError>(
+      { error: { code: "BAD_REQUEST", message: "Invalid override ID" } },
+      400,
+    );
   }
 
   const result = await db
@@ -159,9 +170,9 @@ mechanic.delete("/overrides/:id", async (c) => {
     .returning({ id: schema.providerScheduleOverrides.id });
 
   if (result.length === 0) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Override not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Override not found" } }, 404);
   }
-  return c.json({ ok: true });
+  return c.json<{ ok: true }>({ ok: true });
 });
 
 // ---------------------------------------------------------------------------
@@ -186,7 +197,7 @@ mechanic.get("/orders", zValidator("query", listMyOrdersQuery), async (c) => {
     .from(schema.orders)
     .where(and(...conditions))
     .orderBy(asc(schema.orders.scheduledAt));
-  return c.json(rows);
+  return c.json<Order[]>(rows);
 });
 
 export { mechanic };

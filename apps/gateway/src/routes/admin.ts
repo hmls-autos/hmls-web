@@ -8,6 +8,10 @@ import {
   listCustomersQuery,
   updateCustomerInput,
 } from "../contracts/admin.ts";
+import type { Customer, Order, VehicleInfo } from "@hmls/shared/db/types";
+import type { OrderStatus } from "@hmls/shared/order/status";
+
+type ApiError = { error: { code: string; message: string } };
 
 const admin = new Hono<AdminEnv>();
 
@@ -19,7 +23,9 @@ admin.use("*", requireAdmin);
 // alone instead of running it on every admin page.
 admin.get("/me", (c) => {
   const user = c.get("authUser");
-  return c.json({ id: user.id, email: user.email, role: user.role });
+  return c.json<{ id: string; email: string | null; role: string | null }>(
+    { id: user.id, email: user.email, role: user.role },
+  );
 });
 
 // GET /dashboard — KPI stats
@@ -82,7 +88,24 @@ admin.get("/dashboard", async (c) => {
       sql`${schema.orders.status} IN ('approved', 'scheduled', 'in_progress')`,
     );
 
-  return c.json({
+  return c.json<{
+    stats: {
+      customers: number;
+      orders: number;
+      pendingReview: number;
+      pendingApprovals: number;
+      activeJobs: number;
+      revenue30d: number;
+    };
+    upcomingOrders: Array<{
+      id: number;
+      scheduledAt: Date | null;
+      contactName: string | null;
+      vehicleInfo: VehicleInfo | null;
+      status: OrderStatus;
+    }>;
+    recentCustomers: Customer[];
+  }>({
     stats: {
       customers: customerCount.count,
       orders: orderCount.count,
@@ -95,8 +118,8 @@ admin.get("/dashboard", async (c) => {
       id: o.id,
       scheduledAt: o.scheduledAt,
       contactName: o.contactName,
-      vehicleInfo: o.vehicleInfo,
-      status: o.status,
+      vehicleInfo: o.vehicleInfo as VehicleInfo | null,
+      status: o.status as OrderStatus,
     })),
     recentCustomers,
   });
@@ -122,14 +145,17 @@ admin.get("/customers", zValidator("query", listCustomersQuery), async (c) => {
   }
 
   const rows = await query.limit(100);
-  return c.json(rows);
+  return c.json<Customer[]>(rows);
 });
 
 // GET /customers/:id — single customer with their orders
 admin.get("/customers/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid customer ID" } }, 400);
+    return c.json<ApiError>(
+      { error: { code: "BAD_REQUEST", message: "Invalid customer ID" } },
+      400,
+    );
   }
 
   const [customer] = await db
@@ -139,7 +165,7 @@ admin.get("/customers/:id", async (c) => {
     .limit(1);
 
   if (!customer) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Customer not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Customer not found" } }, 404);
   }
 
   const orders = await db
@@ -148,14 +174,17 @@ admin.get("/customers/:id", async (c) => {
     .where(eq(schema.orders.customerId, id))
     .orderBy(desc(schema.orders.createdAt));
 
-  return c.json({ customer, orders });
+  return c.json<{ customer: Customer; orders: Order[] }>({ customer, orders });
 });
 
 // PATCH /customers/:id — update customer
 admin.patch("/customers/:id", zValidator("json", updateCustomerInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid customer ID" } }, 400);
+    return c.json<ApiError>(
+      { error: { code: "BAD_REQUEST", message: "Invalid customer ID" } },
+      400,
+    );
   }
 
   const body = c.req.valid("json");
@@ -168,7 +197,10 @@ admin.patch("/customers/:id", zValidator("json", updateCustomerInput), async (c)
   if (body.vehicleInfo !== undefined) updates.vehicleInfo = body.vehicleInfo;
 
   if (Object.keys(updates).length === 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "No fields to update" } }, 400);
+    return c.json<ApiError>(
+      { error: { code: "BAD_REQUEST", message: "No fields to update" } },
+      400,
+    );
   }
 
   const [updated] = await db
@@ -178,10 +210,10 @@ admin.patch("/customers/:id", zValidator("json", updateCustomerInput), async (c)
     .returning();
 
   if (!updated) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Customer not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Customer not found" } }, 404);
   }
 
-  return c.json(updated);
+  return c.json<Customer>(updated);
 });
 
 // POST /customers — create customer
@@ -189,7 +221,7 @@ admin.post("/customers", zValidator("json", createCustomerInput), async (c) => {
   const body = c.req.valid("json");
 
   if (!body.name && !body.email && !body.phone) {
-    return c.json({
+    return c.json<ApiError>({
       error: { code: "BAD_REQUEST", message: "At least one of name, email, or phone is required" },
     }, 400);
   }
@@ -206,14 +238,17 @@ admin.post("/customers", zValidator("json", createCustomerInput), async (c) => {
     })
     .returning();
 
-  return c.json(customer, 201);
+  return c.json<Customer>(customer, 201);
 });
 
 // DELETE /customers/:id — delete customer
 admin.delete("/customers/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid customer ID" } }, 400);
+    return c.json<ApiError>(
+      { error: { code: "BAD_REQUEST", message: "Invalid customer ID" } },
+      400,
+    );
   }
 
   const [existing] = await db
@@ -223,11 +258,11 @@ admin.delete("/customers/:id", async (c) => {
     .limit(1);
 
   if (!existing) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Customer not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Customer not found" } }, 404);
   }
 
   await db.delete(schema.customers).where(eq(schema.customers.id, id));
-  return c.json({ success: true });
+  return c.json<{ success: true }>({ success: true });
 });
 
 export { admin };

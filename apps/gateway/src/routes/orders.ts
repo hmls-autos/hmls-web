@@ -28,6 +28,9 @@ import {
   updateAdminNotesInput,
   updateOrderInput,
 } from "../contracts/orders.ts";
+import type { Order, OrderDetail, OrderEvent } from "@hmls/shared/db/types";
+
+type ApiError = { error: { code: string; message: string } };
 
 /** Build an admin Actor from the Hono auth context. */
 function adminActor(email: string | null | undefined): Actor {
@@ -74,7 +77,7 @@ orders.get("/", zValidator("query", listOrdersQuery), async (c) => {
   }
 
   const rows = await query.limit(limit).offset(offset);
-  return c.json(rows);
+  return c.json<Order[]>(rows);
 });
 
 // POST /orders — create a new draft order
@@ -90,7 +93,7 @@ orders.post("/", zValidator("json", createOrderInput), async (c) => {
     .limit(1);
 
   if (!customer) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Customer not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Customer not found" } }, 404);
   }
 
   const vehicleInfo = body.vehicle_year || body.vehicle_make || body.vehicle_model
@@ -154,14 +157,14 @@ orders.post("/", zValidator("json", createOrderInput), async (c) => {
     metadata: { itemCount: orderItems.length, source: "admin_post_orders" },
   });
 
-  return c.json(order, 201);
+  return c.json<Order>(order, 201);
 });
 
 // GET /orders/:id — single order with related entities + events
 orders.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const [order] = await db
@@ -171,7 +174,7 @@ orders.get("/:id", async (c) => {
     .limit(1);
 
   if (!order) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
   // Backfill shareToken if missing (legacy orders)
@@ -190,7 +193,7 @@ orders.get("/:id", async (c) => {
       .orderBy(desc(schema.orderEvents.createdAt)),
   ]);
 
-  return c.json({ order, customer, events });
+  return c.json<OrderDetail>({ order, customer: customer ?? null, events });
 });
 
 // PATCH /orders/:id — edit items (through harness, lifecycle-aware) and/or
@@ -198,7 +201,7 @@ orders.get("/:id", async (c) => {
 orders.patch("/:id", zValidator("json", updateOrderInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const body = c.req.valid("json");
@@ -220,7 +223,7 @@ orders.patch("/:id", zValidator("json", updateOrderInput), async (c) => {
       .where(eq(schema.orders.id, id))
       .limit(1);
     if (!current) {
-      return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+      return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
     }
 
     const result = await patchItems(id, {
@@ -258,7 +261,10 @@ orders.patch("/:id", zValidator("json", updateOrderInput), async (c) => {
 
   if (!wantsItemEdit && Object.keys(directUpdates).length === 1) {
     // Only updatedAt was set — no actual fields to change.
-    return c.json({ error: { code: "BAD_REQUEST", message: "No fields to update" } }, 400);
+    return c.json<ApiError>(
+      { error: { code: "BAD_REQUEST", message: "No fields to update" } },
+      400,
+    );
   }
 
   // Return the freshly-read row so clients see the consistent post-write
@@ -269,9 +275,9 @@ orders.patch("/:id", zValidator("json", updateOrderInput), async (c) => {
     .where(eq(schema.orders.id, id))
     .limit(1);
   if (!latest) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
-  return c.json(latest);
+  return c.json<Order>(latest);
 });
 
 // POST /orders/:id/schedule — set / reschedule the appointment time.
@@ -281,20 +287,20 @@ orders.patch("/:id", zValidator("json", updateOrderInput), async (c) => {
 orders.post("/:id/schedule", zValidator("json", scheduleOrderInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const body = c.req.valid("json");
 
   const when = new Date(body.scheduledAt);
   if (Number.isNaN(when.getTime())) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "scheduledAt is not a valid date" } },
       400,
     );
   }
   if (!Number.isInteger(body.durationMinutes) || body.durationMinutes <= 0) {
-    return c.json(
+    return c.json<ApiError>(
       {
         error: {
           code: "BAD_REQUEST",
@@ -328,14 +334,14 @@ orders.post("/:id/schedule", zValidator("json", scheduleOrderInput), async (c) =
     .from(schema.orders)
     .where(eq(schema.orders.id, id))
     .limit(1);
-  return c.json(refreshed ?? result.value);
+  return c.json<Order>(refreshed ?? result.value);
 });
 
 // PATCH /orders/:id/status — generic status transition.
 orders.patch("/:id/status", zValidator("json", transitionOrderInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const body = c.req.valid("json");
@@ -363,7 +369,7 @@ orders.patch("/:id/status", zValidator("json", transitionOrderInput), async (c) 
 orders.post("/:id/send", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
   const authUser = c.get("authUser");
   await backfillShareTokenIfMissing(id);
@@ -377,7 +383,7 @@ orders.post("/:id/send", async (c) => {
 orders.post("/:id/revise", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
   const authUser = c.get("authUser");
   const result = await transition(id, "revised", adminActor(authUser.email));
@@ -388,7 +394,7 @@ orders.post("/:id/revise", async (c) => {
 orders.get("/:id/events", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const events = await db
@@ -397,7 +403,7 @@ orders.get("/:id/events", async (c) => {
     .where(eq(schema.orderEvents.orderId, id))
     .orderBy(desc(schema.orderEvents.createdAt));
 
-  return c.json(events);
+  return c.json<OrderEvent[]>(events);
 });
 
 // POST /orders/:id/events — add an annotation note to an order. Scoped to
@@ -406,7 +412,7 @@ orders.get("/:id/events", async (c) => {
 orders.post("/:id/events", zValidator("json", addOrderNoteInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const body = c.req.valid("json");
@@ -414,7 +420,7 @@ orders.post("/:id/events", zValidator("json", addOrderNoteInput), async (c) => {
   const authUser = c.get("authUser");
   const result = await addNote(id, body.note, adminActor(authUser.email));
   if (!result.ok) return sendOrderStateResult(c, result);
-  return c.json(result.value, 201);
+  return c.json<{ eventId: string }>(result.value, 201);
 });
 
 // POST /orders/:id/payment — stamp payment fields on an approved+ order.
@@ -422,7 +428,7 @@ orders.post("/:id/events", zValidator("json", addOrderNoteInput), async (c) => {
 orders.post("/:id/payment", zValidator("json", recordPaymentInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const body = c.req.valid("json");
@@ -441,7 +447,7 @@ orders.post("/:id/payment", zValidator("json", recordPaymentInput), async (c) =>
 orders.patch("/:id/notes", zValidator("json", updateAdminNotesInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const body = c.req.valid("json");
@@ -453,10 +459,10 @@ orders.patch("/:id/notes", zValidator("json", updateAdminNotesInput), async (c) 
     .returning();
 
   if (!updated) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
-  return c.json(updated);
+  return c.json<Order>(updated);
 });
 
 export { orders };
@@ -467,7 +473,7 @@ const ordersPdf = new Hono();
 ordersPdf.get("/:id/pdf", zValidator("query", orderPdfQuery), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const { token } = c.req.valid("query");
@@ -483,7 +489,7 @@ ordersPdf.get("/:id/pdf", zValidator("query", orderPdfQuery), async (c) => {
     .limit(1);
 
   if (!order) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
   const customer = {

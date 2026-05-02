@@ -21,6 +21,32 @@ import {
   setAvailabilityInput,
   updateMechanicInput,
 } from "../contracts/admin-mechanics.ts";
+import type {
+  Order,
+  Provider,
+  ProviderAvailability,
+  ProviderScheduleOverride,
+} from "@hmls/shared/db/types";
+
+type ApiError = { error: { code: string; message: string } };
+
+/** Provider row with aggregate mechanic stats appended. */
+type ProviderWithStats = Provider & {
+  weekUtilization: number | null;
+  isOnJobNow: boolean;
+  upcomingBookingsCount: number;
+  earnings30d: number;
+  nextBookingAt: Date | null;
+};
+
+/** Order row joined with customer contact fields. */
+type OrderWithCustomer = Order & {
+  customer: {
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+  };
+};
 
 function adminActor(email: string | null | undefined): Actor {
   return { kind: "admin", email: email ?? "admin" };
@@ -42,7 +68,7 @@ adminMechanics.get("/", async (c) => {
     .from(schema.providers)
     .orderBy(desc(schema.providers.isActive), asc(schema.providers.name));
 
-  if (providers.length === 0) return c.json([]);
+  if (providers.length === 0) return c.json<ProviderWithStats[]>([]);
 
   const providerIds = providers.map((p) => p.id);
 
@@ -219,7 +245,7 @@ adminMechanics.get("/", async (c) => {
     };
   });
 
-  return c.json(result);
+  return c.json<ProviderWithStats[]>(result);
 });
 
 // POST / — create a new mechanic
@@ -242,14 +268,14 @@ adminMechanics.post("/", zValidator("json", createMechanicInput), async (c) => {
     })
     .returning();
 
-  return c.json(created, 201);
+  return c.json<Provider>(created, 201);
 });
 
 // GET /:id — single mechanic
 adminMechanics.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
       400,
     );
@@ -262,19 +288,19 @@ adminMechanics.get("/:id", async (c) => {
     .limit(1);
 
   if (!provider) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "NOT_FOUND", message: "Mechanic not found" } },
       404,
     );
   }
-  return c.json(provider);
+  return c.json<Provider>(provider);
 });
 
 // PATCH /:id — edit profile fields
 adminMechanics.patch("/:id", zValidator("json", updateMechanicInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
       400,
     );
@@ -301,7 +327,7 @@ adminMechanics.patch("/:id", zValidator("json", updateMechanicInput), async (c) 
   if (body.authUserId !== undefined) updates.authUserId = body.authUserId;
 
   if (Object.keys(updates).length === 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "No fields to update" } },
       400,
     );
@@ -314,12 +340,12 @@ adminMechanics.patch("/:id", zValidator("json", updateMechanicInput), async (c) 
     .returning();
 
   if (!updated) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "NOT_FOUND", message: "Mechanic not found" } },
       404,
     );
   }
-  return c.json(updated);
+  return c.json<Provider>(updated);
 });
 
 // DELETE /:id — soft delete (sets isActive=false). Bookings reference this
@@ -327,7 +353,7 @@ adminMechanics.patch("/:id", zValidator("json", updateMechanicInput), async (c) 
 adminMechanics.delete("/:id", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
       400,
     );
@@ -340,19 +366,19 @@ adminMechanics.delete("/:id", async (c) => {
     .returning();
 
   if (!updated) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "NOT_FOUND", message: "Mechanic not found" } },
       404,
     );
   }
-  return c.json({ success: true });
+  return c.json<{ success: true }>({ success: true });
 });
 
 // GET /:id/availability — read weekly hours
 adminMechanics.get("/:id/availability", async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
       400,
     );
@@ -362,14 +388,14 @@ adminMechanics.get("/:id/availability", async (c) => {
     .from(schema.providerAvailability)
     .where(eq(schema.providerAvailability.providerId, id))
     .orderBy(asc(schema.providerAvailability.dayOfWeek));
-  return c.json(rows);
+  return c.json<ProviderAvailability[]>(rows);
 });
 
 // PUT /:id/availability — replace weekly hours atomically
 adminMechanics.put("/:id/availability", zValidator("json", setAvailabilityInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
       400,
     );
@@ -380,7 +406,7 @@ adminMechanics.put("/:id/availability", zValidator("json", setAvailabilityInput)
   // Business rule beyond shape: endTime must be after startTime
   for (const row of body.availability) {
     if (row.endTime <= row.startTime) {
-      return c.json(
+      return c.json<ApiError>(
         {
           error: {
             code: "BAD_REQUEST",
@@ -408,14 +434,14 @@ adminMechanics.put("/:id/availability", zValidator("json", setAvailabilityInput)
     .from(schema.providerAvailability)
     .where(eq(schema.providerAvailability.providerId, id))
     .orderBy(asc(schema.providerAvailability.dayOfWeek));
-  return c.json(rows);
+  return c.json<ProviderAvailability[]>(rows);
 });
 
 // GET /:id/overrides — read schedule overrides
 adminMechanics.get("/:id/overrides", zValidator("query", listOverridesQuery), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
       400,
     );
@@ -435,14 +461,14 @@ adminMechanics.get("/:id/overrides", zValidator("query", listOverridesQuery), as
     .from(schema.providerScheduleOverrides)
     .where(and(...conditions))
     .orderBy(asc(schema.providerScheduleOverrides.overrideDate));
-  return c.json(rows);
+  return c.json<ProviderScheduleOverride[]>(rows);
 });
 
 // POST /:id/overrides — upsert override (one per date)
 adminMechanics.post("/:id/overrides", zValidator("json", createOverrideInput), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
       400,
     );
@@ -452,7 +478,7 @@ adminMechanics.post("/:id/overrides", zValidator("json", createOverrideInput), a
 
   // Business rule beyond shape: if isAvailable, times are required
   if (body.isAvailable && (!body.startTime || !body.endTime)) {
-    return c.json(
+    return c.json<ApiError>(
       {
         error: {
           code: "BAD_REQUEST",
@@ -483,7 +509,7 @@ adminMechanics.post("/:id/overrides", zValidator("json", createOverrideInput), a
       reason: body.reason ?? null,
     })
     .returning();
-  return c.json(created, 201);
+  return c.json<ProviderScheduleOverride>(created, 201);
 });
 
 // DELETE /:id/overrides/:overrideId — delete single override
@@ -494,7 +520,7 @@ adminMechanics.delete("/:id/overrides/:overrideId", async (c) => {
     !Number.isInteger(id) || id <= 0 ||
     !Number.isInteger(overrideId) || overrideId <= 0
   ) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "Invalid ID" } },
       400,
     );
@@ -511,19 +537,19 @@ adminMechanics.delete("/:id/overrides/:overrideId", async (c) => {
     .returning({ id: schema.providerScheduleOverrides.id });
 
   if (result.length === 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "NOT_FOUND", message: "Override not found" } },
       404,
     );
   }
-  return c.json({ ok: true });
+  return c.json<{ ok: true }>({ ok: true });
 });
 
 // GET /:id/orders — scheduled orders assigned to this mechanic, with customer join
 adminMechanics.get("/:id/orders", zValidator("query", listMechanicOrdersQuery), async (c) => {
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "Invalid mechanic ID" } },
       400,
     );
@@ -557,7 +583,7 @@ adminMechanics.get("/:id/orders", zValidator("query", listMechanicOrdersQuery), 
     .orderBy(asc(schema.orders.scheduledAt))
     .limit(200);
 
-  return c.json(
+  return c.json<OrderWithCustomer[]>(
     rows.map((r) => ({
       ...r.order,
       customer: {
@@ -578,7 +604,7 @@ adminMechanics.post(
   async (c) => {
     const orderId = Number(c.req.param("orderId"));
     if (!Number.isInteger(orderId) || orderId <= 0) {
-      return c.json(
+      return c.json<ApiError>(
         { error: { code: "BAD_REQUEST", message: "Invalid order ID" } },
         400,
       );
@@ -596,7 +622,7 @@ adminMechanics.post(
       .where(eq(schema.providers.id, body.providerId))
       .limit(1);
     if (!provider) {
-      return c.json(
+      return c.json<ApiError>(
         { error: { code: "NOT_FOUND", message: "Target mechanic not found" } },
         404,
       );

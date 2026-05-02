@@ -7,6 +7,9 @@ import { type AuthEnv, requireAuth } from "../middleware/auth.ts";
 import { transition } from "@hmls/agent/order-state";
 import { sendOrderStateResult } from "../lib/order-state-http.ts";
 import { orderReasonInput, updateProfileInput } from "../contracts/portal.ts";
+import type { Customer, Order, OrderEvent } from "@hmls/shared/db/types";
+
+type ApiError = { error: { code: string; message: string } };
 
 const portal = new Hono<AuthEnv>();
 
@@ -22,7 +25,7 @@ portal.get("/me", async (c) => {
     .limit(1);
 
   if (!customer) throw Errors.notFound("Customer", customerId);
-  return c.json(customer);
+  return c.json<Customer>(customer);
 });
 
 // PUT /me — update customer profile
@@ -37,7 +40,7 @@ portal.put("/me", zValidator("json", updateProfileInput), async (c) => {
   if (data.vehicleInfo !== undefined) updates.vehicleInfo = data.vehicleInfo;
 
   if (Object.keys(updates).length === 0) {
-    return c.json(
+    return c.json<ApiError>(
       { error: { code: "BAD_REQUEST", message: "No fields to update" } },
       400,
     );
@@ -50,7 +53,7 @@ portal.put("/me", zValidator("json", updateProfileInput), async (c) => {
     .returning();
 
   if (!updated) throw Errors.notFound("Customer", customerId);
-  return c.json(updated);
+  return c.json<Customer>(updated);
 });
 
 // GET /me/bookings — orders with scheduling (unified after Layer 3)
@@ -68,7 +71,7 @@ portal.get("/me/bookings", async (c) => {
     .orderBy(desc(schema.orders.scheduledAt));
 
   // Filter in JS so we still include orders without scheduled_at if none match
-  return c.json(rows.filter((r) => r.scheduledAt != null));
+  return c.json<Order[]>(rows.filter((r) => r.scheduledAt != null));
 });
 
 // GET /me/orders — customer's orders (unified — replaces estimates + quotes)
@@ -80,7 +83,7 @@ portal.get("/me/orders", async (c) => {
     .where(eq(schema.orders.customerId, customerId))
     .orderBy(desc(schema.orders.createdAt));
 
-  return c.json(rows);
+  return c.json<Order[]>(rows);
 });
 
 // GET /me/orders/:id — single order detail with events (customer-scoped)
@@ -88,7 +91,7 @@ portal.get("/me/orders/:id", async (c) => {
   const customerId = c.get("customerId");
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const [order] = await db
@@ -98,7 +101,7 @@ portal.get("/me/orders/:id", async (c) => {
     .limit(1);
 
   if (!order || order.customerId !== customerId) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
   const events = await db
@@ -107,7 +110,7 @@ portal.get("/me/orders/:id", async (c) => {
     .where(eq(schema.orderEvents.orderId, id))
     .orderBy(desc(schema.orderEvents.createdAt));
 
-  return c.json({ order, events });
+  return c.json<{ order: Order; events: OrderEvent[] }>({ order, events });
 });
 
 // GET /me/estimates — backward compat redirect to orders
@@ -119,7 +122,7 @@ portal.get("/me/estimates", async (c) => {
     .where(eq(schema.orders.customerId, customerId))
     .orderBy(desc(schema.orders.createdAt));
 
-  return c.json(rows);
+  return c.json<Order[]>(rows);
 });
 
 // GET /me/quotes — backward compat redirect to orders
@@ -131,7 +134,7 @@ portal.get("/me/quotes", async (c) => {
     .where(eq(schema.orders.customerId, customerId))
     .orderBy(desc(schema.orders.createdAt));
 
-  return c.json(rows);
+  return c.json<Order[]>(rows);
 });
 
 // Harness enforces role-based permission (e.g. "customer may approve
@@ -144,7 +147,7 @@ portal.post("/me/orders/:id/approve", async (c) => {
   const customerId = c.get("customerId");
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   // Ownership check — harness handles role-based permission, we handle
@@ -155,7 +158,7 @@ portal.post("/me/orders/:id/approve", async (c) => {
     .where(eq(schema.orders.id, id))
     .limit(1);
   if (!order || order.customerId !== customerId) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
   const result = await transition(id, "approved", { kind: "customer", customerId });
@@ -167,7 +170,7 @@ portal.post("/me/orders/:id/decline", zValidator("json", orderReasonInput), asyn
   const customerId = c.get("customerId");
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+    return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
   }
 
   const [order] = await db
@@ -176,7 +179,7 @@ portal.post("/me/orders/:id/decline", zValidator("json", orderReasonInput), asyn
     .where(eq(schema.orders.id, id))
     .limit(1);
   if (!order || order.customerId !== customerId) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
   const { reason } = c.req.valid("json");
@@ -195,7 +198,7 @@ portal.post(
     const customerId = c.get("customerId");
     const id = Number(c.req.param("id"));
     if (!Number.isInteger(id) || id <= 0) {
-      return c.json({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
+      return c.json<ApiError>({ error: { code: "BAD_REQUEST", message: "Invalid order ID" } }, 400);
     }
 
     const [order] = await db
@@ -204,7 +207,7 @@ portal.post(
       .where(eq(schema.orders.id, id))
       .limit(1);
     if (!order || order.customerId !== customerId) {
-      return c.json({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
+      return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
     }
 
     const { reason } = c.req.valid("json");
