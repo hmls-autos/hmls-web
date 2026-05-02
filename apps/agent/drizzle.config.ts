@@ -2,7 +2,7 @@ import process from "node:process";
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  schema: "./src/db/schema.ts",
+  schema: "../../packages/shared/src/db/schema.ts",
   out: "./migrations",
   dialect: "postgresql",
   dbCredentials: {
