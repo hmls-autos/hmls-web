@@ -2,6 +2,7 @@
 
 import { Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -123,7 +124,17 @@ export default function TimeOffPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => deleteOverride(o.id)}
+                    onClick={async () => {
+                      try {
+                        await deleteOverride(o.id);
+                      } catch (e) {
+                        toast.error(
+                          e instanceof Error
+                            ? e.message
+                            : "Failed to delete override",
+                        );
+                      }
+                    }}
                     className="text-muted-foreground hover:text-red-500"
                   >
                     <Trash2 className="size-4" />

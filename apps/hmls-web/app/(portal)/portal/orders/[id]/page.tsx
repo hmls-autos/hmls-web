@@ -4,7 +4,9 @@ import { ArrowLeft, Check, Printer, X as XIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { OrderProgressBar } from "@/components/OrderProgressBar";
+import { askReason } from "@/components/ui/ReasonDialog";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { usePortalOrder } from "@/hooks/usePortal";
@@ -255,7 +257,10 @@ export default function PortalOrderDetailPage() {
 
   async function handleAction(action: "approve" | "decline") {
     if (action === "decline") {
-      const reason = prompt("Reason for declining (optional):");
+      const reason = await askReason({
+        title: "Decline estimate",
+        description: "Optional: let the shop know what didn't work.",
+      });
       if (reason === null) return;
       await doAction(action, reason || undefined);
     } else {
@@ -272,7 +277,7 @@ export default function PortalOrderDetailPage() {
       });
       mutate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : `Failed to ${action} order`);
+      toast.error(e instanceof Error ? e.message : `Failed to ${action} order`);
     } finally {
       setActionLoading(false);
     }

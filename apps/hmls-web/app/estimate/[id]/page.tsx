@@ -3,7 +3,9 @@
 import { Car, Check, Clock, FileText, Wrench, X as XIcon } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import useSWR from "swr";
+import { askConfirm } from "@/components/ui/ConfirmDialog";
 import { AGENT_URL } from "@/lib/config";
 
 interface LineItem {
@@ -76,9 +78,12 @@ export default function EstimateReviewPage() {
     if (!token) return;
 
     if (action === "decline") {
-      const confirmed = confirm(
-        "Are you sure you want to decline this estimate?",
-      );
+      const confirmed = await askConfirm({
+        title: "Decline this estimate?",
+        description: "You can always restart the chat for a new estimate.",
+        confirmLabel: "Decline",
+        destructive: true,
+      });
       if (!confirmed) return;
     }
 
@@ -94,12 +99,12 @@ export default function EstimateReviewPage() {
       );
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        alert(body?.error?.message ?? `Failed to ${action}`);
+        toast.error(body?.error?.message ?? `Failed to ${action}`);
         return;
       }
       setResult(action === "approve" ? "approved" : "declined");
     } catch {
-      alert(`Failed to ${action} estimate`);
+      toast.error(`Failed to ${action} estimate`);
     } finally {
       setActionLoading(false);
     }

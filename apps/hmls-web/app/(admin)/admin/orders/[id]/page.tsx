@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { ReassignBookingDialog } from "@/components/admin/mechanics/ReassignBookingDialog";
 import { SetTimeDialog } from "@/components/admin/orders/SetTimeDialog";
 import { OrderProgressBar } from "@/components/OrderProgressBar";
@@ -41,6 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { askReason } from "@/components/ui/ReasonDialog";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminOrder } from "@/hooks/useAdmin";
@@ -672,21 +674,24 @@ export default function OrderDetailPage() {
       await transitionStatus("scheduled");
       await mutate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to confirm booking");
+      toast.error(e instanceof Error ? e.message : "Failed to confirm booking");
     } finally {
       setBookingBusy(false);
     }
   }
 
   async function handleBookingReject() {
-    const reason = prompt("Reason (optional):");
+    const reason = await askReason({
+      title: "Reject booking",
+      description: "Optional reason for the customer.",
+    });
     if (reason === null) return;
     setBookingBusy(true);
     try {
       await transitionStatus("cancelled", reason || undefined);
       await mutate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to reject booking");
+      toast.error(e instanceof Error ? e.message : "Failed to reject booking");
     } finally {
       setBookingBusy(false);
     }
@@ -695,7 +700,10 @@ export default function OrderDetailPage() {
   async function handleTransition(newStatus: string) {
     let reason: string | undefined;
     if (newStatus === "cancelled") {
-      const input = prompt("Cancellation reason (optional):");
+      const input = await askReason({
+        title: "Cancel order",
+        description: "Optional cancellation reason.",
+      });
       if (input === null) return;
       reason = input || undefined;
     }

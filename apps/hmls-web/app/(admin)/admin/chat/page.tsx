@@ -13,6 +13,7 @@ import {
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { Button } from "@/components/ui/button";
+import { askConfirm } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/input";
 import { useAgentChat } from "@/hooks/useAgentChat";
 import { STAFF_CHAT_ENDPOINT } from "@/lib/config";
@@ -162,10 +163,15 @@ export default function AdminChatPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
+            onClick={async () => {
               if (
                 uiMessages.length === 0 ||
-                window.confirm("Clear chat history?")
+                (await askConfirm({
+                  title: "Clear chat history?",
+                  description: "This removes all messages from this device.",
+                  confirmLabel: "Clear",
+                  destructive: true,
+                }))
               ) {
                 clearMessages();
               }

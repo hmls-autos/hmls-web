@@ -3,8 +3,10 @@
 import { Calendar, Clock, MapPin, X as XIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { toast } from "sonner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { askReason } from "@/components/ui/ReasonDialog";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { type PortalOrder, usePortalBookings } from "@/hooks/usePortal";
@@ -107,7 +109,10 @@ export default function PortalBookingsPage() {
   const [loading, setLoading] = useState<number | null>(null);
 
   async function handleCancel(orderId: number) {
-    const reason = prompt("Reason for cancelling (optional):");
+    const reason = await askReason({
+      title: "Cancel appointment",
+      description: "Optional: tell us why so we can improve.",
+    });
     if (reason === null) return;
 
     setLoading(orderId);
@@ -118,7 +123,9 @@ export default function PortalBookingsPage() {
       });
       mutate();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to cancel appointment");
+      toast.error(
+        e instanceof Error ? e.message : "Failed to cancel appointment",
+      );
     } finally {
       setLoading(null);
     }

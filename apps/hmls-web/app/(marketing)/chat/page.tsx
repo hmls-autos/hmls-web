@@ -13,6 +13,7 @@ import {
 } from "@/components/ai-elements/conversation";
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { ChatMessage } from "@/components/chat/ChatMessage";
+import { askConfirm } from "@/components/ui/ConfirmDialog";
 import { useAgentChat } from "@/hooks/useAgentChat";
 
 const SUGGESTIONS = [
@@ -219,10 +220,15 @@ function ChatPageInner() {
           </div>
           <motion.button
             type="button"
-            onClick={() => {
+            onClick={async () => {
               if (
                 uiMessages.length === 0 ||
-                window.confirm("Clear chat history?")
+                (await askConfirm({
+                  title: "Clear chat history?",
+                  description: "This removes all messages from this device.",
+                  confirmLabel: "Clear",
+                  destructive: true,
+                }))
               ) {
                 clearMessages();
               }
