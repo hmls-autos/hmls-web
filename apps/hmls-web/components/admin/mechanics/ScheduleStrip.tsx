@@ -52,15 +52,18 @@ export function ScheduleStrip({
   bookings,
   startDate,
 }: Props) {
+  // Compare by epoch ms so consumers passing `new Date()` inline don't
+  // re-trigger this memo every render via the unstable Date reference.
+  const startMs = startDate?.getTime();
   const days = useMemo(() => {
-    const start = startDate ? new Date(startDate) : new Date();
+    const start = startMs != null ? new Date(startMs) : new Date();
     start.setHours(0, 0, 0, 0);
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(start);
       d.setDate(d.getDate() + i);
       return d;
     });
-  }, [startDate]);
+  }, [startMs]);
 
   const weeklyByDow = useMemo(() => {
     const m = new Map<number, WeeklyRow[]>();

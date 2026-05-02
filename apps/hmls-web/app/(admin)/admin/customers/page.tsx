@@ -13,7 +13,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useState,
+} from "react";
 import { useSWRConfig } from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -549,11 +555,14 @@ function CreateCustomerModal({
 
 function CustomersPageInner() {
   const [search, setSearch] = useState("");
+  // Defer the value used to key the SWR fetch so fast typing doesn't
+  // hit the API on every keystroke; the input itself stays responsive.
+  const deferredSearch = useDeferredValue(search);
   const {
     customers,
     isLoading,
     mutate: mutateList,
-  } = useAdminCustomers(search || undefined);
+  } = useAdminCustomers(deferredSearch || undefined);
   const searchParams = useSearchParams();
   const router = useRouter();
   const selectedId = searchParams.get("id")

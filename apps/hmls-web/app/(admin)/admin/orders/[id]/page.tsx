@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ReassignBookingDialog } from "@/components/admin/mechanics/ReassignBookingDialog";
 import { SetTimeDialog } from "@/components/admin/orders/SetTimeDialog";
@@ -602,6 +602,21 @@ export default function OrderDetailPage() {
     savingSchedule,
   } = useOrderMutations(orderId, mutate);
 
+  // Hooks must run before any early return.
+  const orderItems = data?.order.items ?? [];
+  const suggestedDurationMinutes = useMemo(
+    () =>
+      Math.max(
+        60,
+        Math.round(
+          orderItems
+            .filter((it) => it.category === "labor")
+            .reduce((sum, it) => sum + (it.laborHours ?? 0) * 60, 0),
+        ) || 60,
+      ),
+    [orderItems],
+  );
+
   if (isLoading) {
     return (
       <div className="space-y-6 py-6">
@@ -1091,25 +1106,20 @@ export default function OrderDetailPage() {
         onAssigned={() => mutate()}
       />
 
-      <SetTimeDialog
-        open={setTimeOpen}
-        onOpenChange={setSetTimeOpen}
-        initialScheduledAt={
-          order.scheduledAt ? new Date(order.scheduledAt).toISOString() : null
-        }
-        initialDurationMinutes={order.durationMinutes}
-        suggestedDurationMinutes={Math.max(
-          60,
-          Math.round(
-            order.items
-              .filter((it) => it.category === "labor")
-              .reduce((sum, it) => sum + (it.laborHours ?? 0) * 60, 0),
-          ) || 60,
-        )}
-        initialLocation={order.location}
-        saving={savingSchedule}
-        onSave={setSchedule}
-      />
+      {setTimeOpen && (
+        <SetTimeDialog
+          open
+          onOpenChange={setSetTimeOpen}
+          initialScheduledAt={
+            order.scheduledAt ? new Date(order.scheduledAt).toISOString() : null
+          }
+          initialDurationMinutes={order.durationMinutes}
+          suggestedDurationMinutes={suggestedDurationMinutes}
+          initialLocation={order.location}
+          saving={savingSchedule}
+          onSave={setSchedule}
+        />
+      )}
     </div>
   );
 }

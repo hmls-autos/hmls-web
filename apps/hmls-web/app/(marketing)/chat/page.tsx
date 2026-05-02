@@ -4,7 +4,14 @@ import { isToolOrDynamicToolUIPart } from "ai";
 import { motion, useReducedMotion } from "framer-motion";
 import { Loader2, Send, Wrench } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { type FormEvent, Suspense, useEffect, useRef, useState } from "react";
+import {
+  type FormEvent,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useAuth } from "@/components/AuthProvider";
 import {
   Conversation,
@@ -163,14 +170,39 @@ function ChatPageInner() {
   // Filter out empty messages so a transient assistant chunk before the
   // model emits anything doesn't render an empty bubble. Reasoning parts
   // are intentionally skipped — customer chat hides chain-of-thought.
-  const renderable = uiMessages.filter((msg) => {
-    if (msg.role !== "user" && msg.role !== "assistant") return false;
-    return msg.parts.some(
-      (p) =>
-        (p.type === "text" && p.text.trim().length > 0) ||
-        isToolOrDynamicToolUIPart(p),
-    );
-  });
+  const renderable = useMemo(
+    () =>
+      uiMessages.filter((msg) => {
+        if (msg.role !== "user" && msg.role !== "assistant") return false;
+        return msg.parts.some(
+          (p) =>
+            (p.type === "text" && p.text.trim().length > 0) ||
+            isToolOrDynamicToolUIPart(p),
+        );
+      }),
+    [uiMessages],
+  );
+
+  // Map each assistant message id to the text of the first user message
+  // that follows it. Replaces an O(n²) slice+find inside the render loop.
+  const nextUserAnswerByAssistantId = useMemo(() => {
+    const map = new Map<string, string>();
+    let pendingAssistantIds: string[] = [];
+    for (const msg of renderable) {
+      if (msg.role === "assistant") {
+        pendingAssistantIds.push(msg.id);
+      } else if (msg.role === "user") {
+        const text = msg.parts.find(
+          (p): p is { type: "text"; text: string } => p.type === "text",
+        )?.text;
+        if (text) {
+          for (const id of pendingAssistantIds) map.set(id, text);
+        }
+        pendingAssistantIds = [];
+      }
+    }
+    return map;
+  }, [renderable]);
 
   // Show loading state while auth resolves, or while redirecting
   // unauthenticated users to /login / admins to /admin/chat.
@@ -246,16 +278,11 @@ function ChatPageInner() {
         <Conversation className="flex-1 rounded-2xl border border-border bg-surface min-h-0">
           <ConversationContent className="p-6">
             {renderable.length === 0 && <WelcomeScreen onPick={sendMessage} />}
-            {renderable.map((msg, idx) => {
-              // The very next user message after this assistant turn IS the
-              // answer to any ask_user_question or get_availability prompt.
-              const nextUserMsg =
+            {renderable.map((msg) => {
+              const nextUserAnswer =
                 msg.role === "assistant"
-                  ? renderable.slice(idx + 1).find((m) => m.role === "user")
+                  ? nextUserAnswerByAssistantId.get(msg.id)
                   : undefined;
-              const nextUserAnswer = nextUserMsg?.parts.find(
-                (p): p is { type: "text"; text: string } => p.type === "text",
-              )?.text;
               return (
                 <ChatMessage
                   key={msg.id}

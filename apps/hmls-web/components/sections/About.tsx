@@ -12,6 +12,7 @@ export default function About() {
       "(prefers-reduced-motion: reduce)",
     ).matches;
 
+    const observers: IntersectionObserver[] = [];
     for (const el of [imageRef.current, textRef.current]) {
       if (!el) continue;
       if (prefersReducedMotion) {
@@ -27,8 +28,12 @@ export default function About() {
         },
         { threshold: 0.1 },
       );
+      observers.push(observer);
       observer.observe(el);
     }
+    return () => {
+      for (const o of observers) o.disconnect();
+    };
   }, []);
 
   return (
