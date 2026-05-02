@@ -1,19 +1,20 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { isToolOrDynamicToolUIPart } from "ai";
+import { motion, useReducedMotion } from "framer-motion";
 import { Loader2, Send, Wrench } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { EstimateCard } from "@/components/EstimateCard";
-import { QuestionCard } from "@/components/QuestionCard";
-import { SlotPicker } from "@/components/SlotPicker";
-import { Badge } from "@/components/ui/badge";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import { Message, MessageContent } from "@/components/ai-elements/message";
+import { ChatMessage } from "@/components/chat/ChatMessage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Markdown } from "@/components/ui/Markdown";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAgentChat } from "@/hooks/useAgentChat";
-import { toolDisplayNames } from "@/lib/agent-tools";
 import { STAFF_CHAT_ENDPOINT } from "@/lib/config";
 
 const STAFF_SUGGESTIONS = [
@@ -23,23 +24,73 @@ const STAFF_SUGGESTIONS = [
   "Show in-progress orders",
 ];
 
+function WelcomeScreen({ onPick }: { onPick: (text: string) => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+        className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4"
+      >
+        <Wrench className="w-8 h-8 text-primary" />
+      </motion.div>
+      <motion.h2
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="text-xl font-display font-bold text-foreground mb-2"
+      >
+        What do you need?
+      </motion.h2>
+      <motion.p
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="text-muted-foreground max-w-sm"
+      >
+        Create orders, check labor times, look up customers, manage work orders.
+      </motion.p>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="flex flex-wrap gap-2 mt-6 justify-center"
+      >
+        {STAFF_SUGGESTIONS.map((suggestion, index) => (
+          <motion.button
+            key={suggestion}
+            type="button"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 + index * 0.1 }}
+            whileHover={{
+              scale: 1.05,
+              borderColor: "hsl(var(--primary) / 0.5)",
+            }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => onPick(suggestion)}
+            className="px-4 py-2 rounded-full bg-muted border border-border text-sm text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+          >
+            {suggestion}
+          </motion.button>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
 export default function AdminChatPage() {
   const prefersReducedMotion = useReducedMotion();
   const { session } = useAuth();
   const [input, setInput] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
-    messages,
+    uiMessages,
     isLoading,
     error,
-    currentTool,
-    pendingQuestion,
-    pendingSlotPicker,
     sendMessage,
-    answerQuestion,
-    selectSlot,
     clearMessages,
     clearError,
   } = useAgentChat({
@@ -49,10 +100,13 @@ export default function AdminChatPage() {
     inputRef,
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll to bottom on new messages
+  // Focus input on mount only (avoid autoFocus on every state change for mobile).
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const isMobile = window.matchMedia("(pointer: coarse)").matches;
+    if (!isMobile) {
+      inputRef.current?.focus();
+    }
+  }, []);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -61,9 +115,19 @@ export default function AdminChatPage() {
     setInput("");
   };
 
+  const renderable = uiMessages.filter((msg) => {
+    if (msg.role !== "user" && msg.role !== "assistant") return false;
+    return msg.parts.some(
+      (p) =>
+        (p.type === "text" && p.text.trim().length > 0) ||
+        p.type === "reasoning" ||
+        isToolOrDynamicToolUIPart(p),
+    );
+  });
+
   return (
     <main className="flex flex-col flex-1 bg-background text-foreground">
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full pt-8 pb-4 px-4">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full pt-8 pb-4 px-4 min-h-0">
         {/* Header */}
         <motion.div
           initial={prefersReducedMotion ? false : { opacity: 0, y: -20 }}
@@ -100,7 +164,7 @@ export default function AdminChatPage() {
             size="sm"
             onClick={() => {
               if (
-                messages.length === 0 ||
+                uiMessages.length === 0 ||
                 window.confirm("Clear chat history?")
               ) {
                 clearMessages();
@@ -111,225 +175,66 @@ export default function AdminChatPage() {
           </Button>
         </motion.div>
 
-        {/* Messages Area */}
-        <motion.div
-          initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={
-            prefersReducedMotion
-              ? { duration: 0 }
-              : { duration: 0.4, delay: 0.1 }
-          }
-          className="flex-1 overflow-y-auto rounded-2xl border border-border bg-card p-6 space-y-4 min-h-0"
-        >
-          <AnimatePresence mode="wait">
-            {messages.length === 0 && (
-              <motion.div
-                key="welcome"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                className="flex flex-col items-center justify-center h-full text-center"
-              >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4"
-                >
-                  <Wrench className="w-8 h-8 text-primary" />
-                </motion.div>
-                <motion.h2
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-xl font-display font-bold text-foreground mb-2"
-                >
-                  What do you need?
-                </motion.h2>
-                <motion.p
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-muted-foreground max-w-sm"
-                >
-                  Create orders, check labor times, look up customers, manage
-                  work orders.
-                </motion.p>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex flex-wrap gap-2 mt-6 justify-center"
-                >
-                  {STAFF_SUGGESTIONS.map((suggestion, index) => (
-                    <motion.button
-                      key={suggestion}
-                      type="button"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6 + index * 0.1 }}
-                      whileHover={{
-                        scale: 1.05,
-                        borderColor: "hsl(var(--primary) / 0.5)",
-                      }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => sendMessage(suggestion)}
-                      className="px-4 py-2 rounded-full bg-muted border border-border text-sm text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-                    >
-                      {suggestion}
-                    </motion.button>
-                  ))}
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {messages.map((msg, idx) => {
-            if (msg.role === "estimate-card" && msg.estimateData) {
+        {/* Messages */}
+        <Conversation className="flex-1 rounded-2xl border border-border bg-card min-h-0">
+          <ConversationContent className="p-6">
+            {renderable.length === 0 && <WelcomeScreen onPick={sendMessage} />}
+            {renderable.map((msg, idx) => {
+              const isLastAssistant =
+                idx === renderable.length - 1 && msg.role === "assistant";
+              const nextUserMsg =
+                msg.role === "assistant"
+                  ? renderable.slice(idx + 1).find((m) => m.role === "user")
+                  : undefined;
+              const nextUserAnswer = nextUserMsg?.parts.find(
+                (p): p is { type: "text"; text: string } => p.type === "text",
+              )?.text;
               return (
-                <motion.div
+                <ChatMessage
                   key={msg.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex justify-start"
-                >
-                  <div className="max-w-[80%]">
-                    <EstimateCard data={msg.estimateData} />
-                  </div>
-                </motion.div>
+                  msg={msg}
+                  isStreaming={isLastAssistant && isLoading}
+                  nextUserAnswer={nextUserAnswer}
+                  onAnswer={sendMessage}
+                  mode="staff"
+                />
               );
-            }
-            return (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.2 }}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <motion.div
-                  initial={{ opacity: 0, x: msg.role === "user" ? 20 : -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2, delay: 0.05 }}
-                  className={`max-w-[80%] px-5 py-3 rounded-2xl ${
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-muted border border-border text-foreground rounded-bl-md"
-                  }`}
-                >
-                  {msg.role === "user" ? (
-                    <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {msg.content}
-                    </p>
-                  ) : (
-                    <Markdown
-                      content={msg.content}
-                      className="text-sm leading-relaxed"
-                      isStreaming={
-                        isLoading &&
-                        idx === messages.length - 1 &&
-                        msg.role === "assistant"
-                      }
-                    />
-                  )}
-                </motion.div>
-              </motion.div>
-            );
-          })}
+            })}
 
-          {/* Question card */}
-          <AnimatePresence>
-            {pendingQuestion && (
-              <QuestionCard
-                data={pendingQuestion}
-                onSelect={answerQuestion}
-                disabled={isLoading}
-              />
-            )}
-          </AnimatePresence>
-
-          {/* Slot picker */}
-          <AnimatePresence>
-            {pendingSlotPicker && (
-              <SlotPicker
-                data={pendingSlotPicker}
-                onSelect={selectSlot}
-                disabled={isLoading}
-              />
-            )}
-          </AnimatePresence>
-
-          {/* Tool indicator */}
-          <AnimatePresence>
-            {currentTool && currentTool !== "ask_user_question" && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="flex justify-start"
-              >
-                <div className="bg-muted border border-border px-4 py-2 rounded-xl flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                  <Badge variant="secondary" className="text-xs">
-                    {toolDisplayNames[currentTool] || currentTool}...
-                  </Badge>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Error */}
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="flex justify-start"
-              >
-                <div className="max-w-[80%] bg-destructive/10 border border-destructive/20 px-5 py-3 rounded-2xl rounded-bl-md">
-                  <p className="text-xs font-medium text-destructive mb-1">
-                    Error
-                  </p>
-                  <p className="text-sm text-destructive">{error}</p>
-                  <Button
-                    variant="link"
-                    size="xs"
-                    onClick={clearError}
-                    className="text-destructive px-0 mt-1"
-                  >
-                    Dismiss
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Loading skeleton */}
-          <AnimatePresence>
+            {/* Submitted-state indicator: bridges the gap between user
+                send and first assistant token / tool call. */}
             {isLoading &&
-              !currentTool &&
-              messages[messages.length - 1]?.role === "user" && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="flex justify-start"
-                >
-                  <div className="bg-muted border border-border px-5 py-3 rounded-2xl rounded-bl-md space-y-2">
-                    <Skeleton className="h-3 w-48" />
-                    <Skeleton className="h-3 w-36" />
-                    <Skeleton className="h-3 w-24" />
-                  </div>
-                </motion.div>
+              (renderable.length === 0 ||
+                renderable[renderable.length - 1]?.role === "user") && (
+                <Message from="assistant">
+                  <MessageContent>
+                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                      <span>Working on it…</span>
+                    </div>
+                  </MessageContent>
+                </Message>
               )}
-          </AnimatePresence>
 
-          <div ref={messagesEndRef} />
-        </motion.div>
+            {error && (
+              <div className="rounded-2xl bg-destructive/10 border border-destructive/20 px-5 py-3">
+                <p className="text-xs font-medium text-destructive mb-1">
+                  Error
+                </p>
+                <p className="text-sm text-destructive">{error}</p>
+                <Button
+                  variant="link"
+                  size="xs"
+                  onClick={clearError}
+                  className="text-destructive px-0 mt-1"
+                >
+                  Dismiss
+                </Button>
+              </div>
+            )}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
 
         {/* Input */}
         <motion.form
@@ -357,13 +262,13 @@ export default function AdminChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Create an order, check labor times..."
-              disabled={isLoading || !!pendingQuestion}
+              disabled={isLoading}
               className="flex-1 h-14 rounded-xl px-5 text-base"
             />
             <Button
               type="submit"
               aria-label="Send"
-              disabled={isLoading || !input.trim() || !!pendingQuestion}
+              disabled={isLoading || !input.trim()}
               className="w-14 h-14 rounded-xl"
               size="icon-lg"
             >

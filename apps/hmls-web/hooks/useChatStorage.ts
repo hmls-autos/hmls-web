@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 export const DEFAULT_CHAT_STORAGE_KEY = "hmls-chat-history";
 const CHAT_STORAGE_VERSION = 1;
+const PERSIST_DEBOUNCE_MS = 250;
 
 type StoredChat = { v: number; messages: UIMessage[] };
 
@@ -43,25 +44,33 @@ export function clearStoredChat(storageKey: string = DEFAULT_CHAT_STORAGE_KEY) {
   }
 }
 
+/** Debounced persistence — during streaming, `chatMessages` mutates per
+ * token, which would otherwise mean ~100 sync `JSON.stringify` +
+ * `localStorage.setItem` calls per second on the main thread. Each render
+ * schedules a write 250ms out; the cleanup cancels any pending write when
+ * the next change lands, so a burst coalesces into one final write. */
 export function useChatPersist(
   chatMessages: UIMessage[],
   storageKey: string = DEFAULT_CHAT_STORAGE_KEY,
 ) {
   useEffect(() => {
-    try {
-      if (chatMessages.length > 0) {
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify({
-            v: CHAT_STORAGE_VERSION,
-            messages: chatMessages,
-          } satisfies StoredChat),
-        );
-      } else {
-        localStorage.removeItem(storageKey);
+    const timer = window.setTimeout(() => {
+      try {
+        if (chatMessages.length > 0) {
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify({
+              v: CHAT_STORAGE_VERSION,
+              messages: chatMessages,
+            } satisfies StoredChat),
+          );
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+      } catch {
+        /* localStorage full or unavailable */
       }
-    } catch {
-      /* localStorage full or unavailable */
-    }
+    }, PERSIST_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
   }, [chatMessages, storageKey]);
 }

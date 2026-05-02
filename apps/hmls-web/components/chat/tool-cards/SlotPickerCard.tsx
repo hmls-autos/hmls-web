@@ -1,9 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useMemo, useState } from "react";
 
-export interface SlotPickerData {
+export interface SlotPickerOutput {
   slots: Array<{
     providerId: number;
     providerName: string;
@@ -13,12 +12,6 @@ export interface SlotPickerData {
   serviceDurationMinutes: number;
   dateRange: { start: string; end: string };
   message: string;
-}
-
-interface SlotPickerProps {
-  data: SlotPickerData;
-  onSelect: (time: string) => void;
-  disabled?: boolean;
 }
 
 type TimeBucket = "Morning" | "Afternoon" | "Evening";
@@ -47,13 +40,32 @@ function formatTimeLabel(time: string): string {
   });
 }
 
-// Customer view: we don't expose mechanic at all. Bookings are created unassigned;
-// shop admin dispatches from the scheduler after the booking arrives.
-export function SlotPicker({ data, onSelect, disabled }: SlotPickerProps) {
+function formatPickedSlotMessage(time: string): string {
+  const timeLabel = formatTimeLabel(time);
+  const dateLabel = new Date(time).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+  return `I'd like the ${timeLabel} slot on ${dateLabel}.`;
+}
+
+/** Date + time picker rendered inline for the `get_availability` tool result.
+ *
+ * `isAnswered` follows the AskUserQuestion pattern: once the user picks a slot
+ * and the next user message lands, the picker disables itself. */
+export function SlotPickerCard({
+  output,
+  isAnswered,
+  onSelect,
+}: {
+  output: SlotPickerOutput;
+  isAnswered: boolean;
+  onSelect: (message: string) => void;
+}) {
   const { dates, timesByDate } = useMemo(() => {
     const timesByDate = new Map<string, Set<string>>();
-
-    for (const provider of data.slots) {
+    for (const provider of output.slots) {
       for (const time of provider.availableTimes) {
         const dateKey = time.split("T")[0];
         let timeSet = timesByDate.get(dateKey);
@@ -64,18 +76,17 @@ export function SlotPicker({ data, onSelect, disabled }: SlotPickerProps) {
         timeSet.add(time);
       }
     }
-
     const dates = Array.from(timesByDate.keys()).sort();
     return { dates, timesByDate };
-  }, [data.slots]);
+  }, [output.slots]);
 
   const [selectedDate, setSelectedDate] = useState<string>(dates[0] ?? "");
   const [selectedTime, setSelectedTime] = useState<string>("");
 
-  if (data.slots.length === 0) {
+  if (output.slots.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-4 text-sm text-text-secondary">
-        {data.message}
+      <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+        {output.message}
       </div>
     );
   }
@@ -85,24 +96,19 @@ export function SlotPicker({ data, onSelect, disabled }: SlotPickerProps) {
     : new Set<string>();
   const times = Array.from(timeSet).sort();
 
-  function handleConfirm() {
-    if (selectedTime) {
-      onSelect(selectedTime);
-    }
-  }
+  const handleConfirm = () => {
+    if (!selectedTime) return;
+    onSelect(formatPickedSlotMessage(selectedTime));
+  };
 
-  const canConfirm = Boolean(selectedDate && selectedTime);
+  const canConfirm = Boolean(selectedDate && selectedTime) && !isAnswered;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-border bg-surface p-4 space-y-3"
-    >
+    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
       <div>
         <label
           htmlFor="slot-date"
-          className="block text-xs font-medium text-text-secondary mb-1"
+          className="block text-xs font-medium text-muted-foreground mb-1"
         >
           Date
         </label>
@@ -113,8 +119,8 @@ export function SlotPicker({ data, onSelect, disabled }: SlotPickerProps) {
             setSelectedDate(e.target.value);
             setSelectedTime("");
           }}
-          disabled={disabled}
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-red-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary disabled:opacity-50"
+          disabled={isAnswered}
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
         >
           {dates.map((d) => (
             <option key={d} value={d}>
@@ -127,7 +133,7 @@ export function SlotPicker({ data, onSelect, disabled }: SlotPickerProps) {
       <div>
         <label
           htmlFor="slot-time"
-          className="block text-xs font-medium text-text-secondary mb-1"
+          className="block text-xs font-medium text-muted-foreground mb-1"
         >
           Time
         </label>
@@ -135,8 +141,8 @@ export function SlotPicker({ data, onSelect, disabled }: SlotPickerProps) {
           id="slot-time"
           value={selectedTime}
           onChange={(e) => setSelectedTime(e.target.value)}
-          disabled={disabled || times.length === 0}
-          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:border-red-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-red-primary disabled:opacity-50"
+          disabled={isAnswered || times.length === 0}
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
         >
           <option value="" disabled>
             Select a time
@@ -159,18 +165,18 @@ export function SlotPicker({ data, onSelect, disabled }: SlotPickerProps) {
         </select>
       </div>
 
-      <p className="text-[11px] text-text-secondary">
+      <p className="text-[11px] text-muted-foreground">
         Our team will assign a mechanic and confirm your appointment shortly.
       </p>
 
       <button
         type="button"
         onClick={handleConfirm}
-        disabled={!canConfirm || disabled}
-        className="w-full rounded-lg bg-red-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-dark disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-red-primary"
+        disabled={!canConfirm}
+        className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-primary"
       >
-        Confirm Appointment
+        {isAnswered ? "Appointment requested" : "Confirm Appointment"}
       </button>
-    </motion.div>
+    </div>
   );
 }
