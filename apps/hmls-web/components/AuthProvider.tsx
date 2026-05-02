@@ -1,7 +1,7 @@
 "use client";
 
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthContextType = {
@@ -55,10 +55,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabase] = useState(() => createClient());
 
   useEffect(() => {
+    let cancelled = false;
     // Get initial session
     supabase.auth
       .getSession()
       .then(({ data: { session } }: { data: { session: Session | null } }) => {
+        if (cancelled) return;
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
@@ -69,29 +71,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       (_event: AuthChangeEvent, session: Session | null) => {
+        if (cancelled) return;
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
       },
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [supabase]);
 
-  const { isAdmin, isMechanic } = rolesFromSession(session);
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        supabase,
-        isLoading,
-        isAdmin,
-        isMechanic,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // Only re-decode the JWT when the token itself changes. The full session
+  // object holds refresh metadata that updates more often than the token.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: token is the only field that affects decoded roles
+  const { isAdmin, isMechanic } = useMemo(
+    () => rolesFromSession(session),
+    [session?.access_token],
   );
+
+  const value = useMemo(
+    () => ({ user, session, supabase, isLoading, isAdmin, isMechanic }),
+    [user, session, supabase, isLoading, isAdmin, isMechanic],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

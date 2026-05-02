@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import { authFetch, fetcher } from "@/lib/fetcher";
+import { useStableArray } from "@/lib/swr-stable";
 import type { Order } from "@/lib/types";
 
 export interface Mechanic {
@@ -76,7 +77,7 @@ export function useAdminMechanics() {
   }
 
   return {
-    mechanics: data ?? [],
+    mechanics: useStableArray(data),
     isLoading,
     isError: !!error,
     mutate,
@@ -133,7 +134,7 @@ export function useAdminMechanicAvailability(id: number | null) {
   }
 
   return {
-    availability: data ?? [],
+    availability: useStableArray(data),
     isLoading,
     isError: !!error,
     mutate,
@@ -179,7 +180,7 @@ export function useAdminMechanicOverrides(
   }
 
   return {
-    overrides: data ?? [],
+    overrides: useStableArray(data),
     isLoading,
     isError: !!error,
     mutate,
@@ -203,7 +204,7 @@ export function useAdminMechanicOrders(
   );
 
   return {
-    orders: data ?? [],
+    orders: useStableArray(data),
     isLoading,
     isError: !!error,
     mutate,

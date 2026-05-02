@@ -108,7 +108,7 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        router.push("/chat");
+        // Session-change useEffect handles the redirect.
       } else {
         const { error } = await supabase.auth.signUp({
           email,
