@@ -20,7 +20,7 @@ import { desc, eq, like } from "drizzle-orm";
 import { db, schema } from "../db/client.ts";
 import { addNote, attachSchedule, patchItems, recordPayment, transition } from "./order-state.ts";
 import { autoAssignProvider } from "./auto-assign.ts";
-import type { Actor, OrderStatus } from "./order-state-core.ts";
+import type { Actor, OrderStatus } from "@hmls/shared/order/status";
 import type { OrderItem } from "@hmls/shared/db/schema";
 
 const DATABASE_URL = Deno.env.get("DATABASE_URL");

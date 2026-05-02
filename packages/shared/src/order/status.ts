@@ -224,3 +224,52 @@ export function availableActions(
   const allowed = allowedTransitions(from);
   return perms.filter((s) => allowed.includes(s));
 }
+
+// ---------------------------------------------------------------------------
+// Step-progress helpers (consumed by web's progress bar)
+// ---------------------------------------------------------------------------
+
+/** Linear lifecycle steps (excludes branch states declined/revised and
+ *  terminal cancellation). Used to render a progress bar. */
+export const ORDER_MAIN_STEPS = [
+  "draft",
+  "estimated",
+  "approved",
+  "scheduled",
+  "in_progress",
+  "completed",
+] as const;
+
+export type OrderMainStep = (typeof ORDER_MAIN_STEPS)[number];
+
+export const ORDER_TERMINAL_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  "cancelled",
+]);
+
+export const ORDER_BRANCH_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  "declined",
+  "revised",
+]);
+
+export type OrderStepState = "completed" | "current" | "pending";
+
+export function getOrderStepState(
+  stepStatus: OrderStatus,
+  currentStatus: OrderStatus,
+): OrderStepState {
+  const main = ORDER_MAIN_STEPS as readonly OrderStatus[];
+  const currentIdx = main.indexOf(currentStatus);
+  const stepIdx = main.indexOf(stepStatus);
+
+  if (currentIdx === -1) {
+    if (currentStatus === "declined" || currentStatus === "revised") {
+      const effectiveIdx = main.indexOf("estimated");
+      return stepIdx <= effectiveIdx ? "completed" : "pending";
+    }
+    return stepIdx === 0 ? "completed" : "pending";
+  }
+
+  if (stepIdx < currentIdx) return "completed";
+  if (stepIdx === currentIdx) return "current";
+  return "pending";
+}

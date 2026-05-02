@@ -43,7 +43,7 @@ import {
   PAYMENT_ALLOWED_STATUSES,
   resolveAuthority,
   type TerminalStatus,
-} from "./order-state-core.ts";
+} from "@hmls/shared/order/status";
 
 const logger = getLogger(["hmls", "agent", "order-state"]);
 
@@ -61,7 +61,7 @@ export {
   type OrderStatus,
   type TerminalStatus,
   TRANSITIONS,
-} from "./order-state-core.ts";
+} from "@hmls/shared/order/status";
 
 export type OrderRow = typeof schema.orders.$inferSelect;
 
