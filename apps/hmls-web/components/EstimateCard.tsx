@@ -1,6 +1,7 @@
 "use client";
 
-import { Download, ExternalLink, FileText } from "lucide-react";
+import { ArrowRight, Download, ExternalLink, FileText } from "lucide-react";
+import Link from "next/link";
 import { AGENT_URL } from "@/lib/config";
 
 export interface EstimateCardData {
@@ -21,9 +22,14 @@ export interface EstimateCardData {
 
 interface EstimateCardProps {
   data: EstimateCardData;
+  /** Optional in-app deep link to the order detail page (portal for
+   * customers, admin for staff). Rendered as a primary action at the
+   * bottom of the card so the customer can jump from the chat result
+   * straight into their order. */
+  accountLink?: { href: string; label: string };
 }
 
-export function EstimateCard({ data }: EstimateCardProps) {
+export function EstimateCard({ data, accountLink }: EstimateCardProps) {
   const pdfUrl = data.shareUrl ? `${AGENT_URL}${data.shareUrl}` : null;
   const downloadLink = data.downloadUrl
     ? `${AGENT_URL}${data.downloadUrl}`
@@ -107,18 +113,29 @@ export function EstimateCard({ data }: EstimateCardProps) {
       )}
 
       {/* Actions */}
-      {!data.pendingReview && pdfUrl && (
+      {(accountLink || (!data.pendingReview && pdfUrl)) && (
         <div className="px-4 py-2.5 border-t border-border flex items-center gap-3">
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-medium text-red-primary hover:opacity-80 transition-opacity flex items-center gap-1"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            View PDF
-          </a>
-          {downloadLink && (
+          {accountLink && (
+            <Link
+              href={accountLink.href}
+              className="text-xs font-medium text-red-primary hover:opacity-80 transition-opacity flex items-center gap-1"
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+              {accountLink.label}
+            </Link>
+          )}
+          {!data.pendingReview && pdfUrl && (
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-medium text-red-primary hover:opacity-80 transition-opacity flex items-center gap-1"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              View PDF
+            </a>
+          )}
+          {!data.pendingReview && downloadLink && (
             <a
               href={downloadLink}
               target="_blank"
