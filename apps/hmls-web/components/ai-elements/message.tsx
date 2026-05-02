@@ -319,14 +319,26 @@ export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
+// Per-token fade-in for streaming text. Streamdown only animates the delta
+// between renders, so historic messages paint once at mount without flicker.
+// Tuned for snappy reads: 120ms fade, 0 stagger so a chunk's words appear
+// together as one breath rather than rolling out word-by-word.
+const defaultAnimated = {
+  animation: "fadeIn",
+  duration: 120,
+  sep: "word",
+  stagger: 0,
+} as const;
+
 export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
+  ({ className, animated, ...props }: MessageResponseProps) => (
     <Streamdown
       className={cn(
         "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className,
       )}
       plugins={streamdownPlugins}
+      animated={animated ?? defaultAnimated}
       {...props}
     />
   ),

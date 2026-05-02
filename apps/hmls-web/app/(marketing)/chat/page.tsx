@@ -278,7 +278,9 @@ function ChatPageInner() {
         <Conversation className="flex-1 rounded-2xl border border-border bg-surface min-h-0">
           <ConversationContent className="p-6">
             {renderable.length === 0 && <WelcomeScreen onPick={sendMessage} />}
-            {renderable.map((msg) => {
+            {renderable.map((msg, idx) => {
+              const isLastAssistant =
+                idx === renderable.length - 1 && msg.role === "assistant";
               const nextUserAnswer =
                 msg.role === "assistant"
                   ? nextUserAnswerByAssistantId.get(msg.id)
@@ -287,7 +289,7 @@ function ChatPageInner() {
                 <ChatMessage
                   key={msg.id}
                   msg={msg}
-                  isStreaming={false}
+                  isStreaming={isLastAssistant && isLoading}
                   nextUserAnswer={nextUserAnswer}
                   onAnswer={sendMessage}
                   mode="customer"
