@@ -73,7 +73,11 @@ export const ChatMessage = memo(function ChatMessage({
                 </p>
               );
             }
-            return <MessageResponse key={partKey}>{part.text}</MessageResponse>;
+            return (
+              <MessageResponse key={partKey} isAnimating={isStreaming}>
+                {part.text}
+              </MessageResponse>
+            );
           }
           if (part.type === "reasoning") {
             if (hideReasoning) return null;
