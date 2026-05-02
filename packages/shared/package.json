@@ -1,6 +1,8 @@
 {
   "name": "@hmls/shared",
   "version": "0.1.0",
+  "private": true,
+  "type": "module",
   "exports": {
     ".": "./src/mod.ts",
     "./tool-result": "./src/lib/tool-result.ts",
