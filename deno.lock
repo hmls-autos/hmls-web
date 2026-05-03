@@ -5198,6 +5198,15 @@
             "npm:use-stick-to-bottom@^1.1.4"
           ]
         }
+      },
+      "packages/shared": {
+        "packageJson": {
+          "dependencies": [
+            "npm:drizzle-orm@~0.45.2",
+            "npm:postgres@^3.4.9",
+            "npm:zod@^4.3.6"
+          ]
+        }
       }
     }
   }
