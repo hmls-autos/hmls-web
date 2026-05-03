@@ -12,7 +12,7 @@ export const createMechanicInput = z.object({
   serviceRadiusMiles: z.number().optional(),
   homeBaseLat: z.union([z.number(), z.string()]).nullish(),
   homeBaseLng: z.union([z.number(), z.string()]).nullish(),
-  specialties: z.unknown().optional(),
+  specialties: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
   authUserId: z.string().optional(),
 });
@@ -29,7 +29,7 @@ export const updateMechanicInput = z.object({
   serviceRadiusMiles: z.number().optional(),
   homeBaseLat: z.union([z.number(), z.string()]).nullish(),
   homeBaseLng: z.union([z.number(), z.string()]).nullish(),
-  specialties: z.unknown().optional(),
+  specialties: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
   authUserId: z.string().nullish(),
 });

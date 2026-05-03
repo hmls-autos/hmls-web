@@ -9,28 +9,58 @@ import type {
   shops,
 } from "./schema.ts";
 
-export type Order = typeof orders.$inferSelect;
+// ---------------------------------------------------------------------------
+// DB row shapes (Drizzle $inferSelect — Date for timestamps, used by gateway
+// and agent inside DB-touching code).
+// ---------------------------------------------------------------------------
+
+export type OrderRow = typeof orders.$inferSelect;
+export type CustomerRow = typeof customers.$inferSelect;
+export type ProviderRow = typeof providers.$inferSelect;
+export type ProviderAvailabilityRow = typeof providerAvailability.$inferSelect;
+export type ProviderScheduleOverrideRow = typeof providerScheduleOverrides.$inferSelect;
+export type ShopRow = typeof shops.$inferSelect;
+export type OrderEventRow = typeof orderEvents.$inferSelect;
+export type PricingConfigRow = typeof pricingConfig.$inferSelect;
+
+// Insert types (writes accept Date — Drizzle handles the conversion).
 export type OrderInsert = typeof orders.$inferInsert;
-export type Customer = typeof customers.$inferSelect;
 export type CustomerInsert = typeof customers.$inferInsert;
-export type Provider = typeof providers.$inferSelect;
 export type ProviderInsert = typeof providers.$inferInsert;
-export type ProviderAvailability = typeof providerAvailability.$inferSelect;
-export type ProviderScheduleOverride = typeof providerScheduleOverrides.$inferSelect;
-export type Shop = typeof shops.$inferSelect;
-export type OrderEvent = typeof orderEvents.$inferSelect;
-export type PricingConfig = typeof pricingConfig.$inferSelect;
 
-// Single canonical shape. Both Customer.vehicleInfo and Order.vehicleInfo
-// reference this — replaces the divergent definitions in web's old
-// lib/types.ts (one had year: number, the other year: string).
-export type VehicleInfo = { year?: number; make?: string; model?: string };
+// ---------------------------------------------------------------------------
+// Bridge shape — accepts both Drizzle's Date (server-side, Date object)
+// and the JSON-serialized form (client-side, ISO string). One name per
+// entity; both sides use the same type. JSON.stringify silently maps
+// Date → string at the wire, so runtime values on web are strings even
+// though the type allows Date too. Web call sites that need Date methods
+// wrap with `new Date(value)` explicitly.
+// ---------------------------------------------------------------------------
 
-export type { OrderItem } from "./schema.ts";
+type Wire<T> = {
+  [K in keyof T]: T[K] extends Date | null
+    ? Date | string | null
+    : T[K] extends Date
+      ? Date | string
+      : T[K];
+};
 
-// Composite shape returned by GET /api/admin/orders/:id and
-// GET /api/portal/me/orders/:id. Declared once, both gateway and web
-// import from here.
+export type Order = Wire<OrderRow>;
+export type Customer = Wire<CustomerRow>;
+export type Provider = Wire<ProviderRow>;
+export type ProviderAvailability = Wire<ProviderAvailabilityRow>;
+export type ProviderScheduleOverride = Wire<ProviderScheduleOverrideRow>;
+export type Shop = Wire<ShopRow>;
+export type OrderEvent = Wire<OrderEventRow>;
+export type PricingConfig = Wire<PricingConfigRow>;
+
+// Re-export jsonb element shapes from schema (declared there so Drizzle's
+// $type<...>() can reference them). One canonical definition for both
+// the gateway/agent and the web.
+export type { OrderItem, OrderStatusHistoryEntry, VehicleInfo } from "./schema.ts";
+
+// Composite shape returned by GET /api/admin/orders/:id (admin sees the
+// customer record alongside; portal endpoint returns a slimmer shape).
 export type OrderDetail = {
   order: Order;
   customer: Customer | null;
