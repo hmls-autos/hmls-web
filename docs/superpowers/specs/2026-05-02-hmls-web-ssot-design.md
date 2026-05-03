@@ -5,6 +5,38 @@
 **Out of scope:** Fixo (`fixo-web`, `apps/agent/src/fixo`, `apps/gateway/src/routes/fixo`),
 streaming chat routes, UI/visual changes.
 
+## Revision 2026-05-03 — Pivot from Hono RPC to typed-fetch
+
+The original design proposed Hono RPC with `AdminApiType` / `PortalApiType` /
+`MechanicApiType` propagated from gateway to web. During PR 2 implementation we hit a
+structural limit: web typechecking the AppType pulls in the entire transitive type graph
+of every gateway file, which uses Deno-specific imports (`.ts` extensions, `Deno.*`
+globals, `@hmls/agent` workspace package, `@logtape/logtape` JSR import, ...). Each new
+Deno-side dependency would silently become a web concern. The fragility outweighed the
+extra typesafety.
+
+**The revision keeps the high-value parts:**
+- Zod input schemas live in `packages/shared/src/api/contracts/` (originally in gateway).
+  Both gateway routes (via `zValidator`) and web hooks/forms (via `z.infer`) consume
+  the same schemas. Request shapes are SSOT.
+- `c.json<T>(...)` response annotations on every gateway handler, typed by
+  `@hmls/shared/db/types`. Response shapes are SSOT.
+- Sub-app composition (`adminApp` / `portalApp` / `mechanicApp`) at gateway module scope
+  for clean prefix/auth boundaries.
+
+**The revision drops:**
+- `AdminApiType` / `PortalApiType` / `MechanicApiType` exports from `hmls-app.ts`.
+- The relative-path type bridge from `@hmls/shared/api/contract` into gateway source.
+- Web-side accommodations for that bridge (`@deno/types` ambient, `@logtape/logtape`,
+  `hono` dep). `allowImportingTsExtensions: true` stays — the contracts barrel uses
+  `.ts` re-exports for Deno consumers.
+
+**The replacement on the web side (PR 3):** a small `apps/hmls-web/lib/api-paths.ts`
+holds the route strings; a thin typed-fetch wrapper takes a Zod schema for the input and
+a Drizzle type for the output. Three SSOT layers (domain types, state machine, request +
+response shapes) are preserved. The tradeoff: a route-string typo is not caught at
+compile time. Mitigation: every path lives in one file.
+
 ## Goal
 
 Eliminate duplicated and drifted definitions of (1) domain types, (2) order state machine, and
