@@ -6,7 +6,7 @@ import { Errors } from "@hmls/shared/errors";
 import { type AuthEnv, requireAuth } from "../middleware/auth.ts";
 import { transition } from "@hmls/agent/order-state";
 import { sendOrderStateResult } from "../lib/order-state-http.ts";
-import { orderReasonInput, updateProfileInput } from "../contracts/portal.ts";
+import { orderReasonInput, updateProfileInput } from "@hmls/shared/api/contracts/portal";
 import type { Customer, Order, OrderEvent } from "@hmls/shared/db/types";
 
 type ApiError = { error: { code: string; message: string } };

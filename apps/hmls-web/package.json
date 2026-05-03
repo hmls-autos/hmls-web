@@ -30,7 +30,6 @@
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^12.38.0",
     "geist": "^1.7.0",
-    "hono": "^4.12.14",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.577.0",
     "motion": "^12.38.0",

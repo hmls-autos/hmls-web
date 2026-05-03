@@ -7,7 +7,7 @@ import {
   createCustomerInput,
   listCustomersQuery,
   updateCustomerInput,
-} from "../contracts/admin.ts";
+} from "@hmls/shared/api/contracts/admin";
 import type { Customer, Order, VehicleInfo } from "@hmls/shared/db/types";
 import type { OrderStatus } from "@hmls/shared/order/status";
 

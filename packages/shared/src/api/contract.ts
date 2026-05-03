@@ -1,7 +1,4 @@
-// Placeholder. PR 2 wires:
-//   export type { AdminApiType, PortalApiType, MechanicApiType }
-//     from "../../../../apps/gateway/src/hmls-app.ts";
-// and re-exports the Zod contracts barrel. Until then this file exists
-// only so deno.json/package.json exports map resolves cleanly.
-
-export {};
+// Zod input schemas for the HMLS HTTP surface. Both gateway routes and
+// web forms/hooks import from here so request shapes (and their inferred
+// types) are the single source of truth.
+export * from "./contracts/index.ts";

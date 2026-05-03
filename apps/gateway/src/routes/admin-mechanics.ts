@@ -20,7 +20,7 @@ import {
   listOverridesQuery,
   setAvailabilityInput,
   updateMechanicInput,
-} from "../contracts/admin-mechanics.ts";
+} from "@hmls/shared/api/contracts/admin-mechanics";
 import type {
   Order,
   Provider,

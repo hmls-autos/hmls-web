@@ -11,6 +11,11 @@
     "./db/schema": "./src/db/schema.ts",
     "./db/types": "./src/db/types.ts",
     "./order/status": "./src/order/status.ts",
-    "./api/contract": "./src/api/contract.ts"
+    "./api/contract": "./src/api/contract.ts",
+    "./api/contracts/admin": "./src/api/contracts/admin.ts",
+    "./api/contracts/admin-mechanics": "./src/api/contracts/admin-mechanics.ts",
+    "./api/contracts/mechanic": "./src/api/contracts/mechanic.ts",
+    "./api/contracts/orders": "./src/api/contracts/orders.ts",
+    "./api/contracts/portal": "./src/api/contracts/portal.ts"
   }
 }

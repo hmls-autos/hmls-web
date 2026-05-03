@@ -8,7 +8,7 @@ import {
   listMechanicOverridesQuery,
   listMyOrdersQuery,
   setMechanicAvailabilityInput,
-} from "../contracts/mechanic.ts";
+} from "@hmls/shared/api/contracts/mechanic";
 import type {
   Order,
   Provider,

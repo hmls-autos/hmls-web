@@ -27,7 +27,7 @@ import {
   transitionOrderInput,
   updateAdminNotesInput,
   updateOrderInput,
-} from "../contracts/orders.ts";
+} from "@hmls/shared/api/contracts/orders";
 import type { Order, OrderDetail, OrderEvent } from "@hmls/shared/db/types";
 
 type ApiError = { error: { code: string; message: string } };
