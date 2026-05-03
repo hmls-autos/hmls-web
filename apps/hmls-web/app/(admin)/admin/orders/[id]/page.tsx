@@ -154,7 +154,7 @@ function EstimatePanel({
   order: {
     shareToken: string | null;
     id: number;
-    vehicleInfo: { year?: number; make?: string; model?: string } | null;
+    vehicleInfo: { year?: string; make?: string; model?: string } | null;
     priceRangeLowCents: number | null;
     priceRangeHighCents: number | null;
     expiresAt: string | null;
@@ -312,7 +312,7 @@ function BookingPanel({
 }: {
   order: {
     status: string;
-    vehicleInfo: { year?: number; make?: string; model?: string } | null;
+    vehicleInfo: { year?: string; make?: string; model?: string } | null;
     scheduledAt: string | Date | null;
     providerId?: number | null;
     location?: string | null;
@@ -568,7 +568,7 @@ function ActivityTimeline({ events }: { events: OrderEvent[] }) {
               </span>
               <span className="text-[10px] text-muted-foreground">·</span>
               <span className="text-[10px] text-muted-foreground">
-                {relativeTime(event.createdAt)}
+                {event.createdAt ? relativeTime(event.createdAt) : ""}
               </span>
             </div>
           </div>

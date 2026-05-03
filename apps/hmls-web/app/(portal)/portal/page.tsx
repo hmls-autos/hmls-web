@@ -105,7 +105,8 @@ export default function PortalDashboard() {
   const recentOrders = [...orders]
     .sort(
       (a, b) =>
-        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        new Date(b.updatedAt ?? 0).getTime() -
+        new Date(a.updatedAt ?? 0).getTime(),
     )
     .slice(0, 8);
 

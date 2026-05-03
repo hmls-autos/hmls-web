@@ -76,13 +76,13 @@ function PrintReceipt({
     contactEmail: string | null;
     contactPhone: string | null;
     contactAddress: string | null;
-    vehicleInfo: { year?: number; make?: string; model?: string } | null;
+    vehicleInfo: { year?: string; make?: string; model?: string } | null;
     items: OrderItem[];
     subtotalCents: number;
     priceRangeLowCents: number | null;
     priceRangeHighCents: number | null;
     notes: string | null;
-    createdAt: string;
+    createdAt: string | null;
   };
 }) {
   const vehicle = order.vehicleInfo;
