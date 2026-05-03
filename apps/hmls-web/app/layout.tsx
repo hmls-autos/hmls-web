@@ -11,6 +11,7 @@ import { PageEnter } from "@/components/PageEnter";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ReasonDialog } from "@/components/ui/ReasonDialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { websiteSchema } from "@/lib/schema";
 
 const barlow = Barlow({
   subsets: ["latin"],
@@ -78,14 +79,7 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <JsonLd
-          data={{
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            name: "HMLS Mobile Mechanic",
-            url: "https://hmls.autos",
-          }}
-        />
+        <JsonLd data={websiteSchema()} />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <TooltipProvider>
