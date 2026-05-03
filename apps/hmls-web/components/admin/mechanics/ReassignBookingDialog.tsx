@@ -1,5 +1,6 @@
 "use client";
 
+import type { Order } from "@hmls/shared/db/types";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,9 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { assignMechanic, useAdminMechanics } from "@/hooks/useAdminMechanics";
+import {
+  useAdminMechanics,
+  useAssignMechanic,
+} from "@/hooks/useAdminMechanics";
 import { formatDateTime } from "@/lib/format";
-import type { Order } from "@/lib/types";
 
 interface Props {
   order: Order | null;
@@ -28,6 +31,7 @@ export function ReassignBookingDialog({
   onAssigned,
 }: Props) {
   const { mechanics } = useAdminMechanics();
+  const assignMechanic = useAssignMechanic();
   const [targetId, setTargetId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -41,7 +45,7 @@ export function ReassignBookingDialog({
     setIsSaving(true);
     setError(null);
     try {
-      await assignMechanic(order.id, targetId);
+      await assignMechanic(order.id, { providerId: targetId });
       setTargetId(null);
       onOpenChange(false);
       onAssigned?.();

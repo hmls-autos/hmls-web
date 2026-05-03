@@ -4,10 +4,12 @@ import { Check, Pencil, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/Spinner";
+import { useApi } from "@/hooks/useApi";
 import { usePortalCustomer } from "@/hooks/usePortal";
-import { authFetch } from "@/lib/fetcher";
+import { portalPaths } from "@/lib/api-paths";
 
 export default function ProfilePage() {
+  const api = useApi();
   const { customer, isLoading, mutate } = usePortalCustomer();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -32,18 +34,15 @@ export default function ProfilePage() {
   async function handleSave() {
     setSaving(true);
     try {
-      await authFetch("/api/portal/me", {
-        method: "PUT",
-        body: JSON.stringify({
-          name: name.trim() || null,
-          phone: phone.trim() || null,
-          address: address.trim() || null,
-          vehicleInfo: {
-            make: vehicleMake.trim() || null,
-            model: vehicleModel.trim() || null,
-            year: vehicleYear.trim() || null,
-          },
-        }),
+      await api.put(portalPaths.updateMe(), {
+        name: name.trim() || null,
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+        vehicleInfo: {
+          make: vehicleMake.trim() || null,
+          model: vehicleModel.trim() || null,
+          year: vehicleYear.trim() || null,
+        },
       });
       await mutate();
       setEditing(false);

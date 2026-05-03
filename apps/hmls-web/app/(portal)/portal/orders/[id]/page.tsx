@@ -1,5 +1,6 @@
 "use client";
 
+import type { OrderEvent, OrderItem } from "@hmls/shared/db/types";
 import { ArrowLeft, Check, Printer, X as XIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -10,11 +11,11 @@ import { DateTime } from "@/components/ui/DateTime";
 import { askReason } from "@/components/ui/ReasonDialog";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useApi } from "@/hooks/useApi";
 import { usePortalOrder } from "@/hooks/usePortal";
-import { authFetch } from "@/lib/fetcher";
+import { portalPaths } from "@/lib/api-paths";
 import { formatCents } from "@/lib/format";
 import { PORTAL_ORDER_STATUS } from "@/lib/status";
-import type { OrderEvent, OrderItem } from "@/lib/types";
 
 /* ── Timeline helpers ─────────────────────────────────────────────────── */
 
@@ -223,6 +224,7 @@ function PrintReceipt({
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
 export default function PortalOrderDetailPage() {
+  const api = useApi();
   const params = useParams();
   const orderId = params.id as string;
   const { data, isLoading, isError, mutate } = usePortalOrder(orderId);
@@ -274,10 +276,11 @@ export default function PortalOrderDetailPage() {
   async function doAction(action: "approve" | "decline", reason?: string) {
     setActionLoading(true);
     try {
-      await authFetch(`/api/portal/me/orders/${order.id}/${action}`, {
-        method: "POST",
-        body: JSON.stringify(reason ? { reason } : {}),
-      });
+      const path =
+        action === "approve"
+          ? portalPaths.approve(order.id)
+          : portalPaths.decline(order.id);
+      await api.post(path, reason ? { reason } : {});
       mutate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : `Failed to ${action} order`);

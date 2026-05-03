@@ -12,7 +12,8 @@ import {
   type MechanicListRow,
   useAdminMechanics,
 } from "@/hooks/useAdminMechanics";
-import { authFetch } from "@/lib/fetcher";
+import { useApi } from "@/hooks/useApi";
+import { adminPaths } from "@/lib/api-paths";
 import { cn } from "@/lib/utils";
 
 type Filter = "all" | "active" | "inactive" | "available-today";
@@ -56,6 +57,7 @@ function FilterChip({
 }
 
 export default function MechanicsPage() {
+  const api = useApi();
   const { mechanics, isLoading, mutate } = useAdminMechanics();
   const [filter, setFilter] = useState<Filter>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -90,12 +92,9 @@ export default function MechanicsPage() {
   async function toggleActive(m: MechanicListRow) {
     try {
       if (m.isActive) {
-        await authFetch(`/api/admin/mechanics/${m.id}`, { method: "DELETE" });
+        await api.delete(adminPaths.mechanic(m.id));
       } else {
-        await authFetch(`/api/admin/mechanics/${m.id}`, {
-          method: "PATCH",
-          body: JSON.stringify({ isActive: true }),
-        });
+        await api.patch(adminPaths.mechanic(m.id), { isActive: true });
       }
       await mutate();
     } catch (e) {

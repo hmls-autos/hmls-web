@@ -10,8 +10,9 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { askReason } from "@/components/ui/ReasonDialog";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useApi } from "@/hooks/useApi";
 import { type PortalOrder, usePortalOrders } from "@/hooks/usePortal";
-import { authFetch } from "@/lib/fetcher";
+import { portalPaths } from "@/lib/api-paths";
 import { PORTAL_ORDER_STATUS } from "@/lib/status";
 
 function OrderCard({
@@ -114,6 +115,7 @@ function OrderCard({
 }
 
 export default function PortalOrdersPage() {
+  const api = useApi();
   const { orders, isLoading, mutate } = usePortalOrders();
   const [loading, setLoading] = useState<number | null>(null);
 
@@ -137,10 +139,11 @@ export default function PortalOrdersPage() {
   ) {
     setLoading(orderId);
     try {
-      await authFetch(`/api/portal/me/orders/${orderId}/${action}`, {
-        method: "POST",
-        body: JSON.stringify(reason ? { reason } : {}),
-      });
+      const path =
+        action === "approve"
+          ? portalPaths.approve(orderId)
+          : portalPaths.decline(orderId);
+      await api.post(path, reason ? { reason } : {});
       mutate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : `Failed to ${action} order`);

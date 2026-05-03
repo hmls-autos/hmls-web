@@ -40,7 +40,8 @@ import {
   useAdminCustomer,
   useAdminCustomers,
 } from "@/hooks/useAdmin";
-import { authFetch } from "@/lib/fetcher";
+import { useApi } from "@/hooks/useApi";
+import { adminPaths } from "@/lib/api-paths";
 import { formatCents } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -247,6 +248,7 @@ function CustomerDetail({
   id: number;
   onDeleted: () => void;
 }) {
+  const api = useApi();
   const { data, isLoading, mutate: mutateDetail } = useAdminCustomer(id);
   // Refresh every variant of the customer list (including the parent's
   // search-filtered fetch) by mutating all `/api/admin/customers...` keys.
@@ -291,10 +293,7 @@ function CustomerDetail({
     setSaving(true);
     setError(null);
     try {
-      await authFetch(`/api/admin/customers/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(formToPayload(form)),
-      });
+      await api.patch(adminPaths.customer(id), formToPayload(form));
       await Promise.all([mutateDetail(), refreshList()]);
       setEditing(false);
     } catch (e) {
@@ -308,7 +307,7 @@ function CustomerDetail({
     setDeleting(true);
     setError(null);
     try {
-      await authFetch(`/api/admin/customers/${id}`, { method: "DELETE" });
+      await api.delete(adminPaths.customer(id));
       await refreshList();
       onDeleted();
     } catch (e) {
@@ -491,6 +490,7 @@ function CreateCustomerModal({
   onOpenChange: (open: boolean) => void;
   onCreated: (id: number) => void;
 }) {
+  const api = useApi();
   const [form, setForm] = useState<CustomerFormData>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -503,10 +503,10 @@ function CreateCustomerModal({
     setSaving(true);
     setError(null);
     try {
-      const customer = await authFetch<{ id: number }>("/api/admin/customers", {
-        method: "POST",
-        body: JSON.stringify(formToPayload(form)),
-      });
+      const customer = await api.post<{ id: number }>(
+        adminPaths.customers(),
+        formToPayload(form),
+      );
       onCreated(customer.id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Create failed");

@@ -1,8 +1,8 @@
+import type { Order, OrderItem } from "@hmls/shared/db/types";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useApi } from "@/hooks/useApi";
 import { adminPaths } from "@/lib/api-paths";
-import type { Order, OrderItem } from "@/lib/types";
 
 export type OrderContactPatch = {
   contact_name: string;

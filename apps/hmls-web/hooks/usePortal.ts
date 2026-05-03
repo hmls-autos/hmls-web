@@ -1,8 +1,8 @@
+import type { Customer, Order, OrderEvent } from "@hmls/shared/db/types";
 import useSWR from "swr";
 import { useApi } from "@/hooks/useApi";
 import { portalPaths } from "@/lib/api-paths";
 import { useStableArray } from "@/lib/swr-stable";
-import type { Customer, Order, OrderEvent } from "@/lib/types";
 
 export type PortalCustomer = Customer;
 export type PortalOrder = Order;

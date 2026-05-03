@@ -1,47 +1,33 @@
+import type {
+  Order,
+  Provider,
+  ProviderAvailability,
+  ProviderScheduleOverride,
+} from "@hmls/shared/db/types";
 import useSWR from "swr";
-import { authFetch, fetcher } from "@/lib/fetcher";
+import { useApi } from "@/hooks/useApi";
+import { mechanicPaths } from "@/lib/api-paths";
 import { useStableArray } from "@/lib/swr-stable";
-import type { Order } from "@/lib/types";
 
-export interface ProviderSelf {
-  id: number;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  isActive: boolean;
-  timezone: string;
-}
-
-export interface WeeklyAvailabilityRow {
-  id: number;
-  providerId: number;
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-}
-
-export interface ScheduleOverride {
-  id: number;
-  providerId: number;
-  overrideDate: string;
-  isAvailable: boolean;
-  startTime: string | null;
-  endTime: string | null;
-  reason: string | null;
-}
+export type ProviderSelf = Provider;
+export type WeeklyAvailabilityRow = ProviderAvailability;
+export type ScheduleOverride = ProviderScheduleOverride;
+export type MechanicOrder = Order;
 
 export function useMechanicMe() {
-  const { data, error, isLoading } = useSWR<ProviderSelf>(
-    "/api/mechanic/me",
-    fetcher,
+  const api = useApi();
+  const path = mechanicPaths.me();
+  const { data, error, isLoading } = useSWR(path, (p: string) =>
+    api.get<ProviderSelf>(p),
   );
   return { provider: data, isLoading, isError: !!error };
 }
 
 export function useMechanicAvailability() {
-  const { data, error, isLoading, mutate } = useSWR<WeeklyAvailabilityRow[]>(
-    "/api/mechanic/availability",
-    fetcher,
+  const api = useApi();
+  const path = mechanicPaths.availability();
+  const { data, error, isLoading, mutate } = useSWR(path, (p: string) =>
+    api.get<WeeklyAvailabilityRow[]>(p),
   );
 
   async function saveAvailability(
@@ -49,10 +35,7 @@ export function useMechanicAvailability() {
       Pick<WeeklyAvailabilityRow, "dayOfWeek" | "startTime" | "endTime">
     >,
   ) {
-    await authFetch("/api/mechanic/availability", {
-      method: "PUT",
-      body: JSON.stringify({ availability: rows }),
-    });
+    await api.put(path, { availability: rows });
     await mutate();
   }
 
@@ -66,13 +49,14 @@ export function useMechanicAvailability() {
 }
 
 export function useMechanicOverrides(from?: string, to?: string) {
+  const api = useApi();
   const p = new URLSearchParams();
   if (from) p.set("from", from);
   if (to) p.set("to", to);
   const qs = p.toString() ? `?${p.toString()}` : "";
-  const { data, error, isLoading, mutate } = useSWR<ScheduleOverride[]>(
-    `/api/mechanic/overrides${qs}`,
-    fetcher,
+  const path = `${mechanicPaths.overrides()}${qs}`;
+  const { data, error, isLoading, mutate } = useSWR(path, (key: string) =>
+    api.get<ScheduleOverride[]>(key),
   );
 
   async function addOverride(payload: {
@@ -82,15 +66,12 @@ export function useMechanicOverrides(from?: string, to?: string) {
     endTime?: string;
     reason?: string;
   }) {
-    await authFetch("/api/mechanic/overrides", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    await api.post(mechanicPaths.overrides(), payload);
     await mutate();
   }
 
   async function deleteOverride(id: number) {
-    await authFetch(`/api/mechanic/overrides/${id}`, { method: "DELETE" });
+    await api.delete(`${mechanicPaths.overrides()}/${id}`);
     await mutate();
   }
 
@@ -104,16 +85,15 @@ export function useMechanicOverrides(from?: string, to?: string) {
   };
 }
 
-export type MechanicOrder = Order;
-
 export function useMechanicOrders(from?: string, to?: string) {
+  const api = useApi();
   const p = new URLSearchParams();
   if (from) p.set("from", from);
   if (to) p.set("to", to);
   const qs = p.toString() ? `?${p.toString()}` : "";
-  const { data, error, isLoading, mutate } = useSWR<MechanicOrder[]>(
-    `/api/mechanic/orders${qs}`,
-    fetcher,
+  const path = `${mechanicPaths.orders()}${qs}`;
+  const { data, error, isLoading, mutate } = useSWR(path, (key: string) =>
+    api.get<MechanicOrder[]>(key),
   );
 
   return {

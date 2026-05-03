@@ -1,5 +1,6 @@
 "use client";
 
+import type { OrderEvent, OrderItem } from "@hmls/shared/db/types";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -60,7 +61,6 @@ import {
   ORDER_STEP_LABELS_ADMIN,
   ORDER_TRANSITIONS,
 } from "@/lib/status";
-import type { OrderEvent, OrderItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /* ── Constants ────────────────────────────────────────────────────────── */

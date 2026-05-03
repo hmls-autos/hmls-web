@@ -1,8 +1,8 @@
 "use client";
 
+import type { Order } from "@hmls/shared/db/types";
 import { useMemo } from "react";
 import type { ScheduleOverride, WeeklyRow } from "@/hooks/useAdminMechanics";
-import type { Order } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface Props {

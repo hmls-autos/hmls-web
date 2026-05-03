@@ -1,9 +1,8 @@
+import type { Order } from "@hmls/shared/db/types";
 import useSWR from "swr";
 import { useApi } from "@/hooks/useApi";
 import { adminPaths } from "@/lib/api-paths";
-import { authFetch } from "@/lib/fetcher";
 import { useStableArray } from "@/lib/swr-stable";
-import type { Order } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Shape types (mirrors gateway admin-mechanics.ts local types)
@@ -213,21 +212,6 @@ export function useAdminMechanicOrders(
   };
 }
 
-/** Standalone assign helper — kept for legacy call sites (ReassignBookingDialog).
- *  Uses authFetch directly since it is not a hook. Rewrite call sites to
- *  use `useAssignMechanic()` when Task 3.C cleans up lib/fetcher.ts. */
-export async function assignMechanic(
-  orderId: number,
-  providerId: number,
-  force = false,
-) {
-  return await authFetch(adminPaths.assignProvider(orderId), {
-    method: "POST",
-    body: JSON.stringify({ providerId, force }),
-  });
-}
-
-/** Hook-based replacement for the legacy standalone `assignMechanic`. */
 export function useAssignMechanic() {
   const api = useApi();
   return function assign(
