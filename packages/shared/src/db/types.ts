@@ -23,11 +23,6 @@ export type ShopRow = typeof shops.$inferSelect;
 export type OrderEventRow = typeof orderEvents.$inferSelect;
 export type PricingConfigRow = typeof pricingConfig.$inferSelect;
 
-// Insert types (writes accept Date — Drizzle handles the conversion).
-export type OrderInsert = typeof orders.$inferInsert;
-export type CustomerInsert = typeof customers.$inferInsert;
-export type ProviderInsert = typeof providers.$inferInsert;
-
 // ---------------------------------------------------------------------------
 // Wire shapes — what HTTP responses actually carry. JSON.stringify maps
 // Date → ISO string, so timestamps arrive at web clients as strings. Web
@@ -62,7 +57,7 @@ export type PricingConfig = Wire<PricingConfigRow>;
 // Re-export jsonb element shapes from schema (declared there so Drizzle's
 // $type<...>() can reference them). One canonical definition for both
 // the gateway/agent and the web.
-export type { OrderItem, OrderStatusHistoryEntry, VehicleInfo } from "./schema.ts";
+export type { OrderItem, VehicleInfo } from "./schema.ts";
 
 // Composite shape returned by GET /api/admin/orders/:id (admin sees the
 // customer record alongside; portal endpoint returns a slimmer shape).

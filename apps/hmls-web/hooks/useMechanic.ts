@@ -1,6 +1,5 @@
 import type {
   Order,
-  Provider,
   ProviderAvailability,
   ProviderScheduleOverride,
 } from "@hmls/shared/db/types";
@@ -9,19 +8,9 @@ import { useApi } from "@/hooks/useApi";
 import { mechanicPaths } from "@/lib/api-paths";
 import { useStableArray } from "@/lib/swr-stable";
 
-export type ProviderSelf = Provider;
 export type WeeklyAvailabilityRow = ProviderAvailability;
 export type ScheduleOverride = ProviderScheduleOverride;
 export type MechanicOrder = Order;
-
-export function useMechanicMe() {
-  const api = useApi();
-  const path = mechanicPaths.me();
-  const { data, error, isLoading } = useSWR(path, (p: string) =>
-    api.get<ProviderSelf>(p),
-  );
-  return { provider: data, isLoading, isError: !!error };
-}
 
 export function useMechanicAvailability() {
   const api = useApi();

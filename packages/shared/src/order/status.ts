@@ -240,8 +240,6 @@ export const ORDER_MAIN_STEPS = [
   "completed",
 ] as const;
 
-export type OrderMainStep = (typeof ORDER_MAIN_STEPS)[number];
-
 export const ORDER_TERMINAL_STATUSES: ReadonlySet<OrderStatus> = new Set([
   "cancelled",
 ]);
