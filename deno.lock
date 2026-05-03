@@ -17,6 +17,7 @@
     "npm:@base-ui/react@^1.3.0": "1.4.1_@types+react@19.2.14_react@19.2.5_react-dom@19.2.5__react@19.2.5",
     "npm:@biomejs/biome@^2.4.13": "2.4.14",
     "npm:@hono/zod-validator@~0.4.3": "0.4.3_hono@4.12.14_zod@4.3.6",
+    "npm:@radix-ui/react-use-controllable-state@^1.2.2": "1.2.2_@types+react@19.2.14_react@19.2.5",
     "npm:@react-pdf/renderer@^4.3.2": "4.3.2_react@19.2.5",
     "npm:@streamdown/cjk@^1.0.3": "1.0.3_react@19.2.5_micromark@4.0.2_unified@11.0.5",
     "npm:@streamdown/code@^1.1.1": "1.1.1_react@19.2.5",
@@ -61,6 +62,7 @@
     "npm:react-leaflet@5": "5.0.0_leaflet@1.9.4_react@19.2.5_react-dom@19.2.5__react@19.2.5",
     "npm:react@19.2.5": "19.2.5",
     "npm:react@^19.2.4": "19.2.5",
+    "npm:shiki@^4.0.2": "4.0.2",
     "npm:sonner@^2.0.7": "2.0.7_react@19.2.5_react-dom@19.2.5__react@19.2.5",
     "npm:streamdown@^2.5.0": "2.5.0_react@19.2.5_react-dom@19.2.5__react@19.2.5",
     "npm:stripe@^20.4.1": "20.4.1_@types+node@25.6.0",
@@ -2101,7 +2103,17 @@
     "@shikijs/core@3.23.0": {
       "integrity": "sha512-NSWQz0riNb67xthdm5br6lAkvpDJRTgB36fxlo37ZzM2yq0PQFFzbd8psqC2XMPgCzo1fW6cVi18+ArJ44wqgA==",
       "dependencies": [
-        "@shikijs/types",
+        "@shikijs/types@3.23.0",
+        "@shikijs/vscode-textmate",
+        "@types/hast",
+        "hast-util-to-html"
+      ]
+    },
+    "@shikijs/core@4.0.2": {
+      "integrity": "sha512-hxT0YF4ExEqB8G/qFdtJvpmHXBYJ2lWW7qTHDarVkIudPFE6iCIrqdgWxGn5s+ppkGXI0aEGlibI0PAyzP3zlw==",
+      "dependencies": [
+        "@shikijs/primitive",
+        "@shikijs/types@4.0.2",
         "@shikijs/vscode-textmate",
         "@types/hast",
         "hast-util-to-html"
@@ -2110,7 +2122,15 @@
     "@shikijs/engine-javascript@3.23.0": {
       "integrity": "sha512-aHt9eiGFobmWR5uqJUViySI1bHMqrAgamWE1TYSUoftkAeCCAiGawPMwM+VCadylQtF4V3VNOZ5LmfItH5f3yA==",
       "dependencies": [
-        "@shikijs/types",
+        "@shikijs/types@3.23.0",
+        "@shikijs/vscode-textmate",
+        "oniguruma-to-es"
+      ]
+    },
+    "@shikijs/engine-javascript@4.0.2": {
+      "integrity": "sha512-7PW0Nm49DcoUIQEXlJhNNBHyoGMjalRETTCcjMqEaMoJRLljy1Bi/EGV3/qLBgLKQejdspiiYuHGQW6dX94Nag==",
+      "dependencies": [
+        "@shikijs/types@4.0.2",
         "@shikijs/vscode-textmate",
         "oniguruma-to-es"
       ]
@@ -2118,24 +2138,58 @@
     "@shikijs/engine-oniguruma@3.23.0": {
       "integrity": "sha512-1nWINwKXxKKLqPibT5f4pAFLej9oZzQTsby8942OTlsJzOBZ0MWKiwzMsd+jhzu8YPCHAswGnnN1YtQfirL35g==",
       "dependencies": [
-        "@shikijs/types",
+        "@shikijs/types@3.23.0",
+        "@shikijs/vscode-textmate"
+      ]
+    },
+    "@shikijs/engine-oniguruma@4.0.2": {
+      "integrity": "sha512-UpCB9Y2sUKlS9z8juFSKz7ZtysmeXCgnRF0dlhXBkmQnek7lAToPte8DkxmEYGNTMii72zU/lyXiCB6StuZeJg==",
+      "dependencies": [
+        "@shikijs/types@4.0.2",
         "@shikijs/vscode-textmate"
       ]
     },
     "@shikijs/langs@3.23.0": {
       "integrity": "sha512-2Ep4W3Re5aB1/62RSYQInK9mM3HsLeB91cHqznAJMuylqjzNVAVCMnNWRHFtcNHXsoNRayP9z1qj4Sq3nMqYXg==",
       "dependencies": [
-        "@shikijs/types"
+        "@shikijs/types@3.23.0"
+      ]
+    },
+    "@shikijs/langs@4.0.2": {
+      "integrity": "sha512-KaXby5dvoeuZzN0rYQiPMjFoUrz4hgwIE+D6Du9owcHcl6/g16/yT5BQxSW5cGt2MZBz6Hl0YuRqf12omRfUUg==",
+      "dependencies": [
+        "@shikijs/types@4.0.2"
+      ]
+    },
+    "@shikijs/primitive@4.0.2": {
+      "integrity": "sha512-M6UMPrSa3fN5ayeJwFVl9qWofl273wtK1VG8ySDZ1mQBfhCpdd8nEx7nPZ/tk7k+TYcpqBZzj/AnwxT9lO+HJw==",
+      "dependencies": [
+        "@shikijs/types@4.0.2",
+        "@shikijs/vscode-textmate",
+        "@types/hast"
       ]
     },
     "@shikijs/themes@3.23.0": {
       "integrity": "sha512-5qySYa1ZgAT18HR/ypENL9cUSGOeI2x+4IvYJu4JgVJdizn6kG4ia5Q1jDEOi7gTbN4RbuYtmHh0W3eccOrjMA==",
       "dependencies": [
-        "@shikijs/types"
+        "@shikijs/types@3.23.0"
+      ]
+    },
+    "@shikijs/themes@4.0.2": {
+      "integrity": "sha512-mjCafwt8lJJaVSsQvNVrJumbnnj1RI8jbUKrPKgE6E3OvQKxnuRoBaYC51H4IGHePsGN/QtALglWBU7DoKDFnA==",
+      "dependencies": [
+        "@shikijs/types@4.0.2"
       ]
     },
     "@shikijs/types@3.23.0": {
       "integrity": "sha512-3JZ5HXOZfYjsYSk0yPwBrkupyYSLpAE26Qc0HLghhZNGTZg/SKxXIIgoxOpmmeQP0RRSDJTk1/vPfw9tbw+jSQ==",
+      "dependencies": [
+        "@shikijs/vscode-textmate",
+        "@types/hast"
+      ]
+    },
+    "@shikijs/types@4.0.2": {
+      "integrity": "sha512-qzbeRooUTPnLE+sHD/Z8DStmaDgnbbc/pMrU203950aRqjX/6AFHeDYT+j00y2lPdz0ywJKx7o/7qnqTivtlXg==",
       "dependencies": [
         "@shikijs/vscode-textmate",
         "@types/hast"
@@ -2160,7 +2214,7 @@
       "integrity": "sha512-i7HTNuDgZWb+VdrNVOam9gQhIc5MSSDXKWXgbUrn/4vSRaSMM+Rtl10MQj4wLWPNpF7p80waJsAqFP8HZfb0Jg==",
       "dependencies": [
         "react",
-        "shiki"
+        "shiki@3.23.0"
       ]
     },
     "@streamdown/math@1.0.2_react@19.2.5": {
@@ -4686,12 +4740,25 @@
     "shiki@3.23.0": {
       "integrity": "sha512-55Dj73uq9ZXL5zyeRPzHQsK7Nbyt6Y10k5s7OjuFZGMhpp4r/rsLBH0o/0fstIzX1Lep9VxefWljK/SKCzygIA==",
       "dependencies": [
-        "@shikijs/core",
-        "@shikijs/engine-javascript",
-        "@shikijs/engine-oniguruma",
-        "@shikijs/langs",
-        "@shikijs/themes",
-        "@shikijs/types",
+        "@shikijs/core@3.23.0",
+        "@shikijs/engine-javascript@3.23.0",
+        "@shikijs/engine-oniguruma@3.23.0",
+        "@shikijs/langs@3.23.0",
+        "@shikijs/themes@3.23.0",
+        "@shikijs/types@3.23.0",
+        "@shikijs/vscode-textmate",
+        "@types/hast"
+      ]
+    },
+    "shiki@4.0.2": {
+      "integrity": "sha512-eAVKTMedR5ckPo4xne/PjYQYrU3qx78gtJZ+sHlXEg5IHhhoQhMfZVzetTYuaJS0L2Ef3AcCRzCHV8T0WI6nIQ==",
+      "dependencies": [
+        "@shikijs/core@4.0.2",
+        "@shikijs/engine-javascript@4.0.2",
+        "@shikijs/engine-oniguruma@4.0.2",
+        "@shikijs/langs@4.0.2",
+        "@shikijs/themes@4.0.2",
+        "@shikijs/types@4.0.2",
         "@shikijs/vscode-textmate",
         "@types/hast"
       ]
@@ -5090,6 +5157,7 @@
             "npm:@ai-sdk/react@3.0.171",
             "npm:@base-ui/react@^1.3.0",
             "npm:@biomejs/biome@^2.4.13",
+            "npm:@radix-ui/react-use-controllable-state@^1.2.2",
             "npm:@streamdown/cjk@^1.0.3",
             "npm:@streamdown/code@^1.1.1",
             "npm:@streamdown/math@^1.0.2",
@@ -5120,6 +5188,7 @@
             "npm:react-dom@19.2.5",
             "npm:react-leaflet@5",
             "npm:react@19.2.5",
+            "npm:shiki@^4.0.2",
             "npm:sonner@^2.0.7",
             "npm:streamdown@^2.5.0",
             "npm:swr@^2.4.1",
