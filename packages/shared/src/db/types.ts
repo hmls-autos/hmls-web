@@ -40,11 +40,15 @@ export type ProviderInsert = typeof providers.$inferInsert;
 // of the boundary gets the runtime-accurate type.
 // ---------------------------------------------------------------------------
 
+// Order matters: check the non-null Date case FIRST because
+// `Date extends Date | null` is true (Date is a subtype of Date | null).
+// If we tested the union case first, every non-null timestamp would
+// wrongly inherit `| null` — the bug we hit during initial integration.
 type Wire<T> = {
-  [K in keyof T]: T[K] extends Date | null
-    ? string | null
-    : T[K] extends Date
-      ? string
+  [K in keyof T]: T[K] extends Date
+    ? string
+    : T[K] extends Date | null
+      ? string | null
       : T[K];
 };
 
