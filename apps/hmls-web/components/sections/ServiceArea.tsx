@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import RevealOnScroll from "@/components/ui/RevealOnScroll";
 
 const ServiceMap = dynamic(() => import("@/components/ui/RealMap"), {
@@ -22,6 +22,34 @@ const cities = [
 ];
 
 export default function ServiceArea() {
+  const mapHostRef = useRef<HTMLDivElement>(null);
+  const [shouldMountMap, setShouldMountMap] = useState(false);
+
+  // Defer mounting Leaflet (≈150KB JS + 9 tile downloads + DOM init) until the
+  // user is within 600px of the map. Otherwise the entire init chain runs in
+  // a single frame the moment the section scrolls into view, producing a
+  // visible hitch. The 600px lead time lets the browser amortize the work
+  // across several idle frames before the user actually gets there.
+  useEffect(() => {
+    const el = mapHostRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setShouldMountMap(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setShouldMountMap(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section className="w-full py-32 bg-background">
       <div className="max-w-7xl mx-auto px-6">
@@ -37,14 +65,21 @@ export default function ServiceArea() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <div className="w-full h-[450px] rounded-2xl overflow-hidden border border-border mb-10">
-            <Suspense
-              fallback={
-                <div className="w-full h-full bg-surface animate-pulse" />
-              }
-            >
-              <ServiceMap className="w-full h-full" />
-            </Suspense>
+          <div
+            ref={mapHostRef}
+            className="w-full h-[450px] rounded-2xl overflow-hidden border border-border mb-10"
+          >
+            {shouldMountMap ? (
+              <Suspense
+                fallback={
+                  <div className="w-full h-full bg-surface animate-pulse" />
+                }
+              >
+                <ServiceMap className="w-full h-full" />
+              </Suspense>
+            ) : (
+              <div className="w-full h-full bg-surface" />
+            )}
           </div>
         </RevealOnScroll>
 
