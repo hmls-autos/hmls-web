@@ -1,4 +1,5 @@
 import { BUSINESS } from "./business";
+import type { CityContent, ServiceContent } from "./seo-content";
 
 /**
  * JSON-LD builders. Each returns a plain object suitable for `<JsonLd>`.
@@ -87,6 +88,77 @@ export function autoRepairSchema() {
       bestRating: 5,
       worstRating: 1,
     },
+  };
+}
+
+/** Per-city LocalBusiness schema for /areas/[city] pages. */
+export function cityServiceSchema(city: CityContent) {
+  const url = `${BUSINESS.url}/areas/${city.slug}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "AutoRepair",
+    "@id": `${url}#business`,
+    name: `${BUSINESS.name} — ${city.name}`,
+    url,
+    telephone: BUSINESS.phone,
+    email: BUSINESS.email,
+    description: `Mobile mechanic service for ${city.name}, CA — oil changes, brakes, batteries, diagnostics, and pre-purchase inspections in your driveway.`,
+    parentOrganization: { "@id": ORG_ID },
+    address: postalAddress(),
+    geo: geoCoordinates(),
+    priceRange: BUSINESS.priceRange,
+    areaServed: {
+      "@type": "City",
+      name: city.name,
+      containedInPlace: { "@type": "State", name: "California" },
+    },
+    hasOfferCatalog: offerCatalog(),
+    sameAs: [BUSINESS.gmb.shareUrl],
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: BUSINESS.rating.value,
+      reviewCount: BUSINESS.rating.count,
+      bestRating: 5,
+      worstRating: 1,
+    },
+  };
+}
+
+/** Per-service Service schema for /services/[service] pages. */
+export function serviceSchema(service: ServiceContent) {
+  const url = `${BUSINESS.url}/services/${service.slug}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${url}#service`,
+    name: service.name,
+    description: service.intro.replace(/&[a-z]+;/g, ""),
+    url,
+    provider: { "@id": ORG_ID },
+    areaServed: areaServedCities(),
+    serviceType: service.shortName,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "PriceSpecification",
+        description: service.estimatedRange,
+      },
+    },
+  };
+}
+
+/** BreadcrumbList for nested pages (city, service, etc.). */
+export function breadcrumbSchema(trail: { name: string; url: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: trail.map((node, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: node.name,
+      item: node.url,
+    })),
   };
 }
 

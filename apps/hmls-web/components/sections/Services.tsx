@@ -94,12 +94,18 @@ export default function Services() {
         </div>
 
         <RevealOnScroll>
-          <div className="text-center mt-16">
+          <div className="text-center mt-16 flex flex-wrap justify-center gap-4">
             <Link
-              href="/chat"
+              href="/services"
               className="inline-flex items-center gap-2 px-8 py-4 border border-border text-text rounded-xl hover:border-red-500/50 hover:bg-red-500/10 transition-all duration-300 font-display font-semibold tracking-wide"
             >
               View all services
+            </Link>
+            <Link
+              href="/chat"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-300 font-display font-semibold tracking-wide"
+            >
+              Get an Estimate
             </Link>
           </div>
         </RevealOnScroll>
