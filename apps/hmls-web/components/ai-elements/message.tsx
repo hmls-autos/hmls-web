@@ -1,9 +1,5 @@
 "use client";
 
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
@@ -25,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useStreamdownPlugins } from "@/lib/streamdown-plugins";
 import { cn } from "@/lib/utils";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
@@ -317,8 +314,6 @@ export const MessageBranchPage = ({
 
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
-const streamdownPlugins = { cjk, code, math, mermaid };
-
 // Per-token fade-in for streaming text. Streamdown only animates the delta
 // between renders, so historic messages paint once at mount without flicker.
 // Tuned for snappy reads: 120ms fade, 0 stagger so a chunk's words appear
@@ -331,17 +326,24 @@ const defaultAnimated = {
 } as const;
 
 export const MessageResponse = memo(
-  ({ className, animated, ...props }: MessageResponseProps) => (
-    <Streamdown
-      className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className,
-      )}
-      plugins={streamdownPlugins}
-      animated={animated ?? defaultAnimated}
-      {...props}
-    />
-  ),
+  ({ className, animated, children, ...props }: MessageResponseProps) => {
+    const plugins = useStreamdownPlugins(
+      typeof children === "string" ? children : "",
+    );
+    return (
+      <Streamdown
+        className={cn(
+          "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+          className,
+        )}
+        plugins={plugins}
+        animated={animated ?? defaultAnimated}
+        {...props}
+      >
+        {children}
+      </Streamdown>
+    );
+  },
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&
     nextProps.isAnimating === prevProps.isAnimating,
