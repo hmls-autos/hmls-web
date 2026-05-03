@@ -13,7 +13,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useApi } from "@/hooks/useApi";
 import { type PortalOrder, usePortalBookings } from "@/hooks/usePortal";
 import { portalPaths } from "@/lib/api-paths";
-import { PORTAL_ORDER_STATUS } from "@/lib/status";
+import { PORTAL_ORDER_STATUS } from "@/lib/status-display";
 
 function BookingCard({
   order,

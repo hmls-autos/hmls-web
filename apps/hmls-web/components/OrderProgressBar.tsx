@@ -1,17 +1,20 @@
+import {
+  getOrderStepState,
+  isOrderStatus,
+  ORDER_BRANCH_STATUSES,
+  ORDER_MAIN_STEPS,
+  ORDER_TERMINAL_STATUSES,
+} from "@hmls/shared/order/status";
 import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
-  getOrderStepState,
-  ORDER_BRANCH_STATUSES,
-  ORDER_MAIN_STEPS,
-  ORDER_STATUS,
   ORDER_STEP_LABELS_ADMIN,
   ORDER_STEP_LABELS_PORTAL,
-  ORDER_TERMINAL_STATUSES,
   PORTAL_ORDER_STATUS,
-} from "@/lib/status";
+  statusDisplay,
+} from "@/lib/status-display";
 import { cn } from "@/lib/utils";
 
 type Variant = "admin" | "portal";
@@ -44,10 +47,7 @@ const ADMIN_STYLES: VariantStyles = {
     cancelled: "Order was cancelled",
   },
   renderBadge: (status) => {
-    const entry = ORDER_STATUS[status] ?? {
-      label: status,
-      color: "bg-neutral-100 text-neutral-500",
-    };
+    const entry = statusDisplay(status);
     return (
       <Badge variant="outline" className={cn("border-0", entry.color)}>
         {entry.label}
@@ -88,8 +88,9 @@ export function OrderProgressBar({
   variant: Variant;
 }) {
   const styles = STYLES[variant];
-  const isTerminal = ORDER_TERMINAL_STATUSES.has(status);
-  const isBranch = ORDER_BRANCH_STATUSES.has(status);
+  const knownStatus = isOrderStatus(status) ? status : ("draft" as const);
+  const isTerminal = ORDER_TERMINAL_STATUSES.has(knownStatus);
+  const isBranch = ORDER_BRANCH_STATUSES.has(knownStatus);
   const message = styles.branchMessages[status];
 
   return (
@@ -101,7 +102,7 @@ export function OrderProgressBar({
         )}
       >
         {ORDER_MAIN_STEPS.map((step, idx) => {
-          const state = getOrderStepState(step, status);
+          const state = getOrderStepState(step, knownStatus);
           const isDone = state === "completed" || state === "current";
           return (
             <div key={step} className="flex items-center">

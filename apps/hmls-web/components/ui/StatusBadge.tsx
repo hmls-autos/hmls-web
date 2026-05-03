@@ -1,4 +1,4 @@
-import type { StatusConfig } from "@/lib/status";
+import type { StatusConfig } from "@/lib/status-display";
 
 export function StatusBadge({
   status,

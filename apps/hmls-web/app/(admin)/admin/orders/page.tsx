@@ -9,7 +9,7 @@ import { DateTime } from "@/components/ui/DateTime";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminDashboard, useAdminOrders } from "@/hooks/useAdmin";
 import { formatCents } from "@/lib/format";
-import { ORDER_STATUS, type StatusConfig } from "@/lib/status";
+import { ORDER_STATUS, type StatusConfig } from "@/lib/status-display";
 import { cn } from "@/lib/utils";
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */

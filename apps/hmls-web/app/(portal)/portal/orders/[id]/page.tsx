@@ -15,7 +15,7 @@ import { useApi } from "@/hooks/useApi";
 import { usePortalOrder } from "@/hooks/usePortal";
 import { portalPaths } from "@/lib/api-paths";
 import { formatCents } from "@/lib/format";
-import { PORTAL_ORDER_STATUS } from "@/lib/status";
+import { PORTAL_ORDER_STATUS, statusDisplay } from "@/lib/status-display";
 
 /* ── Timeline helpers ─────────────────────────────────────────────────── */
 
@@ -23,8 +23,7 @@ function eventDescription(event: OrderEvent): string {
   switch (event.eventType) {
     case "status_change":
       if (event.toStatus) {
-        const label =
-          PORTAL_ORDER_STATUS[event.toStatus]?.label ?? event.toStatus;
+        const label = statusDisplay(event.toStatus, "portal").label;
         return `Status updated to: ${label}`;
       }
       return "Status updated";
@@ -90,7 +89,7 @@ function PrintReceipt({
   const vehicleStr = vehicle
     ? [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ")
     : null;
-  const statusLabel = PORTAL_ORDER_STATUS[order.status]?.label ?? order.status;
+  const statusLabel = statusDisplay(order.status, "portal").label;
 
   return (
     <div className="hidden print:block text-black bg-white p-8 max-w-2xl mx-auto font-sans">
@@ -536,7 +535,7 @@ export default function PortalOrderDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Status</span>
                   <span className="text-text">
-                    {PORTAL_ORDER_STATUS[order.status]?.label ?? order.status}
+                    {statusDisplay(order.status, "portal").label}
                   </span>
                 </div>
                 {order.expiresAt && (

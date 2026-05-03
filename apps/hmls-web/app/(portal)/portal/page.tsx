@@ -7,7 +7,7 @@ import { DateTime } from "@/components/ui/DateTime";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePortalCustomer, usePortalOrders } from "@/hooks/usePortal";
 import { formatCents } from "@/lib/format";
-import { PORTAL_ORDER_STATUS } from "@/lib/status";
+import { statusDisplay } from "@/lib/status-display";
 
 function SummaryCard({
   label,
@@ -164,7 +164,7 @@ export default function PortalDashboard() {
         <Card className="p-0">
           <CardContent className="p-0 divide-y divide-border">
             {recentOrders.map((order) => {
-              const statusConfig = PORTAL_ORDER_STATUS[order.status];
+              const statusConfig = statusDisplay(order.status, "portal");
               return (
                 <Link
                   key={order.id}
@@ -177,7 +177,7 @@ export default function PortalDashboard() {
                       Order #{order.id}
                     </p>
                     <p className="text-xs text-muted-foreground capitalize">
-                      {statusConfig?.label ?? order.status}
+                      {statusConfig.label}
                       {order.subtotalCents > 0
                         ? ` · ${formatCents(order.subtotalCents)}`
                         : ""}

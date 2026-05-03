@@ -2,6 +2,12 @@
 
 import type { OrderEvent, OrderItem } from "@hmls/shared/db/types";
 import {
+  EDITABLE_STATUSES,
+  isOrderStatus,
+  TRANSITIONS as ORDER_TRANSITIONS,
+  type OrderStatus,
+} from "@hmls/shared/order/status";
+import {
   AlertTriangle,
   ArrowLeft,
   Calendar,
@@ -55,12 +61,7 @@ import {
 } from "@/hooks/useOrderMutations";
 import { AGENT_URL } from "@/lib/config";
 import { formatCents } from "@/lib/format";
-import {
-  EDITABLE_STATUSES,
-  ORDER_STATUS,
-  ORDER_STEP_LABELS_ADMIN,
-  ORDER_TRANSITIONS,
-} from "@/lib/status";
+import { ORDER_STATUS, ORDER_STEP_LABELS_ADMIN } from "@/lib/status-display";
 import { cn } from "@/lib/utils";
 
 /* ── Constants ────────────────────────────────────────────────────────── */
@@ -482,10 +483,12 @@ function eventDescription(event: OrderEvent): string {
   switch (event.eventType) {
     case "status_change":
       if (event.fromStatus && event.toStatus) {
-        const fromLabel =
-          ORDER_STEP_LABELS_ADMIN[event.fromStatus] ?? event.fromStatus;
-        const toLabel =
-          ORDER_STEP_LABELS_ADMIN[event.toStatus] ?? event.toStatus;
+        const fromLabel = isOrderStatus(event.fromStatus)
+          ? ORDER_STEP_LABELS_ADMIN[event.fromStatus]
+          : event.fromStatus;
+        const toLabel = isOrderStatus(event.toStatus)
+          ? ORDER_STEP_LABELS_ADMIN[event.toStatus]
+          : event.toStatus;
         return `Status changed from ${fromLabel} → ${toLabel}`;
       }
       return "Status changed";
@@ -664,8 +667,9 @@ export default function OrderDetailPage() {
   const vehicleStr = vehicle
     ? [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ")
     : null;
-  const allowed = ORDER_TRANSITIONS[order.status] ?? [];
-  const isEditable = EDITABLE_STATUSES.includes(order.status);
+  const knownStatus = isOrderStatus(order.status) ? order.status : undefined;
+  const allowed = knownStatus ? ORDER_TRANSITIONS[knownStatus] : [];
+  const isEditable = knownStatus ? EDITABLE_STATUSES.has(knownStatus) : false;
 
   const showEstimatePanel = ESTIMATE_STATUSES.has(order.status);
   const showQuotePanel = QUOTE_STATUSES.has(order.status);
@@ -1025,7 +1029,7 @@ export default function OrderDetailPage() {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="flex flex-col gap-2">
-                  {allowed.map((next) => {
+                  {allowed.map((next: OrderStatus) => {
                     const isDanger = DANGER_ACTIONS.has(next);
                     return (
                       <Button

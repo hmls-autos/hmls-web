@@ -13,7 +13,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useApi } from "@/hooks/useApi";
 import { type PortalOrder, usePortalOrders } from "@/hooks/usePortal";
 import { portalPaths } from "@/lib/api-paths";
-import { PORTAL_ORDER_STATUS } from "@/lib/status";
+import { PORTAL_ORDER_STATUS, statusDisplay } from "@/lib/status-display";
 
 function OrderCard({
   order,
@@ -70,9 +70,7 @@ function OrderCard({
                 className="flex items-center gap-2 text-xs text-text-secondary"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-text-secondary shrink-0" />
-                <span>
-                  {PORTAL_ORDER_STATUS[entry.status]?.label ?? entry.status}
-                </span>
+                <span>{statusDisplay(entry.status, "portal").label}</span>
                 <span className="text-text-secondary/60">
                   {new Date(entry.timestamp).toLocaleDateString("en-US", {
                     month: "short",
