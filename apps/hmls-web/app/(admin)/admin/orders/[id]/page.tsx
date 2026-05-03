@@ -79,9 +79,22 @@ const TRANSITION_LABELS: Record<string, string> = {
 
 const DANGER_ACTIONS = new Set(["cancelled", "declined"]);
 
-const ESTIMATE_STATUSES = new Set(["draft", "revised"]);
-const QUOTE_STATUSES = new Set(["estimated", "approved"]);
-const BOOKING_STATUSES = new Set(["scheduled", "in_progress", "completed"]);
+// Panel-visibility predicates over canonical OrderStatus. These are NOT
+// quote/booking *statuses* (those tables were dropped in Layer 3) — they
+// just decide which side panel to render in the order detail view.
+const SHOW_ESTIMATE_PANEL_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  "draft",
+  "revised",
+]);
+const SHOW_QUOTE_PANEL_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  "estimated",
+  "approved",
+]);
+const SHOW_BOOKING_PANEL_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  "scheduled",
+  "in_progress",
+  "completed",
+]);
 
 /* ── Status Badge (using shadcn Badge) ─────────────────────────────── */
 
@@ -671,10 +684,14 @@ export default function OrderDetailPage() {
   const allowed = knownStatus ? ORDER_TRANSITIONS[knownStatus] : [];
   const isEditable = knownStatus ? EDITABLE_STATUSES.has(knownStatus) : false;
 
-  const showEstimatePanel = ESTIMATE_STATUSES.has(order.status);
-  const showQuotePanel = QUOTE_STATUSES.has(order.status);
+  const showEstimatePanel = knownStatus
+    ? SHOW_ESTIMATE_PANEL_STATUSES.has(knownStatus)
+    : false;
+  const showQuotePanel = knownStatus
+    ? SHOW_QUOTE_PANEL_STATUSES.has(knownStatus)
+    : false;
   const showBookingPanel =
-    BOOKING_STATUSES.has(order.status) ||
+    (knownStatus ? SHOW_BOOKING_PANEL_STATUSES.has(knownStatus) : false) ||
     order.scheduledAt != null ||
     order.status === "approved" ||
     // Chat-flow drafts accumulate the appointment + auto-assigned mechanic
