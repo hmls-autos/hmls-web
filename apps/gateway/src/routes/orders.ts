@@ -28,7 +28,7 @@ import {
   updateAdminNotesInput,
   updateOrderInput,
 } from "@hmls/shared/api/contracts/orders";
-import type { Order, OrderDetail, OrderEvent } from "@hmls/shared/db/types";
+import type { OrderDetailRow, OrderEventRow, OrderRow } from "@hmls/shared/db/types";
 
 type ApiError = { error: { code: string; message: string } };
 
@@ -77,7 +77,7 @@ orders.get("/", zValidator("query", listOrdersQuery), async (c) => {
   }
 
   const rows = await query.limit(limit).offset(offset);
-  return c.json<Order[]>(rows);
+  return c.json<OrderRow[]>(rows);
 });
 
 // POST /orders — create a new draft order
@@ -157,7 +157,7 @@ orders.post("/", zValidator("json", createOrderInput), async (c) => {
     metadata: { itemCount: orderItems.length, source: "admin_post_orders" },
   });
 
-  return c.json<Order>(order, 201);
+  return c.json<OrderRow>(order, 201);
 });
 
 // GET /orders/:id — single order with related entities + events
@@ -193,7 +193,7 @@ orders.get("/:id", async (c) => {
       .orderBy(desc(schema.orderEvents.createdAt)),
   ]);
 
-  return c.json<OrderDetail>({ order, customer: customer ?? null, events });
+  return c.json<OrderDetailRow>({ order, customer: customer ?? null, events });
 });
 
 // PATCH /orders/:id — edit items (through harness, lifecycle-aware) and/or
@@ -277,7 +277,7 @@ orders.patch("/:id", zValidator("json", updateOrderInput), async (c) => {
   if (!latest) {
     return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
-  return c.json<Order>(latest);
+  return c.json<OrderRow>(latest);
 });
 
 // POST /orders/:id/schedule — set / reschedule the appointment time.
@@ -334,7 +334,7 @@ orders.post("/:id/schedule", zValidator("json", scheduleOrderInput), async (c) =
     .from(schema.orders)
     .where(eq(schema.orders.id, id))
     .limit(1);
-  return c.json<Order>(refreshed ?? result.value);
+  return c.json<OrderRow>(refreshed ?? result.value);
 });
 
 // PATCH /orders/:id/status — generic status transition.
@@ -403,7 +403,7 @@ orders.get("/:id/events", async (c) => {
     .where(eq(schema.orderEvents.orderId, id))
     .orderBy(desc(schema.orderEvents.createdAt));
 
-  return c.json<OrderEvent[]>(events);
+  return c.json<OrderEventRow[]>(events);
 });
 
 // POST /orders/:id/events — add an annotation note to an order. Scoped to
@@ -462,7 +462,7 @@ orders.patch("/:id/notes", zValidator("json", updateAdminNotesInput), async (c) 
     return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Order not found" } }, 404);
   }
 
-  return c.json<Order>(updated);
+  return c.json<OrderRow>(updated);
 });
 
 export { orders };

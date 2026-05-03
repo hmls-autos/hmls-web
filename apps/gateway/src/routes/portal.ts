@@ -7,7 +7,7 @@ import { type AuthEnv, requireAuth } from "../middleware/auth.ts";
 import { transition } from "@hmls/agent/order-state";
 import { sendOrderStateResult } from "../lib/order-state-http.ts";
 import { orderReasonInput, updateProfileInput } from "@hmls/shared/api/contracts/portal";
-import type { Customer, Order, OrderEvent } from "@hmls/shared/db/types";
+import type { CustomerRow, OrderEventRow, OrderRow } from "@hmls/shared/db/types";
 
 type ApiError = { error: { code: string; message: string } };
 
@@ -25,7 +25,7 @@ portal.get("/me", async (c) => {
     .limit(1);
 
   if (!customer) throw Errors.notFound("Customer", customerId);
-  return c.json<Customer>(customer);
+  return c.json<CustomerRow>(customer);
 });
 
 // PUT /me — update customer profile
@@ -53,7 +53,7 @@ portal.put("/me", zValidator("json", updateProfileInput), async (c) => {
     .returning();
 
   if (!updated) throw Errors.notFound("Customer", customerId);
-  return c.json<Customer>(updated);
+  return c.json<CustomerRow>(updated);
 });
 
 // GET /me/bookings — orders with scheduling (unified after Layer 3)
@@ -71,7 +71,7 @@ portal.get("/me/bookings", async (c) => {
     .orderBy(desc(schema.orders.scheduledAt));
 
   // Filter in JS so we still include orders without scheduled_at if none match
-  return c.json<Order[]>(rows.filter((r) => r.scheduledAt != null));
+  return c.json<OrderRow[]>(rows.filter((r) => r.scheduledAt != null));
 });
 
 // GET /me/orders — customer's orders (unified — replaces estimates + quotes)
@@ -83,7 +83,7 @@ portal.get("/me/orders", async (c) => {
     .where(eq(schema.orders.customerId, customerId))
     .orderBy(desc(schema.orders.createdAt));
 
-  return c.json<Order[]>(rows);
+  return c.json<OrderRow[]>(rows);
 });
 
 // GET /me/orders/:id — single order detail with events (customer-scoped)
@@ -110,7 +110,7 @@ portal.get("/me/orders/:id", async (c) => {
     .where(eq(schema.orderEvents.orderId, id))
     .orderBy(desc(schema.orderEvents.createdAt));
 
-  return c.json<{ order: Order; events: OrderEvent[] }>({ order, events });
+  return c.json<{ order: OrderRow; events: OrderEventRow[] }>({ order, events });
 });
 
 // GET /me/estimates — backward compat redirect to orders
@@ -122,7 +122,7 @@ portal.get("/me/estimates", async (c) => {
     .where(eq(schema.orders.customerId, customerId))
     .orderBy(desc(schema.orders.createdAt));
 
-  return c.json<Order[]>(rows);
+  return c.json<OrderRow[]>(rows);
 });
 
 // GET /me/quotes — backward compat redirect to orders
@@ -134,7 +134,7 @@ portal.get("/me/quotes", async (c) => {
     .where(eq(schema.orders.customerId, customerId))
     .orderBy(desc(schema.orders.createdAt));
 
-  return c.json<Order[]>(rows);
+  return c.json<OrderRow[]>(rows);
 });
 
 // Harness enforces role-based permission (e.g. "customer may approve

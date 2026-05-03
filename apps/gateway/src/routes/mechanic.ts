@@ -10,10 +10,10 @@ import {
   setMechanicAvailabilityInput,
 } from "@hmls/shared/api/contracts/mechanic";
 import type {
-  Order,
-  Provider,
-  ProviderAvailability,
-  ProviderScheduleOverride,
+  OrderRow,
+  ProviderAvailabilityRow,
+  ProviderRow,
+  ProviderScheduleOverrideRow,
 } from "@hmls/shared/db/types";
 
 type ApiError = { error: { code: string; message: string } };
@@ -37,7 +37,7 @@ mechanic.get("/me", async (c) => {
   if (!provider) {
     return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Provider not found" } }, 404);
   }
-  return c.json<Provider>(provider);
+  return c.json<ProviderRow>(provider);
 });
 
 // ---------------------------------------------------------------------------
@@ -51,7 +51,7 @@ mechanic.get("/availability", async (c) => {
     .from(schema.providerAvailability)
     .where(eq(schema.providerAvailability.providerId, providerId))
     .orderBy(asc(schema.providerAvailability.dayOfWeek));
-  return c.json<ProviderAvailability[]>(rows);
+  return c.json<ProviderAvailabilityRow[]>(rows);
 });
 
 // Replace the full weekly schedule atomically
@@ -85,7 +85,7 @@ mechanic.put("/availability", zValidator("json", setMechanicAvailabilityInput), 
     .from(schema.providerAvailability)
     .where(eq(schema.providerAvailability.providerId, providerId))
     .orderBy(asc(schema.providerAvailability.dayOfWeek));
-  return c.json<ProviderAvailability[]>(rows);
+  return c.json<ProviderAvailabilityRow[]>(rows);
 });
 
 // ---------------------------------------------------------------------------
@@ -105,7 +105,7 @@ mechanic.get("/overrides", zValidator("query", listMechanicOverridesQuery), asyn
     .from(schema.providerScheduleOverrides)
     .where(and(...conditions))
     .orderBy(asc(schema.providerScheduleOverrides.overrideDate));
-  return c.json<ProviderScheduleOverride[]>(rows);
+  return c.json<ProviderScheduleOverrideRow[]>(rows);
 });
 
 mechanic.post("/overrides", zValidator("json", createMechanicOverrideInput), async (c) => {
@@ -146,7 +146,7 @@ mechanic.post("/overrides", zValidator("json", createMechanicOverrideInput), asy
       reason: body.reason ?? null,
     })
     .returning();
-  return c.json<ProviderScheduleOverride>(created, 201);
+  return c.json<ProviderScheduleOverrideRow>(created, 201);
 });
 
 mechanic.delete("/overrides/:id", async (c) => {
@@ -197,7 +197,7 @@ mechanic.get("/orders", zValidator("query", listMyOrdersQuery), async (c) => {
     .from(schema.orders)
     .where(and(...conditions))
     .orderBy(asc(schema.orders.scheduledAt));
-  return c.json<Order[]>(rows);
+  return c.json<OrderRow[]>(rows);
 });
 
 export { mechanic };

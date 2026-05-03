@@ -22,16 +22,16 @@ import {
   updateMechanicInput,
 } from "@hmls/shared/api/contracts/admin-mechanics";
 import type {
-  Order,
-  Provider,
-  ProviderAvailability,
-  ProviderScheduleOverride,
+  OrderRow,
+  ProviderAvailabilityRow,
+  ProviderRow,
+  ProviderScheduleOverrideRow,
 } from "@hmls/shared/db/types";
 
 type ApiError = { error: { code: string; message: string } };
 
 /** Provider row with aggregate mechanic stats appended. */
-type ProviderWithStats = Provider & {
+type ProviderWithStats = ProviderRow & {
   weekUtilization: number | null;
   isOnJobNow: boolean;
   upcomingBookingsCount: number;
@@ -40,7 +40,7 @@ type ProviderWithStats = Provider & {
 };
 
 /** Order row joined with customer contact fields. */
-type OrderWithCustomer = Order & {
+type OrderWithCustomer = OrderRow & {
   customer: {
     name: string | null;
     email: string | null;
@@ -268,7 +268,7 @@ adminMechanics.post("/", zValidator("json", createMechanicInput), async (c) => {
     })
     .returning();
 
-  return c.json<Provider>(created, 201);
+  return c.json<ProviderRow>(created, 201);
 });
 
 // GET /:id — single mechanic
@@ -293,7 +293,7 @@ adminMechanics.get("/:id", async (c) => {
       404,
     );
   }
-  return c.json<Provider>(provider);
+  return c.json<ProviderRow>(provider);
 });
 
 // PATCH /:id — edit profile fields
@@ -345,7 +345,7 @@ adminMechanics.patch("/:id", zValidator("json", updateMechanicInput), async (c) 
       404,
     );
   }
-  return c.json<Provider>(updated);
+  return c.json<ProviderRow>(updated);
 });
 
 // DELETE /:id — soft delete (sets isActive=false). Bookings reference this
@@ -388,7 +388,7 @@ adminMechanics.get("/:id/availability", async (c) => {
     .from(schema.providerAvailability)
     .where(eq(schema.providerAvailability.providerId, id))
     .orderBy(asc(schema.providerAvailability.dayOfWeek));
-  return c.json<ProviderAvailability[]>(rows);
+  return c.json<ProviderAvailabilityRow[]>(rows);
 });
 
 // PUT /:id/availability — replace weekly hours atomically
@@ -434,7 +434,7 @@ adminMechanics.put("/:id/availability", zValidator("json", setAvailabilityInput)
     .from(schema.providerAvailability)
     .where(eq(schema.providerAvailability.providerId, id))
     .orderBy(asc(schema.providerAvailability.dayOfWeek));
-  return c.json<ProviderAvailability[]>(rows);
+  return c.json<ProviderAvailabilityRow[]>(rows);
 });
 
 // GET /:id/overrides — read schedule overrides
@@ -461,7 +461,7 @@ adminMechanics.get("/:id/overrides", zValidator("query", listOverridesQuery), as
     .from(schema.providerScheduleOverrides)
     .where(and(...conditions))
     .orderBy(asc(schema.providerScheduleOverrides.overrideDate));
-  return c.json<ProviderScheduleOverride[]>(rows);
+  return c.json<ProviderScheduleOverrideRow[]>(rows);
 });
 
 // POST /:id/overrides — upsert override (one per date)
@@ -509,7 +509,7 @@ adminMechanics.post("/:id/overrides", zValidator("json", createOverrideInput), a
       reason: body.reason ?? null,
     })
     .returning();
-  return c.json<ProviderScheduleOverride>(created, 201);
+  return c.json<ProviderScheduleOverrideRow>(created, 201);
 });
 
 // DELETE /:id/overrides/:overrideId — delete single override

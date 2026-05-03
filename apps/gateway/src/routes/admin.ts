@@ -8,7 +8,7 @@ import {
   listCustomersQuery,
   updateCustomerInput,
 } from "@hmls/shared/api/contracts/admin";
-import type { Customer, Order, VehicleInfo } from "@hmls/shared/db/types";
+import type { CustomerRow, OrderRow, VehicleInfo } from "@hmls/shared/db/types";
 import type { OrderStatus } from "@hmls/shared/order/status";
 
 type ApiError = { error: { code: string; message: string } };
@@ -104,7 +104,7 @@ admin.get("/dashboard", async (c) => {
       vehicleInfo: VehicleInfo | null;
       status: OrderStatus;
     }>;
-    recentCustomers: Customer[];
+    recentCustomers: CustomerRow[];
   }>({
     stats: {
       customers: customerCount.count,
@@ -145,7 +145,7 @@ admin.get("/customers", zValidator("query", listCustomersQuery), async (c) => {
   }
 
   const rows = await query.limit(100);
-  return c.json<Customer[]>(rows);
+  return c.json<CustomerRow[]>(rows);
 });
 
 // GET /customers/:id — single customer with their orders
@@ -174,7 +174,7 @@ admin.get("/customers/:id", async (c) => {
     .where(eq(schema.orders.customerId, id))
     .orderBy(desc(schema.orders.createdAt));
 
-  return c.json<{ customer: Customer; orders: Order[] }>({ customer, orders });
+  return c.json<{ customer: CustomerRow; orders: OrderRow[] }>({ customer, orders });
 });
 
 // PATCH /customers/:id — update customer
@@ -213,7 +213,7 @@ admin.patch("/customers/:id", zValidator("json", updateCustomerInput), async (c)
     return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Customer not found" } }, 404);
   }
 
-  return c.json<Customer>(updated);
+  return c.json<CustomerRow>(updated);
 });
 
 // POST /customers — create customer
@@ -238,7 +238,7 @@ admin.post("/customers", zValidator("json", createCustomerInput), async (c) => {
     })
     .returning();
 
-  return c.json<Customer>(customer, 201);
+  return c.json<CustomerRow>(customer, 201);
 });
 
 // DELETE /customers/:id — delete customer

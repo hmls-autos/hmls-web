@@ -29,19 +29,22 @@ export type CustomerInsert = typeof customers.$inferInsert;
 export type ProviderInsert = typeof providers.$inferInsert;
 
 // ---------------------------------------------------------------------------
-// Bridge shape — accepts both Drizzle's Date (server-side, Date object)
-// and the JSON-serialized form (client-side, ISO string). One name per
-// entity; both sides use the same type. JSON.stringify silently maps
-// Date → string at the wire, so runtime values on web are strings even
-// though the type allows Date too. Web call sites that need Date methods
-// wrap with `new Date(value)` explicitly.
+// Wire shapes — what HTTP responses actually carry. JSON.stringify maps
+// Date → ISO string, so timestamps arrive at web clients as strings. Web
+// hooks consume these aliases to keep .createdAt etc. correctly typed.
+//
+// Gateway response annotations (`c.json<...>`) should use the *Row aliases
+// above — those reflect Drizzle's $inferSelect (Date), which is what the
+// pre-serialization data actually looks like inside Hono handlers. The two
+// are related (`Wire<OrderRow>` ≡ `Order`) but kept distinct so each side
+// of the boundary gets the runtime-accurate type.
 // ---------------------------------------------------------------------------
 
 type Wire<T> = {
   [K in keyof T]: T[K] extends Date | null
-    ? Date | string | null
+    ? string | null
     : T[K] extends Date
-      ? Date | string
+      ? string
       : T[K];
 };
 
@@ -61,6 +64,13 @@ export type { OrderItem, OrderStatusHistoryEntry, VehicleInfo } from "./schema.t
 
 // Composite shape returned by GET /api/admin/orders/:id (admin sees the
 // customer record alongside; portal endpoint returns a slimmer shape).
+// *Row variant: pre-serialization (Date timestamps) — used by gateway handlers.
+export type OrderDetailRow = {
+  order: OrderRow;
+  customer: CustomerRow | null;
+  events: OrderEventRow[];
+};
+// Wire variant: post-serialization (string timestamps) — used by web clients.
 export type OrderDetail = {
   order: Order;
   customer: Customer | null;
