@@ -58,10 +58,6 @@ export type MechanicOrderRow = Order & {
   };
 };
 
-/** New canonical alias (Provider + stats). Replaces MechanicListRow going
- *  forward — kept side-by-side until Task 3.C cleans up lib/types.ts. */
-export type ProviderWithStats = MechanicListRow;
-
 // ---------------------------------------------------------------------------
 // Hooks
 // ---------------------------------------------------------------------------
