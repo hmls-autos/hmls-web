@@ -1,5 +1,6 @@
 {
   "workspace": ["./apps/gateway", "./apps/agent", "./packages/shared"],
+  "nodeModulesDir": "auto",
   "imports": {
     "ai": "npm:ai@^6.0.169",
     "@ai-sdk/google": "npm:@ai-sdk/google@^3.0.65",
