@@ -1,8 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { Suspense } from "react";
 import RevealOnScroll from "@/components/ui/RevealOnScroll";
+import { CITIES } from "@/lib/seo-content";
 
 const ServiceMap = dynamic(() => import("@/components/ui/RealMap"), {
   ssr: false,
@@ -10,16 +12,6 @@ const ServiceMap = dynamic(() => import("@/components/ui/RealMap"), {
     <div className="w-full h-full bg-surface animate-pulse rounded-xl" />
   ),
 });
-
-const cities = [
-  "Irvine",
-  "Newport Beach",
-  "Anaheim",
-  "Santa Ana",
-  "Costa Mesa",
-  "Fullerton",
-  "Huntington Beach",
-];
 
 export default function ServiceArea() {
   return (
@@ -50,17 +42,21 @@ export default function ServiceArea() {
 
         <RevealOnScroll>
           <div className="flex flex-wrap justify-center gap-3">
-            {cities.map((city) => (
-              <span
-                key={city}
+            {CITIES.map((city) => (
+              <Link
+                key={city.slug}
+                href={`/areas/${city.slug}`}
                 className="px-5 py-2.5 bg-surface border border-border rounded-full text-sm text-text-secondary font-display hover:border-red-500/30 hover:text-text transition-all duration-300"
               >
-                {city}
-              </span>
+                {city.name}
+              </Link>
             ))}
-            <span className="px-5 py-2.5 text-sm text-text-secondary font-display">
-              and surrounding areas
-            </span>
+            <Link
+              href="/areas"
+              className="px-5 py-2.5 text-sm text-red-400 hover:text-red-300 font-display transition-colors"
+            >
+              View all areas →
+            </Link>
           </div>
         </RevealOnScroll>
       </div>
