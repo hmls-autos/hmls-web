@@ -42,6 +42,13 @@ interface EmailTemplate {
 
 const BASE_URL = Deno.env.get("BASE_URL") || "https://hmls.autos";
 const PORTAL_URL = Deno.env.get("PORTAL_URL") || `${BASE_URL}/portal`;
+const BUSINESS_ADDRESS = Deno.env.get("BUSINESS_ADDRESS") ?? "";
+
+if (!BUSINESS_ADDRESS) {
+  logger.warn(
+    "BUSINESS_ADDRESS env var not set — outgoing emails will lack the physical address required by CAN-SPAM",
+  );
+}
 
 // --- HTML helpers ---
 
@@ -154,9 +161,9 @@ function htmlWrapper(content: string): string {
     <div style="background:#ffffff;border-radius:12px;border:1px solid #e4e4e7;overflow:hidden;">
       ${content}
     </div>
-    <p style="text-align:center;font-size:11px;color:#a1a1aa;margin:16px 0;">HMLS &middot; <a href="${BASE_URL}" style="color:#a1a1aa;">${
+    <p style="text-align:center;font-size:11px;color:#a1a1aa;margin:16px 0;line-height:1.5;">HMLS &middot; <a href="${BASE_URL}" style="color:#a1a1aa;">${
     BASE_URL.replace("https://", "")
-  }</a></p>
+  }</a>${BUSINESS_ADDRESS ? `<br>${BUSINESS_ADDRESS}` : ""}</p>
   </div>
 </td></tr>
 </table>
@@ -475,7 +482,8 @@ export async function notifyOrderStatusChange(
     const template = STATUS_EMAILS[newStatus];
     if (template) {
       const html = template.html ? template.html(ctx) : undefined;
-      await sendEmail(toEmail, template.subject, template.text(ctx), html);
+      const textFooter = BUSINESS_ADDRESS ? `\n\n--\n${BUSINESS_ADDRESS}` : "";
+      await sendEmail(toEmail, template.subject, template.text(ctx) + textFooter, html);
     }
 
     // Notify admin for certain statuses
