@@ -1,7 +1,22 @@
 import { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
 import { and, asc, between, eq, gte, lte } from "drizzle-orm";
 import { db, schema } from "@hmls/agent/db";
 import { type MechanicEnv, requireMechanic } from "../middleware/mechanic.ts";
+import {
+  createMechanicOverrideInput,
+  listMechanicOverridesQuery,
+  listMyOrdersQuery,
+  setMechanicAvailabilityInput,
+} from "@hmls/shared/api/contracts/mechanic";
+import type {
+  OrderRow,
+  ProviderAvailabilityRow,
+  ProviderRow,
+  ProviderScheduleOverrideRow,
+} from "@hmls/shared/db/types";
+
+type ApiError = { error: { code: string; message: string } };
 
 const mechanic = new Hono<MechanicEnv>();
 
@@ -20,9 +35,9 @@ mechanic.get("/me", async (c) => {
     .limit(1);
 
   if (!provider) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Provider not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Provider not found" } }, 404);
   }
-  return c.json(provider);
+  return c.json<ProviderRow>(provider);
 });
 
 // ---------------------------------------------------------------------------
@@ -36,44 +51,18 @@ mechanic.get("/availability", async (c) => {
     .from(schema.providerAvailability)
     .where(eq(schema.providerAvailability.providerId, providerId))
     .orderBy(asc(schema.providerAvailability.dayOfWeek));
-  return c.json(rows);
+  return c.json<ProviderAvailabilityRow[]>(rows);
 });
 
 // Replace the full weekly schedule atomically
-mechanic.put("/availability", async (c) => {
+mechanic.put("/availability", zValidator("json", setMechanicAvailabilityInput), async (c) => {
   const providerId = c.get("providerId");
-  const body = await c.req.json<{
-    availability: Array<{ dayOfWeek: number; startTime: string; endTime: string }>;
-  }>().catch(() => null);
+  const body = c.req.valid("json");
 
-  if (!body?.availability || !Array.isArray(body.availability)) {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: "availability array required" } },
-      400,
-    );
-  }
-
-  // Validate
+  // Business rule beyond shape: endTime must be after startTime
   for (const row of body.availability) {
-    if (
-      !Number.isInteger(row.dayOfWeek) ||
-      row.dayOfWeek < 0 ||
-      row.dayOfWeek > 6 ||
-      !/^\d{2}:\d{2}(:\d{2})?$/.test(row.startTime) ||
-      !/^\d{2}:\d{2}(:\d{2})?$/.test(row.endTime)
-    ) {
-      return c.json(
-        {
-          error: {
-            code: "BAD_REQUEST",
-            message: "Invalid row: dayOfWeek 0-6, HH:MM[:SS] times required",
-          },
-        },
-        400,
-      );
-    }
     if (row.endTime <= row.startTime) {
-      return c.json(
+      return c.json<ApiError>(
         { error: { code: "BAD_REQUEST", message: "endTime must be after startTime" } },
         400,
       );
@@ -96,17 +85,16 @@ mechanic.put("/availability", async (c) => {
     .from(schema.providerAvailability)
     .where(eq(schema.providerAvailability.providerId, providerId))
     .orderBy(asc(schema.providerAvailability.dayOfWeek));
-  return c.json(rows);
+  return c.json<ProviderAvailabilityRow[]>(rows);
 });
 
 // ---------------------------------------------------------------------------
 // Date-specific overrides (time off, extra hours)
 // ---------------------------------------------------------------------------
 
-mechanic.get("/overrides", async (c) => {
+mechanic.get("/overrides", zValidator("query", listMechanicOverridesQuery), async (c) => {
   const providerId = c.get("providerId");
-  const from = c.req.query("from");
-  const to = c.req.query("to");
+  const { from, to } = c.req.valid("query");
 
   const conditions = [eq(schema.providerScheduleOverrides.providerId, providerId)];
   if (from) conditions.push(gte(schema.providerScheduleOverrides.overrideDate, from));
@@ -117,38 +105,16 @@ mechanic.get("/overrides", async (c) => {
     .from(schema.providerScheduleOverrides)
     .where(and(...conditions))
     .orderBy(asc(schema.providerScheduleOverrides.overrideDate));
-  return c.json(rows);
+  return c.json<ProviderScheduleOverrideRow[]>(rows);
 });
 
-mechanic.post("/overrides", async (c) => {
+mechanic.post("/overrides", zValidator("json", createMechanicOverrideInput), async (c) => {
   const providerId = c.get("providerId");
-  const body = await c.req.json<{
-    overrideDate: string;
-    isAvailable: boolean;
-    startTime?: string;
-    endTime?: string;
-    reason?: string;
-  }>().catch(() => null);
+  const body = c.req.valid("json");
 
-  if (!body?.overrideDate || typeof body.isAvailable !== "boolean") {
-    return c.json(
-      {
-        error: {
-          code: "BAD_REQUEST",
-          message: "overrideDate (YYYY-MM-DD) and isAvailable required",
-        },
-      },
-      400,
-    );
-  }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(body.overrideDate)) {
-    return c.json(
-      { error: { code: "BAD_REQUEST", message: "overrideDate must be YYYY-MM-DD" } },
-      400,
-    );
-  }
+  // Business rule beyond shape: if isAvailable, times are required
   if (body.isAvailable && (!body.startTime || !body.endTime)) {
-    return c.json(
+    return c.json<ApiError>(
       {
         error: {
           code: "BAD_REQUEST",
@@ -180,14 +146,17 @@ mechanic.post("/overrides", async (c) => {
       reason: body.reason ?? null,
     })
     .returning();
-  return c.json(created, 201);
+  return c.json<ProviderScheduleOverrideRow>(created, 201);
 });
 
 mechanic.delete("/overrides/:id", async (c) => {
   const providerId = c.get("providerId");
   const id = Number(c.req.param("id"));
   if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: { code: "BAD_REQUEST", message: "Invalid override ID" } }, 400);
+    return c.json<ApiError>(
+      { error: { code: "BAD_REQUEST", message: "Invalid override ID" } },
+      400,
+    );
   }
 
   const result = await db
@@ -201,19 +170,18 @@ mechanic.delete("/overrides/:id", async (c) => {
     .returning({ id: schema.providerScheduleOverrides.id });
 
   if (result.length === 0) {
-    return c.json({ error: { code: "NOT_FOUND", message: "Override not found" } }, 404);
+    return c.json<ApiError>({ error: { code: "NOT_FOUND", message: "Override not found" } }, 404);
   }
-  return c.json({ ok: true });
+  return c.json<{ ok: true }>({ ok: true });
 });
 
 // ---------------------------------------------------------------------------
 // My orders (mechanic's assigned work)
 // ---------------------------------------------------------------------------
 
-mechanic.get("/orders", async (c) => {
+mechanic.get("/orders", zValidator("query", listMyOrdersQuery), async (c) => {
   const providerId = c.get("providerId");
-  const from = c.req.query("from");
-  const to = c.req.query("to");
+  const { from, to } = c.req.valid("query");
 
   const conditions = [eq(schema.orders.providerId, providerId)];
   if (from && to) {
@@ -229,7 +197,7 @@ mechanic.get("/orders", async (c) => {
     .from(schema.orders)
     .where(and(...conditions))
     .orderBy(asc(schema.orders.scheduledAt));
-  return c.json(rows);
+  return c.json<OrderRow[]>(rows);
 });
 
 export { mechanic };

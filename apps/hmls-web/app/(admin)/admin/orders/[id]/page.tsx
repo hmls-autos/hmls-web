@@ -1,5 +1,12 @@
 "use client";
 
+import type { OrderEvent, OrderItem } from "@hmls/shared/db/types";
+import {
+  EDITABLE_STATUSES,
+  isOrderStatus,
+  TRANSITIONS as ORDER_TRANSITIONS,
+  type OrderStatus,
+} from "@hmls/shared/order/status";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -54,13 +61,7 @@ import {
 } from "@/hooks/useOrderMutations";
 import { AGENT_URL } from "@/lib/config";
 import { formatCents } from "@/lib/format";
-import {
-  EDITABLE_STATUSES,
-  ORDER_STATUS,
-  ORDER_STEP_LABELS_ADMIN,
-  ORDER_TRANSITIONS,
-} from "@/lib/status";
-import type { OrderEvent, OrderItem } from "@/lib/types";
+import { ORDER_STATUS, ORDER_STEP_LABELS_ADMIN } from "@/lib/status-display";
 import { cn } from "@/lib/utils";
 
 /* ── Constants ────────────────────────────────────────────────────────── */
@@ -78,9 +79,22 @@ const TRANSITION_LABELS: Record<string, string> = {
 
 const DANGER_ACTIONS = new Set(["cancelled", "declined"]);
 
-const ESTIMATE_STATUSES = new Set(["draft", "revised"]);
-const QUOTE_STATUSES = new Set(["estimated", "approved"]);
-const BOOKING_STATUSES = new Set(["scheduled", "in_progress", "completed"]);
+// Panel-visibility predicates over canonical OrderStatus. These are NOT
+// quote/booking *statuses* (those tables were dropped in Layer 3) — they
+// just decide which side panel to render in the order detail view.
+const SHOW_ESTIMATE_PANEL_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  "draft",
+  "revised",
+]);
+const SHOW_QUOTE_PANEL_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  "estimated",
+  "approved",
+]);
+const SHOW_BOOKING_PANEL_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  "scheduled",
+  "in_progress",
+  "completed",
+]);
 
 /* ── Status Badge (using shadcn Badge) ─────────────────────────────── */
 
@@ -154,7 +168,7 @@ function EstimatePanel({
   order: {
     shareToken: string | null;
     id: number;
-    vehicleInfo: { year?: number; make?: string; model?: string } | null;
+    vehicleInfo: { year?: string; make?: string; model?: string } | null;
     priceRangeLowCents: number | null;
     priceRangeHighCents: number | null;
     expiresAt: string | null;
@@ -312,7 +326,7 @@ function BookingPanel({
 }: {
   order: {
     status: string;
-    vehicleInfo: { year?: number; make?: string; model?: string } | null;
+    vehicleInfo: { year?: string; make?: string; model?: string } | null;
     scheduledAt: string | Date | null;
     providerId?: number | null;
     location?: string | null;
@@ -482,10 +496,12 @@ function eventDescription(event: OrderEvent): string {
   switch (event.eventType) {
     case "status_change":
       if (event.fromStatus && event.toStatus) {
-        const fromLabel =
-          ORDER_STEP_LABELS_ADMIN[event.fromStatus] ?? event.fromStatus;
-        const toLabel =
-          ORDER_STEP_LABELS_ADMIN[event.toStatus] ?? event.toStatus;
+        const fromLabel = isOrderStatus(event.fromStatus)
+          ? ORDER_STEP_LABELS_ADMIN[event.fromStatus]
+          : event.fromStatus;
+        const toLabel = isOrderStatus(event.toStatus)
+          ? ORDER_STEP_LABELS_ADMIN[event.toStatus]
+          : event.toStatus;
         return `Status changed from ${fromLabel} → ${toLabel}`;
       }
       return "Status changed";
@@ -568,7 +584,7 @@ function ActivityTimeline({ events }: { events: OrderEvent[] }) {
               </span>
               <span className="text-[10px] text-muted-foreground">·</span>
               <span className="text-[10px] text-muted-foreground">
-                {relativeTime(event.createdAt)}
+                {event.createdAt ? relativeTime(event.createdAt) : ""}
               </span>
             </div>
           </div>
@@ -664,13 +680,18 @@ export default function OrderDetailPage() {
   const vehicleStr = vehicle
     ? [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ")
     : null;
-  const allowed = ORDER_TRANSITIONS[order.status] ?? [];
-  const isEditable = EDITABLE_STATUSES.includes(order.status);
+  const knownStatus = isOrderStatus(order.status) ? order.status : undefined;
+  const allowed = knownStatus ? ORDER_TRANSITIONS[knownStatus] : [];
+  const isEditable = knownStatus ? EDITABLE_STATUSES.has(knownStatus) : false;
 
-  const showEstimatePanel = ESTIMATE_STATUSES.has(order.status);
-  const showQuotePanel = QUOTE_STATUSES.has(order.status);
+  const showEstimatePanel = knownStatus
+    ? SHOW_ESTIMATE_PANEL_STATUSES.has(knownStatus)
+    : false;
+  const showQuotePanel = knownStatus
+    ? SHOW_QUOTE_PANEL_STATUSES.has(knownStatus)
+    : false;
   const showBookingPanel =
-    BOOKING_STATUSES.has(order.status) ||
+    (knownStatus ? SHOW_BOOKING_PANEL_STATUSES.has(knownStatus) : false) ||
     order.scheduledAt != null ||
     order.status === "approved" ||
     // Chat-flow drafts accumulate the appointment + auto-assigned mechanic
@@ -1025,7 +1046,7 @@ export default function OrderDetailPage() {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="flex flex-col gap-2">
-                  {allowed.map((next) => {
+                  {allowed.map((next: OrderStatus) => {
                     const isDanger = DANGER_ACTIONS.has(next);
                     return (
                       <Button

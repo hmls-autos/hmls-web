@@ -19,6 +19,20 @@ interface HmlsAppOptions {
 
 const logger = getLogger(["hmls", "gateway", "app"]);
 
+// ─── Sub-app composition ──────────────────────────────────────────────────
+// Each sub-app's prefix matches its auth boundary and the web's route group:
+//   /api/admin/*    → adminApp    → app/(admin)/*
+//   /api/portal/*   → portalApp   → app/(portal)/*
+//   /api/mechanic/* → mechanicApp → app/(mechanic)/*
+
+const adminApp = new Hono()
+  .route("/", admin)
+  .route("/orders", orders)
+  .route("/mechanics", adminMechanics);
+
+const portalApp = portal;
+const mechanicApp = mechanic;
+
 export function createHmlsApp(options: HmlsAppOptions) {
   const { googleApiKey } = options;
 
@@ -86,11 +100,9 @@ export function createHmlsApp(options: HmlsAppOptions) {
 
   app.route("/api/estimates", estimates);
   app.route("/api/orders", ordersPdf);
-  app.route("/api/portal", portal);
-  app.route("/api/admin", admin);
-  app.route("/api/admin/orders", orders);
-  app.route("/api/admin/mechanics", adminMechanics);
-  app.route("/api/mechanic", mechanic);
+  app.route("/api/admin", adminApp);
+  app.route("/api/portal", portalApp);
+  app.route("/api/mechanic", mechanicApp);
   app.route("/api/chat", chat);
   app.route("/api/admin/chat", staffChat);
 

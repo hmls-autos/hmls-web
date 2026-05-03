@@ -84,7 +84,7 @@ export async function getStripeCustomerIdForUser(
   userId: string,
 ): Promise<string | null> {
   const { db } = await import("../../db/client.ts");
-  const { userProfiles } = await import("../../db/schema.ts");
+  const { userProfiles } = await import("@hmls/shared/db/schema");
   const { eq } = await import("drizzle-orm");
 
   const [profile] = await db
@@ -103,7 +103,7 @@ export async function createCheckoutSession(
   cancelUrl: string,
 ): Promise<string> {
   const { db } = await import("../../db/client.ts");
-  const { userProfiles } = await import("../../db/schema.ts");
+  const { userProfiles } = await import("@hmls/shared/db/schema");
   const { eq } = await import("drizzle-orm");
 
   let stripeCustomerId = await getStripeCustomerIdForUser(userId);
@@ -139,7 +139,7 @@ export async function handleSubscriptionWebhook(
   event: Stripe.Event,
 ): Promise<void> {
   const { db } = await import("../../db/client.ts");
-  const { userProfiles } = await import("../../db/schema.ts");
+  const { userProfiles } = await import("@hmls/shared/db/schema");
   const { eq } = await import("drizzle-orm");
 
   switch (event.type) {

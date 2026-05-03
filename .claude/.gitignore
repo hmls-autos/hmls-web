@@ -1,0 +1,6 @@
+# Local-only hook stubs created when ./hooks/ scripts referenced in
+# settings.json don't exist on disk. Untracked so each contributor
+# can stub them locally without polluting the repo.
+hooks/inject-subagent-context.py
+hooks/session-start.py
+hooks/ralph-loop.py

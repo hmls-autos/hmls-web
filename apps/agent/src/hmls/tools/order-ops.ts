@@ -214,9 +214,9 @@ const getOrderStatusTool = {
       : "Order is in a terminal state";
 
     const items = Array.isArray(order.items) ? order.items : [];
-    const itemSummary = items.map((item: Record<string, unknown>) =>
+    const itemSummary = items.map((item) =>
       `${item.name} (${item.category}) x${item.quantity} @ $${
-        ((item.unitPriceCents as number) / 100).toFixed(2)
+        (item.unitPriceCents / 100).toFixed(2)
       }`
     );
 

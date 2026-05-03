@@ -1,5 +1,6 @@
 "use client";
 
+import type { OrderEvent, OrderItem } from "@hmls/shared/db/types";
 import { ArrowLeft, Check, Printer, X as XIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -10,11 +11,11 @@ import { DateTime } from "@/components/ui/DateTime";
 import { askReason } from "@/components/ui/ReasonDialog";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useApi } from "@/hooks/useApi";
 import { usePortalOrder } from "@/hooks/usePortal";
-import { authFetch } from "@/lib/fetcher";
+import { portalPaths } from "@/lib/api-paths";
 import { formatCents } from "@/lib/format";
-import { PORTAL_ORDER_STATUS } from "@/lib/status";
-import type { OrderEvent, OrderItem } from "@/lib/types";
+import { PORTAL_ORDER_STATUS, statusDisplay } from "@/lib/status-display";
 
 /* ── Timeline helpers ─────────────────────────────────────────────────── */
 
@@ -22,8 +23,7 @@ function eventDescription(event: OrderEvent): string {
   switch (event.eventType) {
     case "status_change":
       if (event.toStatus) {
-        const label =
-          PORTAL_ORDER_STATUS[event.toStatus]?.label ?? event.toStatus;
+        const label = statusDisplay(event.toStatus, "portal").label;
         return `Status updated to: ${label}`;
       }
       return "Status updated";
@@ -76,20 +76,20 @@ function PrintReceipt({
     contactEmail: string | null;
     contactPhone: string | null;
     contactAddress: string | null;
-    vehicleInfo: { year?: number; make?: string; model?: string } | null;
+    vehicleInfo: { year?: string; make?: string; model?: string } | null;
     items: OrderItem[];
     subtotalCents: number;
     priceRangeLowCents: number | null;
     priceRangeHighCents: number | null;
     notes: string | null;
-    createdAt: string;
+    createdAt: string | null;
   };
 }) {
   const vehicle = order.vehicleInfo;
   const vehicleStr = vehicle
     ? [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(" ")
     : null;
-  const statusLabel = PORTAL_ORDER_STATUS[order.status]?.label ?? order.status;
+  const statusLabel = statusDisplay(order.status, "portal").label;
 
   return (
     <div className="hidden print:block text-black bg-white p-8 max-w-2xl mx-auto font-sans">
@@ -223,6 +223,7 @@ function PrintReceipt({
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
 export default function PortalOrderDetailPage() {
+  const api = useApi();
   const params = useParams();
   const orderId = params.id as string;
   const { data, isLoading, isError, mutate } = usePortalOrder(orderId);
@@ -274,10 +275,11 @@ export default function PortalOrderDetailPage() {
   async function doAction(action: "approve" | "decline", reason?: string) {
     setActionLoading(true);
     try {
-      await authFetch(`/api/portal/me/orders/${order.id}/${action}`, {
-        method: "POST",
-        body: JSON.stringify(reason ? { reason } : {}),
-      });
+      const path =
+        action === "approve"
+          ? portalPaths.approve(order.id)
+          : portalPaths.decline(order.id);
+      await api.post(path, reason ? { reason } : {});
       mutate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : `Failed to ${action} order`);
@@ -533,7 +535,7 @@ export default function PortalOrderDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-text-secondary">Status</span>
                   <span className="text-text">
-                    {PORTAL_ORDER_STATUS[order.status]?.label ?? order.status}
+                    {statusDisplay(order.status, "portal").label}
                   </span>
                 </div>
                 {order.expiresAt && (

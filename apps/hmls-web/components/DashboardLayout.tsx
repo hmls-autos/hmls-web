@@ -15,7 +15,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetcher } from "@/lib/fetcher";
+import { useApi } from "@/hooks/useApi";
 import { isSectionNavActive } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +47,7 @@ export function DashboardLayout({
 }) {
   const skipAuth = process.env.NEXT_PUBLIC_SKIP_AUTH === "true";
   const { session, isLoading: authLoading } = useAuth();
+  const api = useApi();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -58,7 +59,7 @@ export function DashboardLayout({
       : null;
   const { error: adminError, isLoading: adminLoading } = useSWR(
     guardEndpoint && (session || skipAuth) ? guardEndpoint : null,
-    fetcher,
+    (p: string) => api.get<unknown>(p),
   );
 
   useEffect(() => {

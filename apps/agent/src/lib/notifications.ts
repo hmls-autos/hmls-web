@@ -1,16 +1,19 @@
 import { getLogger } from "@logtape/logtape";
 import { db } from "../db/client.ts";
-import * as schema from "../db/schema.ts";
+import * as schema from "@hmls/shared/db/schema";
 import { eq } from "drizzle-orm";
 
 const logger = getLogger(["hmls", "agent", "notifications"]);
 
 // --- Types ---
 
-interface OrderItem {
+// Trimmed-down item shape used only for rendering email rows. Maps from
+// the canonical OrderItem in @hmls/shared/db/schema; we collapse the
+// labor/parts split into a single `price` (totalCents) for display.
+interface NotificationItem {
   name: string;
   description?: string;
-  price: number; // cents
+  price: number; // cents (= canonical OrderItem.totalCents)
 }
 
 interface NotificationContext {
@@ -22,7 +25,7 @@ interface NotificationContext {
   portalUrl: string;
   reviewUrl?: string;
   vehicleInfo?: { year?: string; make?: string; model?: string } | null;
-  items?: OrderItem[];
+  items?: NotificationItem[];
   priceRangeLow?: number; // cents
   priceRangeHigh?: number; // cents
   subtotal?: number; // cents
@@ -450,7 +453,11 @@ export async function notifyOrderStatusChange(
 
     // Items & vehicle for rich email
     if (order.items) {
-      ctx.items = order.items as OrderItem[];
+      ctx.items = order.items.map((item) => ({
+        name: item.name,
+        description: item.description,
+        price: item.totalCents,
+      }));
     }
     if (order.vehicleInfo) {
       ctx.vehicleInfo = order.vehicleInfo as NotificationContext["vehicleInfo"];

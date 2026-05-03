@@ -10,9 +10,10 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { askReason } from "@/components/ui/ReasonDialog";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useApi } from "@/hooks/useApi";
 import { type PortalOrder, usePortalBookings } from "@/hooks/usePortal";
-import { authFetch } from "@/lib/fetcher";
-import { PORTAL_ORDER_STATUS } from "@/lib/status";
+import { portalPaths } from "@/lib/api-paths";
+import { PORTAL_ORDER_STATUS } from "@/lib/status-display";
 
 function BookingCard({
   order,
@@ -105,6 +106,7 @@ function BookingCard({
 }
 
 export default function PortalBookingsPage() {
+  const api = useApi();
   const { bookings, isLoading, mutate } = usePortalBookings();
   const [loading, setLoading] = useState<number | null>(null);
 
@@ -117,10 +119,10 @@ export default function PortalBookingsPage() {
 
     setLoading(orderId);
     try {
-      await authFetch(`/api/portal/me/orders/${orderId}/cancel-booking`, {
-        method: "POST",
-        body: JSON.stringify(reason ? { reason } : {}),
-      });
+      await api.post(
+        portalPaths.cancelBooking(orderId),
+        reason ? { reason } : {},
+      );
       mutate();
     } catch (e) {
       toast.error(

@@ -12,7 +12,7 @@
 import { and, desc, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import { getLogger } from "@logtape/logtape";
 import { db, schema } from "../db/client.ts";
-import type { Actor } from "./order-state-core.ts";
+import type { Actor } from "@hmls/shared/order/status";
 import { assignProvider } from "./order-state.ts";
 
 const logger = getLogger(["hmls", "agent", "auto-assign"]);

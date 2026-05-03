@@ -2,6 +2,7 @@
 
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { type ApiClient, createApiClient } from "@/lib/api-client";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthContextType = {
@@ -11,6 +12,7 @@ type AuthContextType = {
   isLoading: boolean;
   isAdmin: boolean;
   isMechanic: boolean;
+  api: ApiClient;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -92,9 +94,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [session?.access_token],
   );
 
+  const api = useMemo(
+    () => createApiClient(session?.access_token),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- token is the only field that affects the api client
+    [session?.access_token],
+  );
+
   const value = useMemo(
-    () => ({ user, session, supabase, isLoading, isAdmin, isMechanic }),
-    [user, session, supabase, isLoading, isAdmin, isMechanic],
+    () => ({ user, session, supabase, isLoading, isAdmin, isMechanic, api }),
+    [user, session, supabase, isLoading, isAdmin, isMechanic, api],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

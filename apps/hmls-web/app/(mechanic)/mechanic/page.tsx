@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type MechanicOrder, useMechanicOrders } from "@/hooks/useMechanic";
 import { formatDate, formatTime } from "@/lib/format";
-import { ORDER_STATUS } from "@/lib/status";
+import { statusDisplay } from "@/lib/status-display";
 import { cn } from "@/lib/utils";
 
 function vehicleLabel(o: MechanicOrder) {
@@ -56,10 +56,7 @@ function OrderCard({ order }: { order: MechanicOrder }) {
   const time = order.scheduledAt
     ? formatTime(order.scheduledAt)
     : durationLabel(order.durationMinutes);
-  const statusConfig = ORDER_STATUS[order.status] ?? {
-    label: order.status,
-    color: "bg-neutral-100 text-neutral-500",
-  };
+  const statusConfig = statusDisplay(order.status);
   const firstItem = order.items?.[0]?.name ?? "Service";
 
   return (

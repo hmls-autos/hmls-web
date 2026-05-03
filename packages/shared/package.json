@@ -1,6 +1,13 @@
 {
   "name": "@hmls/shared",
   "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9",
+    "zod": "^4.3.6"
+  },
   "exports": {
     "./tool-result": "./src/lib/tool-result.ts",
     "./errors": "./src/lib/errors.ts",
@@ -13,10 +20,5 @@
     "./api/contracts/mechanic": "./src/api/contracts/mechanic.ts",
     "./api/contracts/orders": "./src/api/contracts/orders.ts",
     "./api/contracts/portal": "./src/api/contracts/portal.ts"
-  },
-  "lint": {
-    "rules": {
-      "exclude": ["no-slow-types"]
-    }
   }
 }

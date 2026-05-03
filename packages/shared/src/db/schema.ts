@@ -41,11 +41,11 @@ export const customers = pgTable("customers", {
   phone: varchar("phone", { length: 20 }),
   email: varchar("email", { length: 255 }),
   address: text("address"),
-  vehicleInfo: jsonb("vehicle_info"),
+  vehicleInfo: jsonb("vehicle_info").$type<VehicleInfo | null>(),
   stripeCustomerId: varchar("stripe_customer_id", { length: 100 }),
   authUserId: varchar("auth_user_id", { length: 255 }).unique(),
   role: varchar("role", { length: 20 }).notNull().default("customer"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const providers = pgTable("providers", {
@@ -54,13 +54,14 @@ export const providers = pgTable("providers", {
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }),
   phone: varchar("phone", { length: 20 }),
-  specialties: jsonb("specialties"),
+  specialties: jsonb("specialties").$type<string[] | null>(),
   isActive: boolean("is_active").notNull().default(true),
   serviceRadiusMiles: integer("service_radius_miles").default(30),
   homeBaseLat: numeric("home_base_lat", { precision: 10, scale: 7 }),
   homeBaseLng: numeric("home_base_lng", { precision: 10, scale: 7 }),
   timezone: varchar("timezone", { length: 50 }).notNull().default("America/Los_Angeles"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow()
+    .notNull(),
 });
 
 export const providerAvailability = pgTable("provider_availability", {
@@ -105,6 +106,24 @@ export interface OrderItem {
   taxable: boolean;
 }
 
+// --- jsonb shapes (declared once so Drizzle $inferSelect knows them) ---
+
+// Year is stored as a string because the production write-paths in
+// gateway/agent stringify it (`String(year)`). Display callers can parse
+// to number when needed; storing as string preserves user-entered values
+// like "2020.5" or empty string and matches what's already in Postgres.
+export interface VehicleInfo {
+  year?: string;
+  make?: string;
+  model?: string;
+}
+
+export interface OrderStatusHistoryEntry {
+  status: string;
+  timestamp: string;
+  actor: string;
+}
+
 // --- Orders (central entity — single source of truth for lifecycle) ---
 
 export const orders = pgTable("orders", {
@@ -112,13 +131,15 @@ export const orders = pgTable("orders", {
   shopId: uuid("shop_id").references(() => shops.id),
   customerId: integer("customer_id").references(() => customers.id),
   status: varchar("status", { length: 30 }).notNull().default("draft"),
-  statusHistory: jsonb("status_history").notNull().default([]),
-  items: jsonb("items").notNull().default([]),
+  statusHistory: jsonb("status_history").$type<OrderStatusHistoryEntry[]>().notNull().default(
+    [],
+  ),
+  items: jsonb("items").$type<OrderItem[]>().notNull().default([]),
   notes: text("notes"),
   subtotalCents: integer("subtotal_cents").notNull().default(0),
   priceRangeLowCents: integer("price_range_low_cents"),
   priceRangeHighCents: integer("price_range_high_cents"),
-  vehicleInfo: jsonb("vehicle_info"),
+  vehicleInfo: jsonb("vehicle_info").$type<VehicleInfo | null>(),
   validDays: integer("valid_days").default(30),
   expiresAt: timestamp("expires_at", { withTimezone: true }),
   shareToken: varchar("share_token", { length: 64 }),
@@ -145,11 +166,13 @@ export const orders = pgTable("orders", {
   locationLng: numeric("location_lng", { precision: 10, scale: 7 }),
   accessInstructions: text("access_instructions"),
   symptomDescription: text("symptom_description"),
-  photoUrls: jsonb("photo_urls"),
+  photoUrls: jsonb("photo_urls").$type<string[] | null>(),
   customerNotes: text("customer_notes"),
   blockedRange: tstzrange("blocked_range"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow()
+    .notNull(),
 }, (table) => ({
   shareTokenIdx: index("orders_share_token_idx").on(table.shareToken),
   statusIdx: index("orders_status_idx").on(table.status),
@@ -167,8 +190,9 @@ export const orderEvents = pgTable("order_events", {
   fromStatus: varchar("from_status", { length: 50 }),
   toStatus: varchar("to_status", { length: 50 }),
   actor: varchar("actor", { length: 100 }),
-  metadata: jsonb("metadata").default({}),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow()
+    .notNull(),
 });
 
 // --- OLP (Open Labor Project) reference data ---

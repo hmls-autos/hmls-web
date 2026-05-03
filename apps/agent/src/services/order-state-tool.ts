@@ -3,7 +3,7 @@
 // HTTP routes — same error mapping, different envelope.
 
 import { toolResult } from "@hmls/shared/tool-result";
-import type { Actor } from "./order-state-core.ts";
+import type { Actor } from "@hmls/shared/order/status";
 import type { OrderStateError, OrderStateResult } from "./order-state.ts";
 import type { ToolContext } from "../common/convert-tools.ts";
 

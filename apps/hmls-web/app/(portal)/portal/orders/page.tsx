@@ -10,9 +10,10 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { askReason } from "@/components/ui/ReasonDialog";
 import { Spinner } from "@/components/ui/Spinner";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useApi } from "@/hooks/useApi";
 import { type PortalOrder, usePortalOrders } from "@/hooks/usePortal";
-import { authFetch } from "@/lib/fetcher";
-import { PORTAL_ORDER_STATUS } from "@/lib/status";
+import { portalPaths } from "@/lib/api-paths";
+import { PORTAL_ORDER_STATUS, statusDisplay } from "@/lib/status-display";
 
 function OrderCard({
   order,
@@ -69,9 +70,7 @@ function OrderCard({
                 className="flex items-center gap-2 text-xs text-text-secondary"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-text-secondary shrink-0" />
-                <span>
-                  {PORTAL_ORDER_STATUS[entry.status]?.label ?? entry.status}
-                </span>
+                <span>{statusDisplay(entry.status, "portal").label}</span>
                 <span className="text-text-secondary/60">
                   {new Date(entry.timestamp).toLocaleDateString("en-US", {
                     month: "short",
@@ -114,6 +113,7 @@ function OrderCard({
 }
 
 export default function PortalOrdersPage() {
+  const api = useApi();
   const { orders, isLoading, mutate } = usePortalOrders();
   const [loading, setLoading] = useState<number | null>(null);
 
@@ -137,10 +137,11 @@ export default function PortalOrdersPage() {
   ) {
     setLoading(orderId);
     try {
-      await authFetch(`/api/portal/me/orders/${orderId}/${action}`, {
-        method: "POST",
-        body: JSON.stringify(reason ? { reason } : {}),
-      });
+      const path =
+        action === "approve"
+          ? portalPaths.approve(orderId)
+          : portalPaths.decline(orderId);
+      await api.post(path, reason ? { reason } : {});
       mutate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : `Failed to ${action} order`);

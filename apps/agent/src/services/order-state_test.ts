@@ -17,7 +17,7 @@ import {
   isTerminal,
   type OrderStatus,
   TRANSITIONS,
-} from "./order-state-core.ts";
+} from "@hmls/shared/order/status";
 
 const ALL_STATUSES: readonly OrderStatus[] = [
   "draft",

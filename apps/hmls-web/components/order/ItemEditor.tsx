@@ -1,10 +1,10 @@
+import type { OrderItem } from "@hmls/shared/db/types";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCents } from "@/lib/format";
-import type { OrderItem } from "@/lib/types";
 
 export function ItemEditor({
   items,

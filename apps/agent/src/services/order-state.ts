@@ -5,8 +5,8 @@
 // through this module. Do NOT bypass.
 //
 // Pure state-machine rules, types, and read helpers live in
-// `./order-state-core.ts` and are re-exported from here — UI and auth
-// layers should import from core directly to avoid pulling in the DB
+// `@hmls/shared/order/status` and are re-exported from here — UI and auth
+// layers should import from shared directly to avoid pulling in the DB
 // client.
 //
 // Invariants (enforced by the implementations below):
@@ -28,7 +28,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { getLogger } from "@logtape/logtape";
 import { db, schema } from "../db/client.ts";
-import type { OrderItem } from "../db/schema.ts";
+import type { OrderItem } from "@hmls/shared/db/schema";
 import { notifyOrderStatusChange } from "../lib/notifications.ts";
 import {
   type Actor,
@@ -43,7 +43,7 @@ import {
   PAYMENT_ALLOWED_STATUSES,
   resolveAuthority,
   type TerminalStatus,
-} from "./order-state-core.ts";
+} from "@hmls/shared/order/status";
 
 const logger = getLogger(["hmls", "agent", "order-state"]);
 
@@ -61,7 +61,7 @@ export {
   type OrderStatus,
   type TerminalStatus,
   TRANSITIONS,
-} from "./order-state-core.ts";
+} from "@hmls/shared/order/status";
 
 export type OrderRow = typeof schema.orders.$inferSelect;
 

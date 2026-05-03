@@ -32,12 +32,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('apps/hmls-web/bun.lock', 'apps/fixo-web/bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock', 'apps/fixo-web/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
-      - name: Install hmls-web dependencies
-        run: cd apps/hmls-web && bun install --frozen-lockfile
+      # hmls-web is in a Bun workspace with packages/shared — install at root
+      # so the @hmls/shared symlink lands in apps/hmls-web/node_modules.
+      - name: Install hmls-web dependencies (workspace)
+        run: bun install --frozen-lockfile
 
       - name: Check image payload budget (hmls-web)
         run: |
