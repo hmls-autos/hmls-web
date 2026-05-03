@@ -60,6 +60,7 @@ export default function Navbar() {
             <Link
               key={href}
               href={href}
+              prefetch={false}
               className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
                 pathname === href
                   ? "text-red-400"
@@ -76,6 +77,7 @@ export default function Navbar() {
             return (
               <Link
                 href={link.href}
+                prefetch={false}
                 className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
                   pathname === link.href
                     ? "text-red-400"
@@ -92,6 +94,7 @@ export default function Navbar() {
             <>
               <Link
                 href={portalLink.href}
+                prefetch={false}
                 className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
                   pathname.startsWith(portalLink.href)
                     ? "text-red-400"
@@ -105,6 +108,7 @@ export default function Navbar() {
               {isAdmin && (
                 <Link
                   href={adminLink.href}
+                  prefetch={false}
                   className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
                     pathname.startsWith(adminLink.href)
                       ? "text-red-400"
@@ -122,6 +126,7 @@ export default function Navbar() {
               {(isMechanic || isAdmin) && (
                 <Link
                   href={mechanicLink.href}
+                  prefetch={false}
                   className={`text-sm transition-colors rounded focus-visible:ring-2 focus-visible:ring-red-primary ${
                     pathname.startsWith(mechanicLink.href)
                       ? "text-red-400"
@@ -153,6 +158,7 @@ export default function Navbar() {
             ) : (
               <Link
                 href="/login"
+                prefetch={false}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
                   isTransparent
                     ? "border-white/30 text-white hover:border-white/60"
@@ -166,6 +172,7 @@ export default function Navbar() {
           {!isAdmin && (
             <Link
               href="/chat"
+              prefetch={false}
               className="px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
             >
               Get a Quote
