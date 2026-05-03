@@ -45,11 +45,9 @@ export type ProviderInsert = typeof providers.$inferInsert;
 // If we tested the union case first, every non-null timestamp would
 // wrongly inherit `| null` — the bug we hit during initial integration.
 type Wire<T> = {
-  [K in keyof T]: T[K] extends Date
-    ? string
-    : T[K] extends Date | null
-      ? string | null
-      : T[K];
+  [K in keyof T]: T[K] extends Date ? string
+    : T[K] extends Date | null ? string | null
+    : T[K];
 };
 
 export type Order = Wire<OrderRow>;

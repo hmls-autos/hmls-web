@@ -15,5 +15,10 @@
     "./api/contracts/mechanic": "./src/api/contracts/mechanic.ts",
     "./api/contracts/orders": "./src/api/contracts/orders.ts",
     "./api/contracts/portal": "./src/api/contracts/portal.ts"
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["no-slow-types"]
+    }
   }
 }

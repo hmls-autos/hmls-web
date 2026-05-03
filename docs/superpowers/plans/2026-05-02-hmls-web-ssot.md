@@ -1,28 +1,43 @@
 # hmls-web SSOT Refactor Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
+> (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
+> checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Establish a single source of truth for (1) DB row shapes, (2) order state machine, and (3) HTTP request/response contracts between `apps/hmls-web`, `apps/gateway`, and `apps/agent`. Eliminate hand-duplicated and drifted types/constants.
+**Goal:** Establish a single source of truth for (1) DB row shapes, (2) order state machine, and (3)
+HTTP request/response contracts between `apps/hmls-web`, `apps/gateway`, and `apps/agent`. Eliminate
+hand-duplicated and drifted types/constants.
 
-**Architecture:** Three sequential PRs. PR 1 moves schema and pure state-machine code into `packages/shared`. PR 2 adds Zod input contracts and exports three Hono RPC sub-app types (`AdminApiType` / `PortalApiType` / `MechanicApiType`) from the gateway. PR 3 deletes web's hand-written types and rewrites every fetch hook to use the typed clients exposed via an extended `AuthProvider`.
+**Architecture:** Three sequential PRs. PR 1 moves schema and pure state-machine code into
+`packages/shared`. PR 2 adds Zod input contracts and exports three Hono RPC sub-app types
+(`AdminApiType` / `PortalApiType` / `MechanicApiType`) from the gateway. PR 3 deletes web's
+hand-written types and rewrites every fetch hook to use the typed clients exposed via an extended
+`AuthProvider`.
 
-**Tech Stack:** Deno workspaces (gateway, agent, shared), Bun + Next.js 16 + React 19 (web), Drizzle ORM (Supabase Postgres), Hono v4 + Hono RPC, Zod v4, SWR v2, Supabase JS, AI SDK v6 (out-of-scope streaming).
+**Tech Stack:** Deno workspaces (gateway, agent, shared), Bun + Next.js 16 + React 19 (web), Drizzle
+ORM (Supabase Postgres), Hono v4 + Hono RPC, Zod v4, SWR v2, Supabase JS, AI SDK v6 (out-of-scope
+streaming).
 
-**Reference spec:** [`docs/superpowers/specs/2026-05-02-hmls-web-ssot-design.md`](../specs/2026-05-02-hmls-web-ssot-design.md) (commit `3758e7c`)
+**Reference spec:**
+[`docs/superpowers/specs/2026-05-02-hmls-web-ssot-design.md`](../specs/2026-05-02-hmls-web-ssot-design.md)
+(commit `3758e7c`)
 
 ---
 
 ## Phase 1 — Shared package backbone (PR 1)
 
-Goal: move `apps/agent/src/db/schema.ts` and `apps/agent/src/services/order-state-core.ts` into `packages/shared`. Update every import site mechanically. No behavior change.
+Goal: move `apps/agent/src/db/schema.ts` and `apps/agent/src/services/order-state-core.ts` into
+`packages/shared`. Update every import site mechanically. No behavior change.
 
-Pre-flight: this PR's regression net is `deno task check` + `deno task test`. They MUST pass before commit.
+Pre-flight: this PR's regression net is `deno task check` + `deno task test`. They MUST pass before
+commit.
 
 ---
 
 ### Task 1.1: Add the new shared package exports map
 
 **Files:**
+
 - Modify: `packages/shared/deno.json`
 - Create: `packages/shared/package.json`
 
@@ -70,7 +85,8 @@ Create `packages/shared/package.json`:
 }
 ```
 
-The exports point at `.ts` source files; Next.js's `transpilePackages` (configured in PR 3) compiles them on demand. No build step.
+The exports point at `.ts` source files; Next.js's `transpilePackages` (configured in PR 3) compiles
+them on demand. No build step.
 
 - [ ] **Step 3: Commit**
 
@@ -84,6 +100,7 @@ git commit -m "chore(shared): extend exports map for schema/types/order/api"
 ### Task 1.2: Move schema.ts into shared
 
 **Files:**
+
 - Create: `packages/shared/src/db/schema.ts`
 - Delete: `apps/agent/src/db/schema.ts`
 - Modify: `apps/agent/src/db/client.ts`
@@ -109,8 +126,8 @@ export type { OrderItem } from "@hmls/shared/db/schema";
 
 - [ ] **Step 3: Run gateway+agent typecheck**
 
-Run: `deno task check`
-Expected: PASS — every file that imported from `apps/agent/src/db/schema.ts` indirectly via `@hmls/agent/db` still works because client.ts forwards.
+Run: `deno task check` Expected: PASS — every file that imported from `apps/agent/src/db/schema.ts`
+indirectly via `@hmls/agent/db` still works because client.ts forwards.
 
 - [ ] **Step 4: Update direct schema imports**
 
@@ -120,18 +137,20 @@ Find files that import from `db/schema.ts` directly (not via `@hmls/agent/db`):
 grep -rln "from \"\\(\\.\\.*/\\)*db/schema\\(\\.ts\\)\\?\"" apps/agent apps/gateway --include="*.ts"
 ```
 
-For each match, replace `from "./db/schema.ts"` (or whatever relative path) with `from "@hmls/shared/db/schema"`. The five files known to do this:
+For each match, replace `from "./db/schema.ts"` (or whatever relative path) with
+`from "@hmls/shared/db/schema"`. The five files known to do this:
 
-- `apps/agent/src/services/order-state.ts:31` — `import type { OrderItem } from "../db/schema.ts";` → `import type { OrderItem } from "@hmls/shared/db/schema";`
+- `apps/agent/src/services/order-state.ts:31` — `import type { OrderItem } from "../db/schema.ts";`
+  → `import type { OrderItem } from "@hmls/shared/db/schema";`
 - `apps/agent/src/common/tools/order.ts:25` — same pattern
 - `apps/agent/src/common/tools/schedule.ts:19` — same pattern
 - `apps/agent/src/fixo/tools/fixo-estimate.ts:17` — same pattern
-- `apps/agent/src/fixo/lib/stripe.ts:87,106,142` — three dynamic `await import("../../db/schema.ts")` calls. Replace with `await import("@hmls/shared/db/schema")`.
+- `apps/agent/src/fixo/lib/stripe.ts:87,106,142` — three dynamic
+  `await import("../../db/schema.ts")` calls. Replace with `await import("@hmls/shared/db/schema")`.
 
 - [ ] **Step 5: Verify typecheck still passes**
 
-Run: `deno task check`
-Expected: PASS
+Run: `deno task check` Expected: PASS
 
 - [ ] **Step 6: Commit**
 
@@ -149,6 +168,7 @@ apps/agent/src/db/client.ts re-exports schema for callers using
 ### Task 1.3: Move order-state-core.ts into shared as order/status.ts
 
 **Files:**
+
 - Create: `packages/shared/src/order/status.ts`
 - Delete: `apps/agent/src/services/order-state-core.ts`
 - Modify: `apps/agent/src/services/order-state.ts`
@@ -176,8 +196,7 @@ to:
 
 - [ ] **Step 3: Run typecheck**
 
-Run: `deno task check`
-Expected: PASS
+Run: `deno task check` Expected: PASS
 
 - [ ] **Step 4: Update other consumers if any**
 
@@ -185,19 +204,20 @@ Expected: PASS
 grep -rln "order-state-core" apps/agent apps/gateway --include="*.ts"
 ```
 
-Replace any matches with `@hmls/shared/order/status`. (`order-state_test.ts` is the most likely sibling.)
+Replace any matches with `@hmls/shared/order/status`. (`order-state_test.ts` is the most likely
+sibling.)
 
 - [ ] **Step 5: Run agent tests**
 
-Run: `cd apps/agent && deno test`
-Expected: PASS — the existing `order-state_test.ts` exercises `TRANSITIONS`, `ACTOR_PERMISSIONS`, `_checkTransitionActorCoverage`, etc. They must still pass with the moved code.
+Run: `cd apps/agent && deno test` Expected: PASS — the existing `order-state_test.ts` exercises
+`TRANSITIONS`, `ACTOR_PERMISSIONS`, `_checkTransitionActorCoverage`, etc. They must still pass with
+the moved code.
 
 - [ ] **Step 6: Promote step-progress helpers from web into shared**
 
-The web's old `lib/status.ts` had four helpers that PR 3 will need from shared:
-`ORDER_MAIN_STEPS`, `ORDER_TERMINAL_STATUSES`, `ORDER_BRANCH_STATUSES`, `getOrderStepState`,
-plus the `OrderStepState` and `OrderMainStep` types. Add them to
-`packages/shared/src/order/status.ts` (append at the bottom):
+The web's old `lib/status.ts` had four helpers that PR 3 will need from shared: `ORDER_MAIN_STEPS`,
+`ORDER_TERMINAL_STATUSES`, `ORDER_BRANCH_STATUSES`, `getOrderStepState`, plus the `OrderStepState`
+and `OrderMainStep` types. Add them to `packages/shared/src/order/status.ts` (append at the bottom):
 
 ```ts
 // ---------------------------------------------------------------------------
@@ -270,6 +290,7 @@ apps/agent/src/services/order-state.ts and now import from shared."
 ### Task 1.4: Add db/types.ts with derived row types
 
 **Files:**
+
 - Create: `packages/shared/src/db/types.ts`
 
 - [ ] **Step 1: Write the file**
@@ -319,8 +340,7 @@ export type OrderDetail = {
 
 - [ ] **Step 2: Verify typecheck passes**
 
-Run: `deno task check`
-Expected: PASS
+Run: `deno task check` Expected: PASS
 
 - [ ] **Step 3: Commit**
 
@@ -338,6 +358,7 @@ hand-written equivalents in apps/hmls-web/lib/types.ts."
 ### Task 1.5: Add api/contract.ts stub
 
 **Files:**
+
 - Create: `packages/shared/src/api/contract.ts`
 
 - [ ] **Step 1: Write a stub**
@@ -366,6 +387,7 @@ git commit -m "chore(shared): stub api/contract.ts placeholder for PR 2"
 ### Task 1.6: Extend mod.ts re-exports
 
 **Files:**
+
 - Modify: `packages/shared/src/mod.ts`
 
 - [ ] **Step 1: Replace mod.ts**
@@ -406,29 +428,28 @@ export type {
   TerminalStatus,
 } from "./order/status.ts";
 export {
-  ACTOR_PERMISSIONS,
-  EDITABLE_STATUSES,
-  ORDER_BRANCH_STATUSES,
-  ORDER_MAIN_STEPS,
-  ORDER_TERMINAL_STATUSES,
-  PAYMENT_ALLOWED_STATUSES,
-  TRANSITIONS,
   _checkTransitionActorCoverage,
+  ACTOR_PERMISSIONS,
   actorString,
   allowedTransitions,
   availableActions,
   canActorTransition,
+  EDITABLE_STATUSES,
   getOrderStepState,
   isOrderStatus,
   isTerminal,
+  ORDER_BRANCH_STATUSES,
+  ORDER_MAIN_STEPS,
+  ORDER_TERMINAL_STATUSES,
+  PAYMENT_ALLOWED_STATUSES,
   resolveAuthority,
+  TRANSITIONS,
 } from "./order/status.ts";
 ```
 
 - [ ] **Step 2: Run typecheck**
 
-Run: `deno task check`
-Expected: PASS
+Run: `deno task check` Expected: PASS
 
 - [ ] **Step 3: Commit**
 
@@ -442,6 +463,7 @@ git commit -m "feat(shared): re-export schema/types/order from mod.ts"
 ### Task 1.7: Fix the canonical EDITABLE_STATUSES dup in admin-order-tools
 
 **Files:**
+
 - Modify: `apps/agent/src/hmls/tools/admin-order-tools.ts:133`
 
 - [ ] **Step 1: Read the dup**
@@ -452,7 +474,8 @@ Open `apps/agent/src/hmls/tools/admin-order-tools.ts`. Find line ~133:
 const EDITABLE_STATUSES = new Set(["draft", "revised", "estimated"]);
 ```
 
-This duplicates the canonical `EDITABLE_STATUSES` exported from `@hmls/shared/order/status`. The canonical version contains the same three states, but the existence of two sources is the bug.
+This duplicates the canonical `EDITABLE_STATUSES` exported from `@hmls/shared/order/status`. The
+canonical version contains the same three states, but the existence of two sources is the bug.
 
 - [ ] **Step 2: Replace the local Set with an import**
 
@@ -466,13 +489,12 @@ Delete the local `const EDITABLE_STATUSES = new Set(...)` line.
 
 - [ ] **Step 3: Verify typecheck**
 
-Run: `deno task check`
-Expected: PASS — `EDITABLE_STATUSES.has(order.status)` still works because `ReadonlySet<OrderStatus>.has()` accepts any string.
+Run: `deno task check` Expected: PASS — `EDITABLE_STATUSES.has(order.status)` still works because
+`ReadonlySet<OrderStatus>.has()` accepts any string.
 
 - [ ] **Step 4: Run agent tests**
 
-Run: `cd apps/agent && deno test`
-Expected: PASS
+Run: `cd apps/agent && deno test` Expected: PASS
 
 - [ ] **Step 5: Commit**
 
@@ -487,9 +509,11 @@ Use the canonical @hmls/shared/order/status export."
 
 ### Task 1.8: Bun-side resolution canary
 
-**Goal:** prove that `apps/hmls-web` can resolve `@hmls/shared` *before* PR 3 depends on it. This is a temporary check — nothing committed.
+**Goal:** prove that `apps/hmls-web` can resolve `@hmls/shared` _before_ PR 3 depends on it. This is
+a temporary check — nothing committed.
 
 **Files:**
+
 - Modify temporarily: `apps/hmls-web/tsconfig.json`
 - Modify temporarily: any web TS file (e.g. `apps/hmls-web/lib/utils.ts`)
 
@@ -522,17 +546,18 @@ void _orderProbe;
 
 - [ ] **Step 4: Run web typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS — proves the path mapping resolves and Drizzle's `$inferSelect` types compile under web's TS config.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS — proves the path mapping resolves and
+Drizzle's `$inferSelect` types compile under web's TS config.
 
 - [ ] **Step 5: Revert the throwaway import**
 
-Remove the three throwaway lines from `lib/utils.ts`. Keep the `tsconfig.json` paths mapping and the `package.json` dep additions — PR 3 needs them and adding them in PR 1 means PR 3 starts from a verified baseline.
+Remove the three throwaway lines from `lib/utils.ts`. Keep the `tsconfig.json` paths mapping and the
+`package.json` dep additions — PR 3 needs them and adding them in PR 1 means PR 3 starts from a
+verified baseline.
 
 - [ ] **Step 6: Verify web still builds**
 
-Run: `cd apps/hmls-web && bun run typecheck && bun run lint`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck && bun run lint` Expected: PASS
 
 - [ ] **Step 7: Commit**
 
@@ -549,6 +574,7 @@ Web doesn't consume the shared package yet — PR 3 will."
 ### Task 1.9: Add transpilePackages to next.config
 
 **Files:**
+
 - Modify: `apps/hmls-web/next.config.ts`
 
 - [ ] **Step 1: Read current config**
@@ -566,12 +592,14 @@ const nextConfig: NextConfig = {
 };
 ```
 
-If `next.config.ts` does not currently export a typed `NextConfig`, follow the existing shape but add the `transpilePackages` key.
+If `next.config.ts` does not currently export a typed `NextConfig`, follow the existing shape but
+add the `transpilePackages` key.
 
 - [ ] **Step 3: Verify build**
 
-Run: `cd apps/hmls-web && bun run build`
-Expected: PASS — Next compiles without error. The shared package isn't actually imported by any web file yet, but adding `transpilePackages` is harmless and will be needed in PR 3.
+Run: `cd apps/hmls-web && bun run build` Expected: PASS — Next compiles without error. The shared
+package isn't actually imported by any web file yet, but adding `transpilePackages` is harmless and
+will be needed in PR 3.
 
 - [ ] **Step 4: Commit**
 
@@ -605,7 +633,8 @@ All must pass.
 git log --oneline --diff-filter=D | head
 ```
 
-Should show `apps/agent/src/db/schema.ts` and `apps/agent/src/services/order-state-core.ts` were deleted (renamed via `git mv`).
+Should show `apps/agent/src/db/schema.ts` and `apps/agent/src/services/order-state-core.ts` were
+deleted (renamed via `git mv`).
 
 - [ ] **Step 3: Verify no leftover imports of old paths**
 
@@ -644,7 +673,8 @@ EOF
 
 ## Phase 2 — Gateway typed contracts (PR 2)
 
-Goal: gateway exports `AdminApiType` / `PortalApiType` / `MechanicApiType` with full TS-inferred response types, with Zod input validation in a centralized `contracts/` directory.
+Goal: gateway exports `AdminApiType` / `PortalApiType` / `MechanicApiType` with full TS-inferred
+response types, with Zod input validation in a centralized `contracts/` directory.
 
 Pre-flight: PR 1 must be merged.
 
@@ -653,6 +683,7 @@ Pre-flight: PR 1 must be merged.
 ### Task 2.1: Create contracts directory with index barrel
 
 **Files:**
+
 - Create: `apps/gateway/src/contracts/index.ts`
 - Create: `apps/gateway/src/contracts/admin.ts`
 
@@ -672,7 +703,9 @@ This will fail typecheck until the per-route files exist. That's expected — we
 
 - [ ] **Step 2: Create admin contracts file**
 
-Create `apps/gateway/src/contracts/admin.ts`. Inspect `apps/gateway/src/routes/admin.ts` for every place that currently calls `c.req.json()` or `c.req.parseBody()`. For `admin.ts`, the input shapes are:
+Create `apps/gateway/src/contracts/admin.ts`. Inspect `apps/gateway/src/routes/admin.ts` for every
+place that currently calls `c.req.json()` or `c.req.parseBody()`. For `admin.ts`, the input shapes
+are:
 
 ```ts
 import { z } from "zod";
@@ -702,12 +735,13 @@ export const listOrdersQuery = z.object({
 });
 ```
 
-Read `routes/admin.ts` thoroughly — if other handlers parse JSON bodies, add their schemas here. The rule: **every `c.req.json()` call must have a matching schema in this file.**
+Read `routes/admin.ts` thoroughly — if other handlers parse JSON bodies, add their schemas here. The
+rule: **every `c.req.json()` call must have a matching schema in this file.**
 
 - [ ] **Step 3: Run typecheck**
 
-Run: `deno task check`
-Expected: PASS for `admin.ts` itself; failure on `index.ts` is acceptable until other contract files exist (we will add them in subsequent tasks).
+Run: `deno task check` Expected: PASS for `admin.ts` itself; failure on `index.ts` is acceptable
+until other contract files exist (we will add them in subsequent tasks).
 
 - [ ] **Step 4: Commit**
 
@@ -721,16 +755,20 @@ git commit -m "feat(gateway): scaffold contracts/ directory with admin schemas"
 ### Task 2.2: Create remaining contract files
 
 **Files:**
+
 - Create: `apps/gateway/src/contracts/admin-mechanics.ts`
 - Create: `apps/gateway/src/contracts/mechanic.ts`
 - Create: `apps/gateway/src/contracts/orders.ts`
 - Create: `apps/gateway/src/contracts/portal.ts`
 
-For each: read the matching `routes/*.ts` file, extract input shapes from every `c.req.json()`/`c.req.query()`/`c.req.param()` access. Define one named Zod schema per request body or query block.
+For each: read the matching `routes/*.ts` file, extract input shapes from every
+`c.req.json()`/`c.req.query()`/`c.req.param()` access. Define one named Zod schema per request body
+or query block.
 
 - [ ] **Step 1: orders.ts contracts**
 
-Create `apps/gateway/src/contracts/orders.ts` based on `routes/orders.ts`. Schemas to include (verify against the actual route file):
+Create `apps/gateway/src/contracts/orders.ts` based on `routes/orders.ts`. Schemas to include
+(verify against the actual route file):
 
 ```ts
 import { z } from "zod";
@@ -801,11 +839,13 @@ export const patchItemsInput = z.object({
 });
 ```
 
-If `routes/orders.ts` accepts other endpoints with bodies, add their schemas. **Do not skip endpoints.**
+If `routes/orders.ts` accepts other endpoints with bodies, add their schemas. **Do not skip
+endpoints.**
 
 - [ ] **Step 2: admin-mechanics.ts contracts**
 
-Create `apps/gateway/src/contracts/admin-mechanics.ts`. Read `routes/admin-mechanics.ts` (706 lines). Schemas (verify against actual code):
+Create `apps/gateway/src/contracts/admin-mechanics.ts`. Read `routes/admin-mechanics.ts` (706
+lines). Schemas (verify against actual code):
 
 ```ts
 import { z } from "zod";
@@ -827,13 +867,13 @@ export const updateMechanicInput = createMechanicInput.partial();
 export const setAvailabilityInput = z.object({
   windows: z.array(z.object({
     dayOfWeek: z.number().int().min(0).max(6),
-    startTime: z.string(),    // "HH:MM:SS"
+    startTime: z.string(), // "HH:MM:SS"
     endTime: z.string(),
   })),
 });
 
 export const createOverrideInput = z.object({
-  overrideDate: z.string(),    // "YYYY-MM-DD"
+  overrideDate: z.string(), // "YYYY-MM-DD"
   isAvailable: z.boolean(),
   startTime: z.string().optional(),
   endTime: z.string().optional(),
@@ -889,8 +929,7 @@ export const createTimeOffInput = z.object({
 
 - [ ] **Step 5: Run typecheck**
 
-Run: `deno task check`
-Expected: PASS
+Run: `deno task check` Expected: PASS
 
 - [ ] **Step 6: Commit**
 
@@ -903,9 +942,11 @@ git commit -m "feat(gateway): add Zod input schemas for orders/admin-mechanics/p
 
 ### Task 2.3: Wire zValidator into routes
 
-For each of the 5 RPC route files, replace ad-hoc `c.req.json()` parsing with Hono's `zValidator` middleware. This causes Hono RPC to expose the input shape to the typed client.
+For each of the 5 RPC route files, replace ad-hoc `c.req.json()` parsing with Hono's `zValidator`
+middleware. This causes Hono RPC to expose the input shape to the typed client.
 
 **Files:**
+
 - Modify: `apps/gateway/src/routes/orders.ts`
 - Modify: `apps/gateway/src/routes/admin.ts`
 - Modify: `apps/gateway/src/routes/admin-mechanics.ts`
@@ -956,16 +997,18 @@ orders.post("/:id/status", zValidator("json", transitionInput), async (c) => {
 });
 ```
 
-Repeat for `/:id` (PATCH → updateOrderInput), `/:id/schedule` (POST → scheduleOrderInput), `/:id/payment` (POST → recordPaymentInput), `/:id/items` (PATCH → patchItemsInput).
+Repeat for `/:id` (PATCH → updateOrderInput), `/:id/schedule` (POST → scheduleOrderInput),
+`/:id/payment` (POST → recordPaymentInput), `/:id/items` (PATCH → patchItemsInput).
 
 - [ ] **Step 3: Verify orders.ts typechecks**
 
-Run: `deno task check:gateway`
-Expected: PASS
+Run: `deno task check:gateway` Expected: PASS
 
 - [ ] **Step 4: Repeat for admin.ts**
 
-Wire `zValidator("json", updateCustomerInput)` on PUT `/customers/:id`. Wire `zValidator("query", listCustomersQuery)` on GET `/customers` and `zValidator("query", listOrdersQuery)` on GET `/orders` if such endpoints exist.
+Wire `zValidator("json", updateCustomerInput)` on PUT `/customers/:id`. Wire
+`zValidator("query", listCustomersQuery)` on GET `/customers` and
+`zValidator("query", listOrdersQuery)` on GET `/orders` if such endpoints exist.
 
 - [ ] **Step 5: Repeat for admin-mechanics.ts**
 
@@ -981,8 +1024,8 @@ Wire each schema from `contracts/mechanic.ts`.
 
 - [ ] **Step 8: Run all gateway tests**
 
-Run: `cd apps/gateway && deno test`
-Expected: PASS — existing route tests should still hit the handlers; if a test passed an invalid body, fix the test body to match the schema.
+Run: `cd apps/gateway && deno test` Expected: PASS — existing route tests should still hit the
+handlers; if a test passed an invalid body, fix the test body to match the schema.
 
 - [ ] **Step 9: Commit**
 
@@ -995,9 +1038,12 @@ git commit -m "feat(gateway): validate inputs with zValidator + contracts/ schem
 
 ### Task 2.4: Add explicit response types to c.json calls
 
-Hono RPC infers response types from the literal type returned by `c.json(...)`. To guarantee the inference is deliberate (not just whatever shape happens to flow out today), annotate every `c.json` call site with an explicit type from `@hmls/shared/db/types`.
+Hono RPC infers response types from the literal type returned by `c.json(...)`. To guarantee the
+inference is deliberate (not just whatever shape happens to flow out today), annotate every `c.json`
+call site with an explicit type from `@hmls/shared/db/types`.
 
 **Files:**
+
 - Modify: `apps/gateway/src/routes/orders.ts`
 - Modify: `apps/gateway/src/routes/admin.ts`
 - Modify: `apps/gateway/src/routes/admin-mechanics.ts`
@@ -1014,9 +1060,11 @@ import type { Order, OrderDetail } from "@hmls/shared/db/types";
 
 For every `c.json(...)` call, annotate the return type. Example transformations:
 
-`return c.json({ orders, page, total });` → `return c.json<{ orders: Order[]; page: number; total: number }>({ orders, page, total });`
+`return c.json({ orders, page, total });` →
+`return c.json<{ orders: Order[]; page: number; total: number }>({ orders, page, total });`
 
-`return c.json({ order, customer, events });` → `return c.json<OrderDetail>({ order, customer, events });`
+`return c.json({ order, customer, events });` →
+`return c.json<OrderDetail>({ order, customer, events });`
 
 `return c.json({ ok: true });` → `return c.json<{ ok: true }>({ ok: true });`
 
@@ -1033,8 +1081,8 @@ Repeat for every `c.json` in the file (32 in `orders.ts`).
 
 - [ ] **Step 2: Run typecheck**
 
-Run: `deno task check:gateway`
-Expected: PASS — the explicit types must match the actual data shape. Drizzle's `Order` type covers all DB columns so list/detail responses align naturally.
+Run: `deno task check:gateway` Expected: PASS — the explicit types must match the actual data shape.
+Drizzle's `Order` type covers all DB columns so list/detail responses align naturally.
 
 - [ ] **Step 3: Repeat for admin.ts (15 c.json calls)**
 
@@ -1069,7 +1117,8 @@ return c.json<{ customer: Customer; orders: Order[] }>({ customer, orders });
 
 - [ ] **Step 4: Repeat for admin-mechanics.ts (36 c.json calls)**
 
-Provider-related responses use `Provider`, `ProviderAvailability`, `ProviderScheduleOverride` from `@hmls/shared/db/types`.
+Provider-related responses use `Provider`, `ProviderAvailability`, `ProviderScheduleOverride` from
+`@hmls/shared/db/types`.
 
 - [ ] **Step 5: Repeat for portal.ts (17 c.json calls)**
 
@@ -1081,8 +1130,7 @@ Mechanic self-service endpoints return `Provider`, `ProviderAvailability[]`, etc
 
 - [ ] **Step 7: Verify all tests pass**
 
-Run: `cd apps/gateway && deno test`
-Expected: PASS — annotations are TS-only, no runtime impact.
+Run: `cd apps/gateway && deno test` Expected: PASS — annotations are TS-only, no runtime impact.
 
 - [ ] **Step 8: Commit**
 
@@ -1099,6 +1147,7 @@ and tied to the canonical Drizzle row shapes."
 ### Task 2.5: Compose three sub-apps in hmls-app.ts and export types
 
 **Files:**
+
 - Modify: `apps/gateway/src/hmls-app.ts`
 
 - [ ] **Step 1: Refactor route mounting**
@@ -1143,13 +1192,12 @@ export type MechanicApiType = typeof mechanicApp;
 
 - [ ] **Step 2: Run gateway typecheck**
 
-Run: `deno task check:gateway`
-Expected: PASS
+Run: `deno task check:gateway` Expected: PASS
 
 - [ ] **Step 3: Run gateway tests**
 
-Run: `cd apps/gateway && deno test`
-Expected: PASS — route prefixes are unchanged so request handling is byte-identical.
+Run: `cd apps/gateway && deno test` Expected: PASS — route prefixes are unchanged so request
+handling is byte-identical.
 
 - [ ] **Step 4: Smoke test the dev server**
 
@@ -1179,6 +1227,7 @@ PR 3's web client consumes via hc<T>()."
 ### Task 2.6: Wire api/contract.ts to gateway types
 
 **Files:**
+
 - Modify: `packages/shared/src/api/contract.ts`
 
 - [ ] **Step 1: Replace stub with real re-exports**
@@ -1202,8 +1251,7 @@ export * from "../../../../apps/gateway/src/contracts/index.ts";
 
 - [ ] **Step 2: Run check**
 
-Run: `deno task check`
-Expected: PASS
+Run: `deno task check` Expected: PASS
 
 - [ ] **Step 3: Web-side resolution canary (temporary)**
 
@@ -1215,8 +1263,8 @@ const _adminProbe: AdminApiType | null = null;
 void _adminProbe;
 ```
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS — this proves cross-runtime type resolution works for the gateway types.
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS — this proves cross-runtime type
+resolution works for the gateway types.
 
 - [ ] **Step 4: Revert canary**
 
@@ -1276,7 +1324,8 @@ EOF
 
 ## Phase 3 — Web one-shot migration (PR 3)
 
-Goal: web stops duplicating types and stops using `authFetch`. All fetch hooks talk through three typed clients exposed via the AuthProvider context.
+Goal: web stops duplicating types and stops using `authFetch`. All fetch hooks talk through three
+typed clients exposed via the AuthProvider context.
 
 Pre-flight: PR 1 and PR 2 must be merged.
 
@@ -1285,6 +1334,7 @@ Pre-flight: PR 1 and PR 2 must be merged.
 ### Task 3.1: Add api-client.ts factory
 
 **Files:**
+
 - Create: `apps/hmls-web/lib/api-client.ts`
 
 - [ ] **Step 1: Write the factory**
@@ -1293,11 +1343,7 @@ Create `apps/hmls-web/lib/api-client.ts`:
 
 ```ts
 import { hc } from "hono/client";
-import type {
-  AdminApiType,
-  MechanicApiType,
-  PortalApiType,
-} from "@hmls/shared/api/contract";
+import type { AdminApiType, MechanicApiType, PortalApiType } from "@hmls/shared/api/contract";
 import { AGENT_URL } from "./config";
 
 export type ApiClients = {
@@ -1324,8 +1370,7 @@ export function createApiClients(token: string | null | undefined): ApiClients {
 
 - [ ] **Step 2: Verify typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS
 
 - [ ] **Step 3: Commit**
 
@@ -1339,6 +1384,7 @@ git commit -m "feat(web): add createApiClients factory for typed Hono RPC client
 ### Task 3.2: Extend AuthProvider with api context
 
 **Files:**
+
 - Modify: `apps/hmls-web/components/AuthProvider.tsx`
 
 - [ ] **Step 1: Update context type**
@@ -1346,7 +1392,7 @@ git commit -m "feat(web): add createApiClients factory for typed Hono RPC client
 In `AuthProvider.tsx`, change the imports and type:
 
 ```tsx
-import { createApiClients, type ApiClients } from "@/lib/api-client";
+import { type ApiClients, createApiClients } from "@/lib/api-client";
 
 type AuthContextType = {
   user: User | null;
@@ -1383,8 +1429,7 @@ const value = useMemo(
 
 - [ ] **Step 4: Run typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS
 
 - [ ] **Step 5: Commit**
 
@@ -1401,6 +1446,7 @@ remains the single source of truth for auth."
 ### Task 3.3: Add useApi.ts thin readers
 
 **Files:**
+
 - Create: `apps/hmls-web/hooks/useApi.ts`
 
 - [ ] **Step 1: Write the file**
@@ -1417,8 +1463,7 @@ export const useMechanicApi = () => useAuth().api.mechanic;
 
 - [ ] **Step 2: Verify typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS
 
 - [ ] **Step 3: Commit**
 
@@ -1432,6 +1477,7 @@ git commit -m "feat(web): add useAdminApi / usePortalApi / useMechanicApi hooks"
 ### Task 3.4: Rewrite usePortal.ts
 
 **Files:**
+
 - Modify: `apps/hmls-web/hooks/usePortal.ts`
 
 - [ ] **Step 1: Replace the file**
@@ -1509,14 +1555,17 @@ export function usePortalBookings() {
 }
 ```
 
-Note: the exact path segments (`api.me`, `api.me.orders[":id"]`) depend on how `routes/portal.ts` mounts its handlers. **Hover over `api.me` in your editor before writing the call** — TypeScript will reveal the actual shape. If the route is mounted as `/me/orders/:id`, the client path is `api.me.orders[":id"]`.
+Note: the exact path segments (`api.me`, `api.me.orders[":id"]`) depend on how `routes/portal.ts`
+mounts its handlers. **Hover over `api.me` in your editor before writing the call** — TypeScript
+will reveal the actual shape. If the route is mounted as `/me/orders/:id`, the client path is
+`api.me.orders[":id"]`.
 
 - [ ] **Step 2: Verify typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS
 
-If a mismatch surfaces (e.g. the route is `/orders/me` not `/me/orders`), the TS error pinpoints which path segments are wrong — fix the client call to match.
+If a mismatch surfaces (e.g. the route is `/orders/me` not `/me/orders`), the TS error pinpoints
+which path segments are wrong — fix the client call to match.
 
 - [ ] **Step 3: Commit**
 
@@ -1530,6 +1579,7 @@ git commit -m "refactor(web): rewrite usePortal hooks on typed portalApi"
 ### Task 3.5: Rewrite useAdmin.ts
 
 **Files:**
+
 - Modify: `apps/hmls-web/hooks/useAdmin.ts`
 
 - [ ] **Step 1: Replace the file**
@@ -1602,9 +1652,7 @@ export function useAdminOrder(id: number | string | null) {
   const api = useAdminApi();
   const orderId = id != null ? String(id) : null;
   const { data, error, isLoading, mutate } = useSWR(
-    orderId
-      ? api.orders[":id"].$url({ param: { id: orderId } }).toString()
-      : null,
+    orderId ? api.orders[":id"].$url({ param: { id: orderId } }).toString() : null,
     async () => {
       if (!orderId) return undefined;
       const res = await api.orders[":id"].$get({ param: { id: orderId } });
@@ -1632,8 +1680,7 @@ export function useAdminOrders(status?: string) {
 
 - [ ] **Step 2: Verify typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS
 
 - [ ] **Step 3: Commit**
 
@@ -1647,6 +1694,7 @@ git commit -m "refactor(web): rewrite useAdmin hooks on typed adminApi"
 ### Task 3.6: Rewrite useOrderMutations.ts
 
 **Files:**
+
 - Modify: `apps/hmls-web/hooks/useOrderMutations.ts`
 
 - [ ] **Step 1: Read current file** to record which mutations exist
@@ -1713,12 +1761,12 @@ export function useOrderMutations(orderId: number) {
 }
 ```
 
-The `Parameters<typeof api.orders[":id"]["$patch"]>[0]["json"]` pattern lets the call site type-check the body without redefining the schema.
+The `Parameters<typeof api.orders[":id"]["$patch"]>[0]["json"]` pattern lets the call site
+type-check the body without redefining the schema.
 
 - [ ] **Step 3: Verify typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS
 
 - [ ] **Step 4: Commit**
 
@@ -1732,24 +1780,32 @@ git commit -m "refactor(web): rewrite order mutation hooks on typed adminApi"
 ### Task 3.7: Rewrite useAdminMechanics.ts
 
 **Files:**
+
 - Modify: `apps/hmls-web/hooks/useAdminMechanics.ts`
 
 - [ ] **Step 1: Replace the file**
 
-Mirror the patterns from `useAdmin.ts` and `useOrderMutations.ts`. Use `api.mechanics`, `api.mechanics[":id"]`, `api.mechanics[":id"].availability`, `api.mechanics[":id"].overrides[":overrideId"]`. **Hover over `api.mechanics` first** to confirm the actual route shape before writing.
+Mirror the patterns from `useAdmin.ts` and `useOrderMutations.ts`. Use `api.mechanics`,
+`api.mechanics[":id"]`, `api.mechanics[":id"].availability`,
+`api.mechanics[":id"].overrides[":overrideId"]`. **Hover over `api.mechanics` first** to confirm the
+actual route shape before writing.
 
 For the response types, import from `@hmls/shared/db/types`:
 
 ```ts
-import type { Provider, ProviderAvailability, ProviderScheduleOverride } from "@hmls/shared/db/types";
+import type {
+  Provider,
+  ProviderAvailability,
+  ProviderScheduleOverride,
+} from "@hmls/shared/db/types";
 ```
 
-Replace the inline `Mechanic` / `MechanicDetail` interfaces previously hand-defined in this hook file.
+Replace the inline `Mechanic` / `MechanicDetail` interfaces previously hand-defined in this hook
+file.
 
 - [ ] **Step 2: Verify typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS
 
 - [ ] **Step 3: Commit**
 
@@ -1763,20 +1819,27 @@ git commit -m "refactor(web): rewrite mechanic hooks on typed adminApi.mechanics
 ### Task 3.8: Rewrite remaining four hooks
 
 **Files:**
+
 - Modify: `apps/hmls-web/hooks/useCustomer.ts`
 - Modify: `apps/hmls-web/hooks/useEstimate.ts`
 - Modify: `apps/hmls-web/hooks/useMechanic.ts`
 
-- [ ] **Step 1: useCustomer.ts** — wrap `usePortalApi().me` and similar customer-side endpoints. Replace any hand-typed `Customer` import with `import type { Customer } from "@hmls/shared/db/types"`.
+- [ ] **Step 1: useCustomer.ts** — wrap `usePortalApi().me` and similar customer-side endpoints.
+      Replace any hand-typed `Customer` import with
+      `import type { Customer } from "@hmls/shared/db/types"`.
 
-- [ ] **Step 2: useEstimate.ts** — short file (36 lines). Currently fetches estimates by share token. If the endpoint is public (no auth), it stays on a plain `fetch` call rather than going through a typed client (because the public estimates endpoint isn't in any of the 3 sub-apps). Otherwise, route through `usePortalApi()`.
+- [ ] **Step 2: useEstimate.ts** — short file (36 lines). Currently fetches estimates by share
+      token. If the endpoint is public (no auth), it stays on a plain `fetch` call rather than going
+      through a typed client (because the public estimates endpoint isn't in any of the 3 sub-apps).
+      Otherwise, route through `usePortalApi()`.
 
-- [ ] **Step 3: useMechanic.ts** — wrap `useMechanicApi()` for the self-service availability/time-off endpoints. Replace inline types with `Provider`, `ProviderAvailability`, `ProviderScheduleOverride` from shared.
+- [ ] **Step 3: useMechanic.ts** — wrap `useMechanicApi()` for the self-service
+      availability/time-off endpoints. Replace inline types with `Provider`, `ProviderAvailability`,
+      `ProviderScheduleOverride` from shared.
 
 - [ ] **Step 4: Verify typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS
 
 - [ ] **Step 5: Commit**
 
@@ -1790,6 +1853,7 @@ git commit -m "refactor(web): rewrite remaining hooks on typed clients"
 ### Task 3.9: Delete fetcher.ts and types.ts
 
 **Files:**
+
 - Delete: `apps/hmls-web/lib/fetcher.ts`
 - Delete: `apps/hmls-web/lib/types.ts`
 
@@ -1799,7 +1863,8 @@ git commit -m "refactor(web): rewrite remaining hooks on typed clients"
 grep -rln "from \"@/lib/fetcher\"\|from \"@/lib/types\"" apps/hmls-web --include="*.ts" --include="*.tsx"
 ```
 
-Expected: no matches. If matches appear, fix those import sites first to use `@hmls/shared/db/types` or the typed clients.
+Expected: no matches. If matches appear, fix those import sites first to use `@hmls/shared/db/types`
+or the typed clients.
 
 - [ ] **Step 2: Delete the files**
 
@@ -1809,8 +1874,7 @@ rm apps/hmls-web/lib/fetcher.ts apps/hmls-web/lib/types.ts
 
 - [ ] **Step 3: Verify typecheck + lint + build**
 
-Run: `cd apps/hmls-web && bun run typecheck && bun run lint && bun run build`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck && bun run lint && bun run build` Expected: PASS
 
 - [ ] **Step 4: Commit**
 
@@ -1827,6 +1891,7 @@ exposed through AuthProvider."
 ### Task 3.10: Slim status.ts → status-display.ts
 
 **Files:**
+
 - Delete: `apps/hmls-web/lib/status.ts`
 - Create: `apps/hmls-web/lib/status-display.ts`
 
@@ -1845,18 +1910,15 @@ export interface StatusConfig {
 export const ORDER_STATUS: Record<OrderStatus, StatusConfig> = {
   draft: {
     label: "Draft",
-    color:
-      "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
+    color: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
   },
   estimated: {
     label: "Estimated",
-    color:
-      "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+    color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
   },
   approved: {
     label: "Approved",
-    color:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
   },
   declined: {
     label: "Declined",
@@ -1864,8 +1926,7 @@ export const ORDER_STATUS: Record<OrderStatus, StatusConfig> = {
   },
   revised: {
     label: "Revised",
-    color:
-      "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
   },
   scheduled: {
     label: "Scheduled",
@@ -1873,18 +1934,15 @@ export const ORDER_STATUS: Record<OrderStatus, StatusConfig> = {
   },
   in_progress: {
     label: "In Progress",
-    color:
-      "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+    color: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
   },
   completed: {
     label: "Completed",
-    color:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   },
   cancelled: {
     label: "Cancelled",
-    color:
-      "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400",
+    color: "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400",
   },
 };
 
@@ -1921,7 +1979,9 @@ export const ORDER_STEP_LABELS_PORTAL: Record<OrderStatus, string> = {
 };
 ```
 
-Notice: `ORDER_TRANSITIONS`, `EDITABLE_STATUSES`, `ORDER_MAIN_STEPS`, `ORDER_TERMINAL_STATUSES`, `ORDER_BRANCH_STATUSES`, `getOrderStepState`, `BOOKING_STATUS`, `QUOTE_STATUS` are **not** here. Consumers of those import from `@hmls/shared/order/status` instead (next task).
+Notice: `ORDER_TRANSITIONS`, `EDITABLE_STATUSES`, `ORDER_MAIN_STEPS`, `ORDER_TERMINAL_STATUSES`,
+`ORDER_BRANCH_STATUSES`, `getOrderStepState`, `BOOKING_STATUS`, `QUOTE_STATUS` are **not** here.
+Consumers of those import from `@hmls/shared/order/status` instead (next task).
 
 - [ ] **Step 2: Delete status.ts**
 
@@ -1937,16 +1997,18 @@ grep -rln "from \"@/lib/status\"" apps/hmls-web --include="*.ts" --include="*.ts
 
 For each matching file, split the imports:
 
-- `ORDER_STATUS`, `PORTAL_ORDER_STATUS`, `ORDER_STEP_LABELS_*`, `StatusConfig` → `from "@/lib/status-display"`
-- `ORDER_TRANSITIONS`, `EDITABLE_STATUSES`, `ORDER_MAIN_STEPS`, `ORDER_TERMINAL_STATUSES`, `ORDER_BRANCH_STATUSES`, `getOrderStepState`, `OrderStatus`, `OrderStepState` → `from "@hmls/shared/order/status"`
+- `ORDER_STATUS`, `PORTAL_ORDER_STATUS`, `ORDER_STEP_LABELS_*`, `StatusConfig` →
+  `from "@/lib/status-display"`
+- `ORDER_TRANSITIONS`, `EDITABLE_STATUSES`, `ORDER_MAIN_STEPS`, `ORDER_TERMINAL_STATUSES`,
+  `ORDER_BRANCH_STATUSES`, `getOrderStepState`, `OrderStatus`, `OrderStepState` →
+  `from "@hmls/shared/order/status"`
 
-These helpers were promoted into `@hmls/shared/order/status` during Task 1.3 step 6, so
-the imports resolve cleanly here.
+These helpers were promoted into `@hmls/shared/order/status` during Task 1.3 step 6, so the imports
+resolve cleanly here.
 
 - [ ] **Step 4: Verify web typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS
 
 - [ ] **Step 5: Commit**
 
@@ -1964,6 +2026,7 @@ BOOKING_STATUS and QUOTE_STATUS removed (Layer 3 dropped those tables)."
 ### Task 3.11: Clean up local panel-visibility Sets in admin orders page
 
 **Files:**
+
 - Modify: `apps/hmls-web/app/(admin)/admin/orders/[id]/page.tsx`
 - Modify: `apps/hmls-web/app/(admin)/admin/mechanics/[id]/page.tsx`
 
@@ -1992,7 +2055,9 @@ const SHOW_BOOKING_PANEL_STATUSES: ReadonlySet<OrderStatus> = new Set([
 ]);
 ```
 
-Update the references later in the file (`QUOTE_STATUSES.has(...)` → `SHOW_QUOTE_PANEL_STATUSES.has(...)`, `BOOKING_STATUSES.has(...)` → `SHOW_BOOKING_PANEL_STATUSES.has(...)`).
+Update the references later in the file (`QUOTE_STATUSES.has(...)` →
+`SHOW_QUOTE_PANEL_STATUSES.has(...)`, `BOOKING_STATUSES.has(...)` →
+`SHOW_BOOKING_PANEL_STATUSES.has(...)`).
 
 - [ ] **Step 2: Remove BOOKING_STATUS import in mechanics detail page**
 
@@ -2014,12 +2079,13 @@ becomes:
 const statusCfg = ORDER_STATUS[b.status as OrderStatus] ?? { ... };
 ```
 
-(`b.status` is the order status from the typed `Order` row — the cast is safe because Drizzle infers `string` from `varchar(30)`. If you want stronger guarantees, add `isOrderStatus(b.status)` from `@hmls/shared/order/status` and branch.)
+(`b.status` is the order status from the typed `Order` row — the cast is safe because Drizzle infers
+`string` from `varchar(30)`. If you want stronger guarantees, add `isOrderStatus(b.status)` from
+`@hmls/shared/order/status` and branch.)
 
 - [ ] **Step 3: Verify typecheck**
 
-Run: `cd apps/hmls-web && bun run typecheck`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck` Expected: PASS
 
 - [ ] **Step 4: Commit**
 
@@ -2037,6 +2103,7 @@ table statuses (those tables were dropped in Layer 3)."
 ### Task 3.12: Walk vehicleInfo year drift
 
 **Files:**
+
 - Modify: any consumer that treats `Customer.vehicleInfo.year` as `string`
 
 - [ ] **Step 1: Find consumers**
@@ -2047,14 +2114,16 @@ grep -rn "vehicleInfo.year\|vehicleInfo?.year" apps/hmls-web --include="*.ts" --
 
 - [ ] **Step 2: For each match**
 
-Inspect the surrounding code. If the code does `String(c.vehicleInfo?.year)`, drop the coercion — `year` is now `number | undefined`. If the code displays it directly inside JSX, no change needed (`{year}` works). If the code does `parseInt(year, 10)`, replace with the value directly.
+Inspect the surrounding code. If the code does `String(c.vehicleInfo?.year)`, drop the coercion —
+`year` is now `number | undefined`. If the code displays it directly inside JSX, no change needed
+(`{year}` works). If the code does `parseInt(year, 10)`, replace with the value directly.
 
-The known offender pattern was forms that used `year: ""` defaults; update to `year: 0` or `year: undefined` consistently.
+The known offender pattern was forms that used `year: ""` defaults; update to `year: 0` or
+`year: undefined` consistently.
 
 - [ ] **Step 3: Verify typecheck + lint**
 
-Run: `cd apps/hmls-web && bun run typecheck && bun run lint`
-Expected: PASS
+Run: `cd apps/hmls-web && bun run typecheck && bun run lint` Expected: PASS
 
 - [ ] **Step 4: Manual smoke**
 
@@ -2063,15 +2132,18 @@ Run: `cd apps/hmls-web && GATEWAY_URL=http://localhost:8080 infisical run --env=
 In another terminal, run the gateway: `infisical run --env=dev -- deno task dev:api`
 
 Visit:
+
 - `/admin` (dashboard) — KPIs render, customer list shows
 - `/admin/customers` — list + detail + edit form
 - `/admin/orders` — list, filter by status, open detail
-- `/admin/orders/:id` — details, quote panel for `estimated`/`approved`, booking panel for `scheduled`+
+- `/admin/orders/:id` — details, quote panel for `estimated`/`approved`, booking panel for
+  `scheduled`+
 - `/admin/mechanics` — list + detail with availability + booking schedule
 - `/portal/orders` — customer list + detail
 - `/mechanic/availability` (logged in as mechanic) — set availability
 
-Check console for errors. Each page should issue a typed RPC call (visible in Network tab going to `localhost:8080/api/...`).
+Check console for errors. Each page should issue a typed RPC call (visible in Network tab going to
+`localhost:8080/api/...`).
 
 - [ ] **Step 5: Commit**
 
@@ -2144,29 +2216,31 @@ EOF
 
 This plan covers every requirement in the spec:
 
-| Spec section / requirement | Plan task |
-| --- | --- |
-| Move `apps/agent/src/db/schema.ts` to shared | Task 1.2 |
-| Move `order-state-core.ts` to shared | Task 1.3 |
-| Add `db/types.ts` with `$inferSelect` | Task 1.4 |
-| Add `api/contract.ts` (stub) | Task 1.5 |
-| Extend `mod.ts` re-exports | Task 1.6 |
-| Fix dup `EDITABLE_STATUSES` in admin-order-tools | Task 1.7 |
-| `packages/shared` dual-publish (deno.json + package.json) | Task 1.1 |
-| Bun-side resolution canary | Task 1.8 |
-| `transpilePackages` in next.config | Task 1.9 |
-| Zod input contracts per route group | Tasks 2.1–2.2 |
-| Wire `zValidator` in routes | Task 2.3 |
-| Annotate `c.json` response types | Task 2.4 |
-| Compose 3 sub-apps + export AppTypes | Task 2.5 |
-| Wire `api/contract.ts` to gateway types | Task 2.6 |
-| Add `lib/api-client.ts` factory | Task 3.1 |
-| Extend `AuthProvider` with api context | Task 3.2 |
-| Add `useApi.ts` thin readers | Task 3.3 |
-| Rewrite all 7 fetch hooks | Tasks 3.4–3.8 |
-| Delete `lib/fetcher.ts` + `lib/types.ts` | Task 3.9 |
-| Slim `lib/status.ts` → `lib/status-display.ts` | Task 3.10 |
-| Rename panel-visibility Sets + drop `BOOKING_STATUS` | Task 3.11 |
-| Walk `vehicleInfo.year` consumers | Task 3.12 |
+| Spec section / requirement                                | Plan task     |
+| --------------------------------------------------------- | ------------- |
+| Move `apps/agent/src/db/schema.ts` to shared              | Task 1.2      |
+| Move `order-state-core.ts` to shared                      | Task 1.3      |
+| Add `db/types.ts` with `$inferSelect`                     | Task 1.4      |
+| Add `api/contract.ts` (stub)                              | Task 1.5      |
+| Extend `mod.ts` re-exports                                | Task 1.6      |
+| Fix dup `EDITABLE_STATUSES` in admin-order-tools          | Task 1.7      |
+| `packages/shared` dual-publish (deno.json + package.json) | Task 1.1      |
+| Bun-side resolution canary                                | Task 1.8      |
+| `transpilePackages` in next.config                        | Task 1.9      |
+| Zod input contracts per route group                       | Tasks 2.1–2.2 |
+| Wire `zValidator` in routes                               | Task 2.3      |
+| Annotate `c.json` response types                          | Task 2.4      |
+| Compose 3 sub-apps + export AppTypes                      | Task 2.5      |
+| Wire `api/contract.ts` to gateway types                   | Task 2.6      |
+| Add `lib/api-client.ts` factory                           | Task 3.1      |
+| Extend `AuthProvider` with api context                    | Task 3.2      |
+| Add `useApi.ts` thin readers                              | Task 3.3      |
+| Rewrite all 7 fetch hooks                                 | Tasks 3.4–3.8 |
+| Delete `lib/fetcher.ts` + `lib/types.ts`                  | Task 3.9      |
+| Slim `lib/status.ts` → `lib/status-display.ts`            | Task 3.10     |
+| Rename panel-visibility Sets + drop `BOOKING_STATUS`      | Task 3.11     |
+| Walk `vehicleInfo.year` consumers                         | Task 3.12     |
 
-**Out of scope (per spec):** server-side proxy for auth, multi-shop tenancy, Stripe re-implementation, BAR § 3353, `OrderEvent.metadata` discriminated union, fixo, streaming chat routes, UI/UX changes — none of these appear in any task.
+**Out of scope (per spec):** server-side proxy for auth, multi-shop tenancy, Stripe
+re-implementation, BAR § 3353, `OrderEvent.metadata` discriminated union, fixo, streaming chat
+routes, UI/UX changes — none of these appear in any task.
