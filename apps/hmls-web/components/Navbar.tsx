@@ -38,10 +38,10 @@ export default function Navbar() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-300 ${
+      className={`sticky top-0 z-50 transition-colors duration-300 ${
         isTransparent
           ? "bg-transparent border-b border-transparent"
-          : "bg-background/90 backdrop-blur-md border-b border-border"
+          : "bg-background border-b border-border"
       }`}
     >
       <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
