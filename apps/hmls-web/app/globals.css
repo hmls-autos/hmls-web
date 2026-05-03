@@ -289,6 +289,90 @@ body {
   transform: translateY(-4px);
 }
 
+/* Boundary (loading/error/not-found) animations -- pure CSS, no JS lib needed */
+@keyframes boundary-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes boundary-pop-in {
+  0% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes wrench-pulse {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.1) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(-5deg);
+  }
+}
+
+@keyframes dot-bounce {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.boundary-enter {
+  animation: boundary-scale-in 0.5s ease-out both;
+}
+.boundary-pop {
+  animation: boundary-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+.boundary-fade-up {
+  animation: hero-fade-up 0.4s ease-out both;
+  opacity: 0;
+}
+.boundary-fade-up-1 {
+  animation-delay: 0.2s;
+}
+.boundary-fade-up-2 {
+  animation-delay: 0.3s;
+}
+.boundary-fade-up-3 {
+  animation-delay: 0.4s;
+}
+.wrench-pulse {
+  animation: wrench-pulse 2s ease-in-out infinite;
+}
+.dot-bounce {
+  animation: dot-bounce 1s ease-in-out infinite;
+}
+.hover-lift {
+  transition: transform 0.15s ease;
+}
+.hover-lift:hover {
+  transform: scale(1.05);
+}
+.hover-lift:active {
+  transform: scale(0.95);
+}
+
 /* Respect reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .reveal,
@@ -314,6 +398,19 @@ body {
   }
 
   .card-hover {
+    transition: none;
+  }
+
+  .boundary-enter,
+  .boundary-pop,
+  .boundary-fade-up,
+  .wrench-pulse,
+  .dot-bounce {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .hover-lift {
     transition: none;
   }
 
