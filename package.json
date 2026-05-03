@@ -1,0 +1,9 @@
+{
+  "name": "hmls-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/hmls-web",
+    "packages/shared"
+  ]
+}
