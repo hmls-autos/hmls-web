@@ -1,12 +1,12 @@
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, Phone, Star } from "lucide-react";
 import type { Metadata } from "next";
 import { FadeIn } from "@/components/ui/Animations";
 import LazyMap from "@/components/ui/LazyMap";
+import { BUSINESS } from "@/lib/business";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description:
-    "Get in touch for reliable auto care. We come to you anywhere in Orange County. Call (949) 213-7073.",
+  description: `Get in touch for reliable auto care. We come to you anywhere in Orange County. Call ${BUSINESS.phoneDisplay}.`,
 };
 
 export default function Contact() {
@@ -47,10 +47,10 @@ export default function Contact() {
                 <div className="text-left">
                   <div className="text-xs text-text-secondary">Phone</div>
                   <a
-                    href="tel:+19492137073"
+                    href={`tel:${BUSINESS.phone}`}
                     className="text-sm font-medium hover:text-red-primary transition-colors"
                   >
-                    (949) 213-7073
+                    {BUSINESS.phoneDisplay}
                   </a>
                 </div>
               </div>
@@ -62,10 +62,10 @@ export default function Contact() {
                 <div className="text-left">
                   <div className="text-xs text-text-secondary">Email</div>
                   <a
-                    href="mailto:business@hmls.autos"
+                    href={`mailto:${BUSINESS.email}`}
                     className="text-sm font-medium hover:text-red-primary transition-colors"
                   >
-                    business@hmls.autos
+                    {BUSINESS.email}
                   </a>
                 </div>
               </div>
@@ -73,6 +73,48 @@ export default function Contact() {
 
             <div className="w-full h-80 rounded-2xl overflow-hidden border border-border relative group">
               <LazyMap className="w-full h-full" />
+            </div>
+
+            <div className="mt-8 w-full p-6 rounded-2xl border border-border bg-surface">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="flex items-center gap-0.5 text-red-primary">
+                    {["s1", "s2", "s3", "s4", "s5"].map((k) => (
+                      <Star
+                        key={k}
+                        className="w-4 h-4 fill-current"
+                        aria-hidden="true"
+                      />
+                    ))}
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">
+                      {BUSINESS.rating.value.toFixed(1)} on Google
+                    </div>
+                    <div className="text-xs text-text-secondary">
+                      {BUSINESS.rating.count} reviews from real customers
+                    </div>
+                  </div>
+                </div>
+                <a
+                  href={BUSINESS.gmb.shareUrl}
+                  target="_blank"
+                  rel="noopener"
+                  className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-red-primary text-white text-sm font-semibold hover:bg-red-primary/90 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-primary"
+                >
+                  Leave a Review
+                </a>
+              </div>
+            </div>
+
+            <div className="mt-8 w-full aspect-[16/9] rounded-2xl overflow-hidden border border-border">
+              <iframe
+                title="HMLS Mobile Mechanic on Google Maps"
+                src={BUSINESS.gmb.embedUrl}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="w-full h-full"
+              />
             </div>
           </FadeIn>
         </div>

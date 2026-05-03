@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BUSINESS, BUSINESS_ADDRESS_ONELINE } from "@/lib/business";
 
 export default function Footer() {
   return (
@@ -11,6 +12,9 @@ export default function Footer() {
             </div>
             <div className="text-sm text-white/40 mt-1">
               Mobile Mechanic &bull; Orange County, CA
+            </div>
+            <div className="text-xs text-white/30 mt-2">
+              {BUSINESS_ADDRESS_ONELINE}
             </div>
           </div>
 
@@ -33,6 +37,14 @@ export default function Footer() {
             >
               Contact
             </Link>
+            <a
+              href={BUSINESS.gmb.shareUrl}
+              target="_blank"
+              rel="noopener"
+              className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-red-primary rounded"
+            >
+              Leave a Review
+            </a>
             <Link
               href="/terms"
               className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-red-primary rounded"
