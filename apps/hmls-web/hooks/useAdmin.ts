@@ -1,5 +1,6 @@
 import useSWR from "swr";
-import { fetcher } from "@/lib/fetcher";
+import { useApi } from "@/hooks/useApi";
+import { adminPaths } from "@/lib/api-paths";
 import { useStableArray } from "@/lib/swr-stable";
 import type { Customer, Order, OrderDetail } from "@/lib/types";
 
@@ -16,6 +17,7 @@ interface DashboardStats {
 
 interface UpcomingOrderRow {
   id: number;
+  /** Serialized as ISO string over the wire despite Date on gateway side. */
   scheduledAt: string | null;
   contactName: string | null;
   vehicleInfo: { make?: string; model?: string; year?: string } | null;
@@ -36,18 +38,19 @@ interface CustomerDetail {
 }
 
 export function useAdminDashboard() {
-  const { data, error, isLoading } = useSWR<DashboardData>(
-    "/api/admin/dashboard",
-    fetcher,
+  const api = useApi();
+  const { data, error, isLoading } = useSWR(
+    adminPaths.dashboard(),
+    (p: string) => api.get<DashboardData>(p),
   );
   return { data, isLoading, isError: !!error };
 }
 
 export function useAdminCustomers(search?: string) {
-  const params = search ? `?search=${encodeURIComponent(search)}` : "";
-  const { data, error, isLoading, mutate } = useSWR<Customer[]>(
-    `/api/admin/customers${params}`,
-    fetcher,
+  const api = useApi();
+  const { data, error, isLoading, mutate } = useSWR(
+    adminPaths.customers(search),
+    (p: string) => api.get<Customer[]>(p),
   );
   return {
     customers: useStableArray(data),
@@ -58,26 +61,28 @@ export function useAdminCustomers(search?: string) {
 }
 
 export function useAdminCustomer(id: number | null) {
-  const { data, error, isLoading, mutate } = useSWR<CustomerDetail>(
-    id ? `/api/admin/customers/${id}` : null,
-    fetcher,
+  const api = useApi();
+  const path = id != null ? adminPaths.customer(id) : null;
+  const { data, error, isLoading, mutate } = useSWR(path, (p: string) =>
+    api.get<CustomerDetail>(p),
   );
   return { data, isLoading, isError: !!error, mutate };
 }
 
 export function useAdminOrder(id: number | string | null) {
-  const { data, error, isLoading, mutate } = useSWR<OrderDetail>(
-    id ? `/api/admin/orders/${id}` : null,
-    fetcher,
+  const api = useApi();
+  const path = id != null ? adminPaths.order(id) : null;
+  const { data, error, isLoading, mutate } = useSWR(path, (p: string) =>
+    api.get<OrderDetail>(p),
   );
   return { data, isLoading, isError: !!error, mutate };
 }
 
 export function useAdminOrders(status?: string) {
-  const params = status ? `?status=${encodeURIComponent(status)}` : "";
-  const { data, error, isLoading, mutate } = useSWR<AdminOrder[]>(
-    `/api/admin/orders${params}`,
-    fetcher,
+  const api = useApi();
+  const { data, error, isLoading, mutate } = useSWR(
+    adminPaths.orders(status),
+    (p: string) => api.get<AdminOrder[]>(p),
   );
   return { orders: useStableArray(data), isLoading, isError: !!error, mutate };
 }

@@ -1,7 +1,13 @@
 import useSWR from "swr";
-import { authFetch, fetcher } from "@/lib/fetcher";
+import { useApi } from "@/hooks/useApi";
+import { adminPaths } from "@/lib/api-paths";
+import { authFetch } from "@/lib/fetcher";
 import { useStableArray } from "@/lib/swr-stable";
 import type { Order } from "@/lib/types";
+
+// ---------------------------------------------------------------------------
+// Shape types (mirrors gateway admin-mechanics.ts local types)
+// ---------------------------------------------------------------------------
 
 export interface Mechanic {
   id: number;
@@ -18,6 +24,7 @@ export interface Mechanic {
   createdAt: string;
 }
 
+/** Mechanic + aggregate stats returned by GET /api/admin/mechanics */
 export interface MechanicListRow extends Mechanic {
   weekUtilization: number | null;
   isOnJobNow: boolean;
@@ -52,10 +59,19 @@ export type MechanicOrderRow = Order & {
   };
 };
 
+/** New canonical alias (Provider + stats). Replaces MechanicListRow going
+ *  forward — kept side-by-side until Task 3.C cleans up lib/types.ts. */
+export type ProviderWithStats = MechanicListRow;
+
+// ---------------------------------------------------------------------------
+// Hooks
+// ---------------------------------------------------------------------------
+
 export function useAdminMechanics() {
-  const { data, error, isLoading, mutate } = useSWR<MechanicListRow[]>(
-    "/api/admin/mechanics",
-    fetcher,
+  const api = useApi();
+  const { data, error, isLoading, mutate } = useSWR(
+    adminPaths.mechanics(),
+    (p: string) => api.get<MechanicListRow[]>(p),
   );
 
   async function createMechanic(payload: {
@@ -66,12 +82,11 @@ export function useAdminMechanics() {
     serviceRadiusMiles?: number;
     homeBaseLat?: number | null;
     homeBaseLng?: number | null;
-    specialties?: string[];
+    specialties?: unknown;
+    isActive?: boolean;
+    authUserId?: string;
   }) {
-    const created = await authFetch<Mechanic>("/api/admin/mechanics", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    const created = await api.post<Mechanic>(adminPaths.mechanics(), payload);
     await mutate();
     return created;
   }
@@ -86,23 +101,21 @@ export function useAdminMechanics() {
 }
 
 export function useAdminMechanic(id: number | null) {
-  const { data, error, isLoading, mutate } = useSWR<Mechanic>(
-    id ? `/api/admin/mechanics/${id}` : null,
-    fetcher,
+  const api = useApi();
+  const path = id != null ? adminPaths.mechanic(id) : null;
+  const { data, error, isLoading, mutate } = useSWR(path, (p: string) =>
+    api.get<Mechanic>(p),
   );
 
   async function updateMechanic(patch: Partial<Mechanic>) {
     if (!id) throw new Error("No mechanic id");
-    await authFetch(`/api/admin/mechanics/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(patch),
-    });
+    await api.patch<Mechanic>(adminPaths.mechanic(id), patch);
     await mutate();
   }
 
   async function deactivate() {
     if (!id) throw new Error("No mechanic id");
-    await authFetch(`/api/admin/mechanics/${id}`, { method: "DELETE" });
+    await api.delete<{ success: true }>(adminPaths.mechanic(id));
     await mutate();
   }
 
@@ -117,18 +130,18 @@ export function useAdminMechanic(id: number | null) {
 }
 
 export function useAdminMechanicAvailability(id: number | null) {
-  const { data, error, isLoading, mutate } = useSWR<WeeklyRow[]>(
-    id ? `/api/admin/mechanics/${id}/availability` : null,
-    fetcher,
+  const api = useApi();
+  const path = id != null ? adminPaths.mechanicAvailability(id) : null;
+  const { data, error, isLoading, mutate } = useSWR(path, (p: string) =>
+    api.get<WeeklyRow[]>(p),
   );
 
   async function saveAvailability(
     rows: Array<Pick<WeeklyRow, "dayOfWeek" | "startTime" | "endTime">>,
   ) {
     if (!id) throw new Error("No mechanic id");
-    await authFetch(`/api/admin/mechanics/${id}/availability`, {
-      method: "PUT",
-      body: JSON.stringify({ availability: rows }),
+    await api.put<WeeklyRow[]>(adminPaths.mechanicAvailability(id), {
+      availability: rows,
     });
     await mutate();
   }
@@ -147,13 +160,10 @@ export function useAdminMechanicOverrides(
   from?: string,
   to?: string,
 ) {
-  const p = new URLSearchParams();
-  if (from) p.set("from", from);
-  if (to) p.set("to", to);
-  const qs = p.toString() ? `?${p.toString()}` : "";
-  const { data, error, isLoading, mutate } = useSWR<ScheduleOverride[]>(
-    id ? `/api/admin/mechanics/${id}/overrides${qs}` : null,
-    fetcher,
+  const api = useApi();
+  const path = id != null ? adminPaths.mechanicOverrides(id, from, to) : null;
+  const { data, error, isLoading, mutate } = useSWR(path, (p: string) =>
+    api.get<ScheduleOverride[]>(p),
   );
 
   async function addOverride(payload: {
@@ -164,18 +174,13 @@ export function useAdminMechanicOverrides(
     reason?: string;
   }) {
     if (!id) throw new Error("No mechanic id");
-    await authFetch(`/api/admin/mechanics/${id}/overrides`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    await api.post<ScheduleOverride>(adminPaths.mechanicOverrides(id), payload);
     await mutate();
   }
 
   async function deleteOverride(overrideId: number) {
     if (!id) throw new Error("No mechanic id");
-    await authFetch(`/api/admin/mechanics/${id}/overrides/${overrideId}`, {
-      method: "DELETE",
-    });
+    await api.delete<{ ok: true }>(adminPaths.mechanicOverride(id, overrideId));
     await mutate();
   }
 
@@ -194,13 +199,10 @@ export function useAdminMechanicOrders(
   from?: string,
   to?: string,
 ) {
-  const p = new URLSearchParams();
-  if (from) p.set("from", from);
-  if (to) p.set("to", to);
-  const qs = p.toString() ? `?${p.toString()}` : "";
-  const { data, error, isLoading, mutate } = useSWR<MechanicOrderRow[]>(
-    id ? `/api/admin/mechanics/${id}/orders${qs}` : null,
-    fetcher,
+  const api = useApi();
+  const path = id != null ? adminPaths.mechanicOrders(id, from, to) : null;
+  const { data, error, isLoading, mutate } = useSWR(path, (p: string) =>
+    api.get<MechanicOrderRow[]>(p),
   );
 
   return {
@@ -211,13 +213,27 @@ export function useAdminMechanicOrders(
   };
 }
 
+/** Standalone assign helper — kept for legacy call sites (ReassignBookingDialog).
+ *  Uses authFetch directly since it is not a hook. Rewrite call sites to
+ *  use `useAssignMechanic()` when Task 3.C cleans up lib/fetcher.ts. */
 export async function assignMechanic(
   orderId: number,
   providerId: number,
   force = false,
 ) {
-  return await authFetch(`/api/admin/mechanics/orders/${orderId}/assign`, {
+  return await authFetch(adminPaths.assignProvider(orderId), {
     method: "POST",
     body: JSON.stringify({ providerId, force }),
   });
+}
+
+/** Hook-based replacement for the legacy standalone `assignMechanic`. */
+export function useAssignMechanic() {
+  const api = useApi();
+  return function assign(
+    orderId: number,
+    payload: { providerId: number; force?: boolean },
+  ): Promise<Order> {
+    return api.post<Order>(adminPaths.assignProvider(orderId), payload);
+  };
 }

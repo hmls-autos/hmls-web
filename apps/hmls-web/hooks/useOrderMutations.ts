@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { authFetch } from "@/lib/fetcher";
-import type { OrderItem } from "@/lib/types";
+import { useApi } from "@/hooks/useApi";
+import { adminPaths } from "@/lib/api-paths";
+import type { Order, OrderItem } from "@/lib/types";
 
 export type OrderContactPatch = {
   contact_name: string;
@@ -10,10 +11,20 @@ export type OrderContactPatch = {
   contact_address: string;
 };
 
+/** Mirrors scheduleOrderInput schema from @hmls/shared/api/contracts/orders */
+type ScheduleBody = {
+  scheduledAt: string;
+  durationMinutes: number;
+  location?: string | null;
+};
+
 export function useOrderMutations(
   orderId: number | string,
   revalidate: () => void,
 ) {
+  const api = useApi();
+  const id = String(orderId);
+
   const [transitioning, setTransitioning] = useState(false);
   const [savingItems, setSavingItems] = useState(false);
   const [savingCustomer, setSavingCustomer] = useState(false);
@@ -25,10 +36,8 @@ export function useOrderMutations(
   ): Promise<void> {
     setTransitioning(true);
     try {
-      await authFetch(`/api/admin/orders/${orderId}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: newStatus, cancellationReason }),
-      });
+      const body = { status: newStatus, cancellationReason };
+      await api.patch<Order>(adminPaths.orderStatus(id), body);
       revalidate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update status");
@@ -41,10 +50,7 @@ export function useOrderMutations(
   async function saveItems(items: OrderItem[], notes: string): Promise<void> {
     setSavingItems(true);
     try {
-      await authFetch(`/api/admin/orders/${orderId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ items, notes }),
-      });
+      await api.patch<Order>(adminPaths.order(id), { items, notes });
       revalidate();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to save items");
@@ -57,10 +63,7 @@ export function useOrderMutations(
   async function saveCustomer(patch: OrderContactPatch): Promise<void> {
     setSavingCustomer(true);
     try {
-      await authFetch(`/api/admin/orders/${orderId}`, {
-        method: "PATCH",
-        body: JSON.stringify(patch),
-      });
+      await api.patch<Order>(adminPaths.order(id), patch);
       revalidate();
     } catch (e) {
       toast.error(
@@ -79,10 +82,9 @@ export function useOrderMutations(
   ): Promise<void> {
     setSavingSchedule(true);
     try {
-      await authFetch(`/api/admin/orders/${orderId}/schedule`, {
-        method: "POST",
-        body: JSON.stringify({ scheduledAt, durationMinutes, location }),
-      });
+      const body: ScheduleBody = { scheduledAt, durationMinutes };
+      if (location !== undefined) body.location = location;
+      await api.post<Order>(adminPaths.orderSchedule(id), body);
       revalidate();
     } catch (e) {
       toast.error(
