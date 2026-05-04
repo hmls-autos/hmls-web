@@ -19,13 +19,6 @@ const chat = new Hono<{ Variables: Variables }>();
 chat.post("/", async (c) => {
   const auth = c.get("auth");
 
-  // Validate that the user has an active subscription/tier before running the agent
-  const tierBlock = await checkFreeTierLimit(auth, "text");
-  if (tierBlock) {
-    logger.warn("Tier limit reached", { userId: auth.userId });
-    return tierBlock;
-  }
-
   let body;
   try {
     body = await c.req.json();
@@ -55,6 +48,20 @@ chat.post("/", async (c) => {
     : typeof sessionId === "number"
     ? sessionId
     : null;
+
+  // Tier check excludes the current session if the chat is continuing inside
+  // an already-counted one. Without this, a free-tier user mid-conversation
+  // in their 3rd session of the month gets 403'd from sending another turn —
+  // even though that 3rd session was already counted when it was created.
+  const excludeForTier = parsedSessionId !== null && Number.isInteger(parsedSessionId)
+    ? parsedSessionId
+    : undefined;
+  const tierBlock = await checkFreeTierLimit(auth, "text", excludeForTier);
+  if (tierBlock) {
+    logger.warn("Tier limit reached", { userId: auth.userId });
+    return tierBlock;
+  }
+
   logger.info("Request received", {
     userId,
     messageCount,
