@@ -30,9 +30,20 @@ export async function reopenIfComplete(
     )
     : eq(schema.fixoSessions.userId, authUserId);
 
+  // Reset expires_at back to the 30-day pending/processing window. The row
+  // had been pushed to ~1 year on /complete; rolling it back to the short
+  // window keeps re-opened drafts on the same lazy-cleanup cadence as fresh
+  // ones. The user can re-/complete to push it out to 1 year again.
+  const reopenedExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
   const updated = await db
     .update(schema.fixoSessions)
-    .set({ status: "processing", result: null, completedAt: null })
+    .set({
+      status: "processing",
+      result: null,
+      completedAt: null,
+      expiresAt: reopenedExpiresAt,
+    })
     .where(
       and(
         eq(schema.fixoSessions.id, sessionId),

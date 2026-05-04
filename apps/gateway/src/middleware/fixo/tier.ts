@@ -1,5 +1,5 @@
 import { db, schema } from "@hmls/agent/db";
-import { and, eq, gte, ne, sql } from "drizzle-orm";
+import { and, eq, gt, gte, ne, sql } from "drizzle-orm";
 import type { AuthContext } from "./auth.ts";
 
 const FREE_LIMITS = { text: 3 } as const;
@@ -43,6 +43,10 @@ export async function checkFreeTierLimit(
     // /complete crashed before producing a result shouldn't permanently
     // consume one of their three monthly slots.
     ne(schema.fixoSessions.status, "failed"),
+    // Expired sessions don't count either. The user can't see them in their
+    // history (sessions.ts filters them out), so charging quota for ghosts
+    // they can't revisit is gaslighting.
+    gt(schema.fixoSessions.expiresAt, sql`now()`),
   ];
   if (excludeSessionId !== undefined) {
     conditions.push(ne(schema.fixoSessions.id, excludeSessionId));

@@ -72,7 +72,8 @@ complete.post("/:id/complete", async (c) => {
       if (
         !session ||
         (session.userId !== auth.userId &&
-          session.customerId !== auth.customerId)
+          session.customerId !== auth.customerId) ||
+        session.expiresAt.getTime() <= Date.now()
       ) {
         return c.json({ error: "Session not found" }, 404);
       }
@@ -122,12 +123,21 @@ complete.post("/:id/complete", async (c) => {
       const modelMessages = await convertToModelMessages(messages);
       const result = await summarizeFixoSession({ messages: modelMessages });
 
+      // Extend expiry on successful completion. The 30-day default covers
+      // abandoned drafts; a generated report represents work the user paid
+      // attention for and may revisit weeks later. ~1 year strikes a balance
+      // between user value and not retaining personal vehicle data forever.
+      const completedExpiresAt = new Date(
+        Date.now() + 365 * 24 * 60 * 60 * 1000,
+      );
+
       await tx
         .update(schema.fixoSessions)
         .set({
           result,
           status: "complete",
           completedAt: new Date(),
+          expiresAt: completedExpiresAt,
         })
         .where(eq(schema.fixoSessions.id, sessionId));
 

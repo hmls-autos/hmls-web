@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   customType,
@@ -303,13 +304,25 @@ export const fixoSessions = pgTable(
     creditsCharged: integer("credits_charged").notNull().default(0),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     completedAt: timestamp("completed_at"),
+    // Soft-expire timestamp. Default 30 days from row insert covers the bulk
+    // of pending/processing sessions that the user starts and abandons. On
+    // /complete the gateway extends this to ~1 year because completed reports
+    // hold paid-for value the user may revisit; reopenIfComplete resets back
+    // to 30 days so a re-engaged session can age out again. Lazy-filtered in
+    // the read paths (list, detail, tier count) — no hard delete yet.
+    expiresAt: timestamp("expires_at", { withTimezone: true })
+      .notNull()
+      .default(sql`now() + interval '30 days'`),
     result: jsonb("result"),
     // Persisted UIMessage[] transcript for cross-device continuation.
     // Written by /task onFinish when sessionId is supplied; read by
     // GET /sessions/:id so the web client can resume on a fresh device.
     messages: jsonb("messages"),
   },
-  (table) => [index("idx_fixo_sessions_customer").on(table.customerId)],
+  (table) => [
+    index("idx_fixo_sessions_customer").on(table.customerId),
+    index("idx_fixo_sessions_expires_at").on(table.expiresAt),
+  ],
 );
 
 export const fixoMedia = pgTable(

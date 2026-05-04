@@ -76,7 +76,8 @@ input.post("/:id/input", async (c) => {
 
   if (
     !session ||
-    (session.userId !== auth.userId && session.customerId !== auth.customerId)
+    (session.userId !== auth.userId && session.customerId !== auth.customerId) ||
+    session.expiresAt.getTime() <= Date.now()
   ) {
     return c.json({ error: "Session not found" }, 404);
   }
