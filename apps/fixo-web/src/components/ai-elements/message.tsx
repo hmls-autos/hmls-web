@@ -9,7 +9,6 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import {
   createContext,
-  memo,
   useCallback,
   useContext,
   useEffect,
@@ -51,8 +50,12 @@ export const MessageContent = ({
 }: MessageContentProps) => (
   <div
     className={cn(
-      "is-user:dark flex w-fit min-w-0 max-w-full flex-col gap-2 overflow-hidden text-sm",
-      "group-[.is-user]:ml-auto group-[.is-user]:rounded-lg group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground",
+      "flex w-fit min-w-0 max-w-full flex-col gap-2 overflow-hidden text-sm",
+      // User bubble: Fixo Blue fill with white text. This is the single most
+      // visible piece of brand surface in the chat — every user turn paints
+      // the conversation in the brand color without taking over the assistant
+      // side (which stays clean monochrome for readability of long answers).
+      "group-[.is-user]:ml-auto group-[.is-user]:rounded-lg group-[.is-user]:bg-primary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-primary-foreground",
       "group-[.is-assistant]:text-foreground",
       className,
     )}
@@ -320,20 +323,26 @@ export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
 const streamdownPlugins = { cjk, code, math, mermaid };
 
-export const MessageResponse = memo(
-  ({ className, ...props }: MessageResponseProps) => (
-    <Streamdown
-      className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className,
-      )}
-      plugins={streamdownPlugins}
-      {...props}
-    />
-  ),
-  (prevProps, nextProps) =>
-    prevProps.children === nextProps.children &&
-    nextProps.isAnimating === prevProps.isAnimating,
+// Streamdown already wraps itself in React.memo and memoizes individual
+// markdown blocks (https://streamdown.ai/docs/memoization). Wrapping it again
+// with a custom areEqual just duplicates work and risks staleness — the prior
+// areEqual compared `isAnimating` but the prop wasn't being threaded through
+// from chat/page.tsx, so the comparator always saw `undefined === undefined`
+// and never invalidated when the stream ended (copy buttons stayed disabled
+// past stream-end). Keep this a thin wrapper; let Streamdown's own memo do
+// the heavy lifting.
+export const MessageResponse = ({
+  className,
+  ...props
+}: MessageResponseProps) => (
+  <Streamdown
+    className={cn(
+      "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+      className,
+    )}
+    plugins={streamdownPlugins}
+    {...props}
+  />
 );
 
 MessageResponse.displayName = "MessageResponse";

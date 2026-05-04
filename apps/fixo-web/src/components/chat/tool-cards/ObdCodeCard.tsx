@@ -24,9 +24,9 @@ export function ObdCodeCard({
 }) {
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 rounded-xl bg-surface-alt/60 px-3 py-2 text-sm text-text-secondary">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-primary/50" />
-        Looking up OBD code...
+      <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent/60" />
+        Looking up OBD code…
       </div>
     );
   }
@@ -34,7 +34,7 @@ export function ObdCodeCard({
   const showAlert =
     output.severity === "high" || output.severity === "critical";
   return (
-    <div className="rounded-xl border border-border bg-surface-alt/40 p-3">
+    <div className="rounded-lg border border-border bg-muted/40 p-3">
       <div className="flex items-center gap-2">
         <code className="rounded-md bg-background px-2 py-0.5 font-mono text-sm font-semibold tabular-nums">
           {output.code}

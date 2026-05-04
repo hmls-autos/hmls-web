@@ -50,12 +50,12 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
 
   if (error) {
     return (
-      <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center text-white p-6">
-        <p className="text-center mb-4">{error}</p>
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black p-6 text-white">
+        <p className="mb-4 text-center text-sm">{error}</p>
         <button
           type="button"
           onClick={onClose}
-          className="px-6 py-2 bg-surface-alt rounded-full"
+          className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium backdrop-blur transition-colors hover:bg-white/20"
         >
           Close
         </button>
@@ -64,7 +64,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    <div className="fixed inset-0 z-50 flex flex-col bg-black">
       {/* Close button */}
       <button
         type="button"
@@ -72,72 +72,72 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
           stopCamera();
           onClose();
         }}
-        className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white"
+        className="absolute right-4 top-4 z-10 rounded-md border border-white/20 bg-black/50 p-1.5 text-white backdrop-blur transition-colors hover:bg-black/70"
         aria-label="Close camera"
       >
-        <X className="w-6 h-6" />
+        <X className="h-5 w-5" />
       </button>
 
       {/* Preview or live video */}
       {preview ? (
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex flex-1 items-center justify-center">
           {/* biome-ignore lint/performance/noImgElement: data URL from camera capture, not a static asset */}
           <img
             src={preview}
             alt="Captured"
-            className="max-w-full max-h-full object-contain"
+            className="max-h-full max-w-full object-contain"
           />
         </div>
       ) : (
-        <div className="flex-1 flex items-center justify-center overflow-hidden">
+        <div className="flex flex-1 items-center justify-center overflow-hidden">
           <video
             ref={videoRef}
             autoPlay
             playsInline
             muted
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
           />
         </div>
       )}
 
       {/* Controls */}
-      <div className="pb-[calc(2rem+env(safe-area-inset-bottom))] pt-4 px-4 flex items-center justify-center gap-8">
+      <div className="flex items-center justify-center gap-8 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-4">
         {preview ? (
           <>
             <button
               type="button"
               onClick={handleRetake}
-              className="px-6 py-3 rounded-full bg-white/20 text-white font-medium"
+              className="rounded-md border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur transition-colors hover:bg-white/20"
             >
               Retake
             </button>
             <button
               type="button"
               onClick={handleSend}
-              className="px-6 py-3 rounded-full bg-primary text-white font-medium"
+              className="rounded-md bg-white px-4 py-2 text-sm font-medium text-black transition-colors hover:bg-white/90"
             >
-              Send Photo
+              Send photo
             </button>
           </>
         ) : (
           <>
-            <div className="w-12" />
+            <div className="w-10" />
             <button
               type="button"
               onClick={handleCapture}
               disabled={!isActive}
-              className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center disabled:opacity-50"
+              className="flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-white bg-white/10 backdrop-blur transition-transform hover:scale-105 disabled:opacity-50"
               aria-label="Take photo"
             >
-              <Camera className="w-7 h-7 text-white" />
+              <Camera className="h-6 w-6 text-white" />
             </button>
             <button
               type="button"
               onClick={switchCamera}
-              className="p-3 rounded-full bg-white/20 text-white"
+              className="rounded-md border border-white/20 bg-white/10 p-2.5 text-white backdrop-blur transition-colors hover:bg-white/20"
               aria-label="Switch camera"
             >
-              <RefreshCw className="w-5 h-5" />
+              <RefreshCw className="h-4 w-4" />
             </button>
           </>
         )}

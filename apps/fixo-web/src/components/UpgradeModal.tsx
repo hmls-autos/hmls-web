@@ -37,48 +37,55 @@ export function UpgradeModal({ message, onClose }: UpgradeModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-surface rounded-2xl p-6 max-w-sm w-full shadow-xl">
-        <div className="flex justify-between items-start mb-4">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-5">
+        <div className="mb-4 flex items-start justify-between">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted">
+            <Sparkles className="h-4 w-4 text-foreground" strokeWidth={1.75} />
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-text-secondary hover:text-text"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        <h2 className="text-lg font-semibold mb-2">Upgrade to Plus</h2>
-        <p className="text-text-secondary text-sm mb-4">{message}</p>
+        <h2 className="mb-1.5 text-base font-semibold tracking-tight">
+          Upgrade to Plus
+        </h2>
+        <p className="mb-5 text-[13px] leading-relaxed text-muted-foreground">
+          {message}
+        </p>
 
-        <ul className="space-y-2 mb-6 text-sm">
+        <ul className="mb-5 space-y-2 text-sm">
           <li className="flex items-center gap-2">
-            <span className="text-primary">+</span> Unlimited diagnoses
+            <span className="font-mono text-muted-foreground">+</span>
+            Unlimited diagnoses
           </li>
           <li className="flex items-center gap-2">
-            <span className="text-primary">+</span> Photo, audio, video & OBD
+            <span className="font-mono text-muted-foreground">+</span>
+            Photo, audio, video &amp; OBD
           </li>
           <li className="flex items-center gap-2">
-            <span className="text-primary">+</span> PDF diagnostic reports
+            <span className="font-mono text-muted-foreground">+</span>
+            PDF diagnostic reports
           </li>
         </ul>
 
         <button
           type="button"
           onClick={handleUpgrade}
-          className="w-full bg-primary text-white font-medium py-3 rounded-xl hover:bg-primary-hover transition-colors mb-2"
+          className="mb-1.5 w-full rounded-md bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
         >
-          Upgrade — $19.99/mo
+          Upgrade — <span className="tabular-nums">$19.99/mo</span>
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="w-full text-text-secondary text-sm py-2 hover:text-text"
+          className="w-full rounded-md py-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           Maybe later
         </button>

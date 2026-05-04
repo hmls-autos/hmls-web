@@ -29,6 +29,12 @@ export interface TextShimmerProps {
   className?: string;
   duration?: number;
   spread?: number;
+  /**
+   * CSS color used as the text base. Defaults to `var(--color-muted-foreground)`
+   * (zinc-500). Pass a brand color to give the shimmer brand identity — e.g.
+   * `var(--color-accent)` for Fixo Blue thinking indicator.
+   */
+  baseColor?: string;
 }
 
 const ShimmerComponent = ({
@@ -37,6 +43,7 @@ const ShimmerComponent = ({
   className,
   duration = 2,
   spread = 2,
+  baseColor = "var(--color-muted-foreground)",
 }: TextShimmerProps) => {
   const MotionComponent = getMotionComponent(
     Component as keyof JSX.IntrinsicElements,
@@ -59,8 +66,7 @@ const ShimmerComponent = ({
       style={
         {
           "--spread": `${dynamicSpread}px`,
-          backgroundImage:
-            "var(--bg), linear-gradient(var(--color-muted-foreground), var(--color-muted-foreground))",
+          backgroundImage: `var(--bg), linear-gradient(${baseColor}, ${baseColor})`,
         } as CSSProperties
       }
       transition={{

@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { AddVehicleModal } from "@/components/vehicles/AddVehicleModal";
@@ -100,28 +100,28 @@ export default function VehiclesPage() {
   };
 
   return (
-    <div className="flex flex-col h-dvh">
-      <header className="sticky top-0 z-10 bg-surface/80 backdrop-blur-sm border-b border-border px-4 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Vehicles</h1>
+    <div className="flex h-dvh flex-col">
+      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur-md">
+        <h1 className="text-[15px] font-semibold tracking-tight">Vehicles</h1>
         <button
           type="button"
           onClick={() => setShowForm(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-medium"
+          className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="h-3.5 w-3.5" />
           Add
         </button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-24">
+      <div className="flex-1 overflow-y-auto px-4 py-5 pb-24">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         ) : vehicles.length === 0 ? (
           <EmptyState onAdd={() => setShowForm(true)} />
         ) : (
-          <div className="space-y-3">
+          <div className="mx-auto max-w-2xl space-y-2">
             {vehicles.map((v) => (
               <VehicleCard key={v.id} vehicle={v} onDelete={handleDelete} />
             ))}

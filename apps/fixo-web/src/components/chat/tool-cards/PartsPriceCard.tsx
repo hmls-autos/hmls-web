@@ -59,7 +59,7 @@ export function PartsPriceCard({
 }) {
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 rounded-xl bg-surface-alt/60 px-3 py-2 text-sm text-text-secondary">
+      <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
         <Package className="h-4 w-4 animate-pulse" />
         Looking up parts pricing...
       </div>
@@ -68,21 +68,21 @@ export function PartsPriceCard({
   if (!output) return null;
   if (!output.found) {
     return (
-      <div className="rounded-xl border border-border bg-surface-alt/40 px-3 py-2 text-sm text-text-secondary">
+      <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         No pricing found for "{output.partName}" on {output.vehicle}.
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface-alt/40 p-3">
+    <div className="rounded-lg border border-border bg-muted/40 p-3">
       <div className="flex items-center justify-between gap-2">
         <div>
           <div className="text-sm font-medium text-text">{output.partName}</div>
-          <div className="text-xs text-text-secondary">{output.vehicle}</div>
+          <div className="text-xs text-muted-foreground">{output.vehicle}</div>
         </div>
         <div className="text-right">
-          <div className="text-xs text-text-secondary">Recommended</div>
+          <div className="text-xs text-muted-foreground">Recommended</div>
           <div className="font-mono text-base font-semibold tabular-nums text-text">
             {formatPrice(output.recommendedPrice)}
           </div>
@@ -102,7 +102,7 @@ export function PartsPriceCard({
                 >
                   {tier.label}
                 </span>
-                <span className="font-mono text-xs tabular-nums text-text-secondary">
+                <span className="font-mono text-xs tabular-nums text-muted-foreground">
                   {cheapest === dearest
                     ? formatPrice(cheapest)
                     : `${formatPrice(cheapest)} – ${formatPrice(dearest)}`}
@@ -116,12 +116,12 @@ export function PartsPriceCard({
                   >
                     <span className="min-w-0 truncate">
                       <span className="font-medium text-text">{p.brand}</span>
-                      <span className="text-text-secondary">
+                      <span className="text-muted-foreground">
                         {" · "}
                         {p.partNumber}
                       </span>
                     </span>
-                    <span className="shrink-0 font-mono tabular-nums text-text-secondary">
+                    <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
                       {formatPrice(p.price)}
                       {p.coreCharge
                         ? ` + ${formatPrice(p.coreCharge)} core`

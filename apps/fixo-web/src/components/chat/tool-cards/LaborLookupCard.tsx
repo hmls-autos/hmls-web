@@ -24,7 +24,7 @@ export function LaborLookupCard({
 }) {
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 rounded-xl bg-surface-alt/60 px-3 py-2 text-sm text-text-secondary">
+      <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
         <Clock className="h-4 w-4 animate-pulse" />
         Looking up labor times...
       </div>
@@ -33,19 +33,19 @@ export function LaborLookupCard({
   if (!output) return null;
   if (!output.found || output.count === 0) {
     return (
-      <div className="rounded-xl border border-border bg-surface-alt/40 px-3 py-2 text-sm text-text-secondary">
+      <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
         No labor records for "{output.searchTerm}" on {output.vehicle}.
       </div>
     );
   }
   const total = output.results.reduce((sum, r) => sum + r.laborHours, 0);
   return (
-    <div className="rounded-xl border border-border bg-surface-alt/40 p-3">
+    <div className="rounded-lg border border-border bg-muted/40 p-3">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-xs uppercase tracking-wide text-text-secondary">
+        <div className="text-xs uppercase tracking-wide text-muted-foreground">
           {output.vehicle}
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+        <span className="inline-flex items-center gap-1 rounded border border-accent/30 bg-accent/10 px-1.5 py-0.5 font-mono text-[11px] font-medium tabular-nums text-accent">
           <Clock className="h-3 w-3" />
           {total.toFixed(1)} hr total
         </span>
@@ -60,7 +60,7 @@ export function LaborLookupCard({
               <div className="truncate text-sm font-medium text-text">
                 {r.service}
               </div>
-              <div className="truncate text-xs text-text-secondary">
+              <div className="truncate text-xs text-muted-foreground">
                 {r.engine}
                 {r.fuelType ? ` · ${r.fuelType}` : ""} · {r.category}
               </div>

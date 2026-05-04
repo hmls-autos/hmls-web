@@ -25,6 +25,7 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
+import { Shimmer } from "@/components/ai-elements/shimmer";
 import {
   Tool,
   ToolContent,
@@ -47,14 +48,14 @@ import { ensureSession, loadStoredSessionId } from "@/lib/session";
 
 function WelcomeScreen() {
   return (
-    <div className="flex flex-col items-center justify-center flex-1 text-center px-6 py-12">
-      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-        <Car className="w-8 h-8 text-primary" />
+    <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+      <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-lg border border-border bg-card">
+        <Car className="h-5 w-5 text-foreground" strokeWidth={1.75} />
       </div>
-      <h2 className="text-xl font-semibold mb-2">
-        Fixo<span className="text-primary">.</span>
+      <h2 className="mb-2 text-base font-semibold tracking-tight text-accent">
+        Fixo<span className="text-accent-hover">.</span>
       </h2>
-      <p className="text-text-secondary text-sm max-w-xs">
+      <p className="max-w-xs text-[13px] leading-relaxed text-muted-foreground">
         Describe your car problem, snap a photo of a warning light, or enter an
         OBD code for instant expert analysis.
       </p>
@@ -220,6 +221,7 @@ function ChatPageInner({
   const {
     uiMessages,
     isLoading,
+    status,
     sendMessage,
     pendingEstimate,
     error,
@@ -326,21 +328,26 @@ function ChatPageInner({
 
   return (
     <div className="flex flex-col h-dvh">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-surface/80 backdrop-blur-sm border-b border-border px-4 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-semibold">
-          Fixo<span className="text-primary">.</span>
+      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur-md">
+        {/* Mobile: "Fixo." logo (no sidebar to host it).
+            Desktop: page title "Chat" matches the other pages — sidebar
+            already shows the logo so repeating it here read as duplication. */}
+        <h1 className="text-[15px] font-semibold tracking-tight">
+          <span className="text-accent lg:hidden">
+            Fixo<span className="text-accent-hover">.</span>
+          </span>
+          <span className="hidden lg:inline">Chat</span>
         </h1>
         {renderable.length > 0 && !isLoading && (
           <button
             type="button"
             disabled={isFinalizing}
             onClick={handleDownloadReport}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
             aria-label="Finish session and download report"
           >
-            <FileDown className="w-4 h-4" />
-            {isFinalizing ? "Generating..." : "Report"}
+            <FileDown className="h-3.5 w-3.5" />
+            {isFinalizing ? "Generating…" : "Report"}
           </button>
         )}
       </header>
@@ -369,7 +376,13 @@ function ChatPageInner({
             )?.text;
 
             return (
-              <Message from={msg.role} key={msg.id}>
+              // AI SDK v6 sometimes pushes intermediate messages without an
+              // id during streaming (empty-string assistant stubs). Two of
+              // those land in `renderable` and React sees `key=""` twice.
+              // Falling back to the array index for missing ids keeps the
+              // sibling list disambiguated without changing identity for
+              // properly-id'd messages.
+              <Message from={msg.role} key={msg.id || `idx-${idx}`}>
                 <MessageContent>
                   {previewImage && (
                     // biome-ignore lint/performance/noImgElement: data URL preview, not a static asset
@@ -383,7 +396,10 @@ function ChatPageInner({
                     const partKey = `${msg.id}-${i}`;
                     if (part.type === "text") {
                       return (
-                        <MessageResponse key={partKey}>
+                        <MessageResponse
+                          isAnimating={isLastAssistant && isLoading}
+                          key={partKey}
+                        >
                           {part.text}
                         </MessageResponse>
                       );
@@ -454,6 +470,18 @@ function ChatPageInner({
               </Message>
             );
           })}
+          {/* Thinking indicator: visible only on `submitted` — the gap between
+              the user pressing send and the first token arriving. Once `streaming`
+              starts, Streamdown's caret + tool cards take over and an extra
+              spinner becomes redundant noise. Vercel AI SDK's recommended
+              pattern is exactly this: gate on `status === "submitted"`. */}
+          {status === "submitted" && (
+            <Message from="assistant">
+              <MessageContent>
+                <Shimmer baseColor="var(--color-accent)">Thinking…</Shimmer>
+              </MessageContent>
+            </Message>
+          )}
           {pendingEstimate && (
             <div className="px-1">
               <FixoEstimateCard data={pendingEstimate} />

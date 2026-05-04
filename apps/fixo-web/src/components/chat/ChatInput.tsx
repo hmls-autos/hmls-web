@@ -13,6 +13,14 @@ interface ChatInputProps {
   inputRef?: RefObject<HTMLInputElement | null>;
 }
 
+/**
+ * Vercel chatbot-template-style composer:
+ *  - Single rounded card containing textarea + tool icon row + send button.
+ *  - Hairline border, no shadow, focus ring uses --ring (Fixo Blue accent).
+ *  - Icon row sits below the textarea — same layout as v0/Vercel chat templates.
+ *  - Send button is a black/white inverted square (primary), accent only when
+ *    enabled-and-non-empty so the eye is drawn to a real action target.
+ */
 export function ChatInput({
   onSend,
   isLoading,
@@ -24,28 +32,47 @@ export function ChatInput({
 }: ChatInputProps) {
   const [value, setValue] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canSend = value.trim().length > 0 && !isLoading;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!value.trim() || isLoading) return;
+    if (!canSend) return;
     onSend(value.trim());
     setValue("");
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Enter sends, Shift+Enter for newline (matches Vercel chatbot UX)
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   return (
-    <div className="fixed bottom-14 left-0 right-0 z-40 bg-surface border-t border-border p-3">
+    <div className="fixed bottom-12 left-0 right-0 z-40 px-3 pb-2 pt-3 lg:bottom-0 lg:left-60 lg:pb-4">
+      {/* Soft gradient fade replaces a hard border-t — content scrolls
+          *under* the input area and softly disappears, instead of being
+          "cut" by a 1px line. Matches Vercel chatbot composer. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 -top-6 h-6 bg-gradient-to-t from-background to-background/0"
+      />
       <form
         onSubmit={handleSubmit}
-        className="flex items-center gap-2 max-w-2xl mx-auto"
+        className="relative mx-auto flex max-w-2xl items-end gap-1.5 rounded-xl border border-border bg-background/80 p-1.5 backdrop-blur-xl transition-colors focus-within:border-foreground/25"
       >
-        <button
-          type="button"
-          onClick={onCameraClick}
-          className="p-2.5 rounded-full bg-surface-alt text-text-secondary hover:text-text transition-colors"
-          aria-label="Take photo"
-        >
-          <Camera className="w-5 h-5" />
-        </button>
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Describe your car problem…"
+          disabled={isLoading}
+          className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-[13px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none disabled:opacity-50"
+        />
+
         <input
           ref={fileInputRef}
           type="file"
@@ -57,48 +84,55 @@ export function ChatInput({
             e.target.value = "";
           }}
         />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="p-2.5 rounded-full bg-surface-alt text-text-secondary hover:text-text transition-colors"
-          aria-label="Upload photo"
-        >
-          <ImagePlus className="w-5 h-5" />
-        </button>
-        <button
-          type="button"
-          onClick={onMicClick}
-          className="p-2.5 rounded-full bg-surface-alt text-text-secondary hover:text-text transition-colors"
-          aria-label="Record audio"
-        >
-          <Mic className="w-5 h-5" />
-        </button>
-        <button
-          type="button"
-          onClick={onObdClick}
-          className="p-2.5 rounded-full bg-surface-alt text-text-secondary hover:text-text transition-colors"
-          aria-label="Enter OBD code"
-        >
-          <Cpu className="w-5 h-5" />
-        </button>
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Describe your car problem..."
-          disabled={isLoading}
-          className="flex-1 bg-surface-alt rounded-full px-4 py-2.5 text-sm text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors disabled:opacity-50"
-        />
-        <button
-          type="submit"
-          disabled={!value.trim() || isLoading}
-          className="p-2.5 rounded-full bg-primary text-white disabled:opacity-30 transition-opacity"
-          aria-label="Send message"
-        >
-          <Send className="w-5 h-5" />
-        </button>
+
+        <div className="flex items-center gap-px">
+          <ToolButton onClick={onCameraClick} label="Take photo">
+            <Camera className="h-3.5 w-3.5" />
+          </ToolButton>
+          <ToolButton
+            onClick={() => fileInputRef.current?.click()}
+            label="Upload photo"
+          >
+            <ImagePlus className="h-3.5 w-3.5" />
+          </ToolButton>
+          <ToolButton onClick={onMicClick} label="Record audio">
+            <Mic className="h-3.5 w-3.5" />
+          </ToolButton>
+          <ToolButton onClick={onObdClick} label="Enter OBD code">
+            <Cpu className="h-3.5 w-3.5" />
+          </ToolButton>
+
+          <button
+            type="submit"
+            disabled={!canSend}
+            aria-label="Send message"
+            className="ml-1 flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground/70"
+          >
+            <Send className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </form>
     </div>
+  );
+}
+
+function ToolButton({
+  onClick,
+  label,
+  children,
+}: {
+  onClick?: () => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+    >
+      {children}
+    </button>
   );
 }

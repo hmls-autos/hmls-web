@@ -35,89 +35,99 @@ export function FixoEstimateCard({ data }: FixoEstimateCardProps) {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="border-b pb-3">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 shrink-0">
-            <FileText className="h-4 w-4 text-primary" />
+    <Card className="w-full overflow-hidden border-border bg-card shadow-none">
+      <CardHeader className="border-b border-border pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-muted">
+            <FileText
+              className="h-3.5 w-3.5 text-foreground"
+              strokeWidth={1.75}
+            />
           </div>
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-sm font-semibold">
-              Estimate{data.estimateId ? ` #${data.estimateId}` : ""}
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-sm font-semibold tracking-tight">
+              Estimate
+              {data.estimateId ? (
+                <span className="ml-1 font-mono text-xs tabular-nums text-muted-foreground">
+                  #{data.estimateId}
+                </span>
+              ) : null}
             </CardTitle>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="truncate text-xs text-muted-foreground">
               {data.vehicle}
             </p>
           </div>
           {data.note && (
-            <span className="text-xs text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded-full shrink-0">
+            <span className="shrink-0 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-400">
               Not saved
             </span>
           )}
         </div>
       </CardHeader>
 
-      <CardContent className="py-3 space-y-1.5">
+      <CardContent className="space-y-1.5 py-3">
         {data.items.map((item, i) => (
           <div
             // biome-ignore lint/suspicious/noArrayIndexKey: items have no stable id
             key={i}
-            className="flex justify-between items-start gap-3 text-sm"
+            className="flex items-start justify-between gap-3 text-sm"
           >
-            <div className="flex-1 min-w-0">
-              <span className="text-foreground font-medium">{item.name}</span>
+            <div className="min-w-0 flex-1">
+              <span className="font-medium text-foreground">{item.name}</span>
               {item.description && (
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {item.description}
                 </p>
               )}
             </div>
-            <span className="font-medium tabular-nums shrink-0">
+            <span className="shrink-0 font-mono font-medium tabular-nums">
               ${(item.unitPrice * item.quantity).toFixed(2)}
             </span>
           </div>
         ))}
       </CardContent>
 
-      <CardFooter className="flex-col items-stretch gap-3 border-t">
-        <div className="flex justify-between text-sm pt-1">
+      <CardFooter className="flex-col items-stretch gap-2.5 border-t border-border bg-muted/40">
+        <div className="flex justify-between pt-1 text-sm">
           <span className="text-muted-foreground">Subtotal</span>
-          <span className="font-semibold tabular-nums">
+          <span className="font-mono font-semibold tabular-nums">
             ${data.subtotal.toFixed(2)}
           </span>
         </div>
-        <div className="flex justify-between text-sm">
+        <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">Estimated range</span>
-          <span className="font-bold text-primary text-base leading-none self-center">
+          <span className="self-center font-mono text-base font-semibold leading-none tabular-nums text-accent">
             {data.priceRange}
           </span>
         </div>
         {data.expiresAt && (
           <p className="text-xs text-muted-foreground">
             Valid until{" "}
-            {new Date(data.expiresAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
+            <span className="tabular-nums">
+              {new Date(data.expiresAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
           </p>
         )}
         {shareUrl && (
           <Button
             variant="outline"
             size="sm"
-            className="w-full mt-1"
+            className="mt-1 w-full border-border bg-card hover:bg-muted"
             onClick={handleShare}
           >
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 text-primary" />
-                Copied!
+                <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-500" />
+                Copied
               </>
             ) : (
               <>
                 <ClipboardCopy className="h-3.5 w-3.5" />
-                Share Estimate
+                Share estimate
               </>
             )}
           </Button>
