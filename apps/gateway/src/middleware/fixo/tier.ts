@@ -5,12 +5,19 @@ import type { AuthContext } from "./auth.ts";
 const FREE_LIMITS = { text: 3 } as const;
 
 /**
- * Free-tier rate limit on diagnostic sessions per month.
+ * Free-tier rate limit on diagnostic reports per month.
  *
- * `excludeSessionId` is for endpoints called against an already-created
- * session (like /complete). The session was already counted when the
- * Report-click flow created it; counting it again here would block the
- * user's third report at limit=3 even though only 2 prior sessions exist.
+ * Counts COMPLETED sessions only (`status='complete'`). Drafts and abandoned
+ * sessions don't burn the user's slots — they're just persisted state until
+ * the user clicks Report. This decoupling is what lets the chat hook
+ * eagerly create a session row on first send (for transcript persistence)
+ * without exploding the free 3/month quota.
+ *
+ * `excludeSessionId` is preserved for endpoints called against the session
+ * that's about to flip to 'complete' inside an atomic transaction (e.g.
+ * /complete). The current logic — pending sessions don't count — already
+ * handles this case, but the parameter is kept as a defensive guard against
+ * future changes that might count broader statuses again.
  */
 export async function checkFreeTierLimit(
   auth: AuthContext,
@@ -31,7 +38,7 @@ export async function checkFreeTierLimit(
     );
   }
 
-  // Count this month's sessions
+  // Count this month's completed reports
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
@@ -39,13 +46,11 @@ export async function checkFreeTierLimit(
   const conditions = [
     eq(schema.fixoSessions.userId, auth.userId),
     gte(schema.fixoSessions.createdAt, monthStart),
-    // Don't penalize the user for transient failures — a session whose
-    // /complete crashed before producing a result shouldn't permanently
-    // consume one of their three monthly slots.
-    ne(schema.fixoSessions.status, "failed"),
-    // Expired sessions don't count either. The user can't see them in their
-    // history (sessions.ts filters them out), so charging quota for ghosts
-    // they can't revisit is gaslighting.
+    // Only completed reports count. Drafts (pending), reopened drafts
+    // (processing), and crashes (failed) are all free.
+    eq(schema.fixoSessions.status, "complete"),
+    // Defensive: an expired completed session shouldn't count either, in
+    // case expires_at gets clobbered into the past for any reason.
     gt(schema.fixoSessions.expiresAt, sql`now()`),
   ];
   if (excludeSessionId !== undefined) {

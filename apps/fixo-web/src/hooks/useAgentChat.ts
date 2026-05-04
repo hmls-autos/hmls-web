@@ -18,7 +18,11 @@ import {
   useState,
 } from "react";
 import { AGENT_URL } from "@/lib/config";
-import { clearStoredSessionId, loadStoredSessionId } from "@/lib/session";
+import {
+  clearStoredSessionId,
+  ensureSession,
+  loadStoredSessionId,
+} from "@/lib/session";
 
 export interface FixoEstimateData {
   success: true;
@@ -329,7 +333,7 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const error = chatError?.message ?? null;
 
   const sendMessage = useCallback(
-    (content: string, options?: { imageUrl?: string }) => {
+    async (content: string, options?: { imageUrl?: string }) => {
       if (options?.imageUrl) {
         // Track by the raw chatMessages index the new user message will
         // occupy. AI SDK v6 assigns its own ids and ignores any we pre-
@@ -343,15 +347,21 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
           url: options.imageUrl,
         };
       }
-      // Intentionally NOT creating a session here. The free-tier quota counts
-      // session rows, so creating one on every chat send would have the third
-      // chat fail with "limit_reached" before /task even runs. Sessions are
-      // created lazily by useMediaUpload (on first upload) or by the chat
-      // page's report flow (on first Report click) — both are concrete
-      // moments where the session id is actually needed.
+      // Eagerly create a session on the first send so the transcript is
+      // persisted server-side from turn 1 and the conversation shows up in
+      // /history immediately. Tier quota now counts completed reports
+      // (`status='complete'`), not session rows, so creating eagerly no
+      // longer burns the user's monthly slots. ensureSession dedupes
+      // concurrent callers, so repeated sends never POST /sessions twice.
+      // Best-effort: if it fails, the chat still streams (no persistence).
+      if (sessionIdRef && !sessionIdRef.current && accessToken) {
+        await ensureSession(accessToken, sessionIdRef, userId).catch(
+          () => null,
+        );
+      }
       chatSendMessage({ text: content });
     },
-    [chatSendMessage, chatMessages],
+    [chatSendMessage, chatMessages, sessionIdRef, accessToken, userId],
   );
 
   const clearMessages = useCallback(() => {
