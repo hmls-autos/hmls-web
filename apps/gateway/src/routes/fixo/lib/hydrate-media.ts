@@ -1,7 +1,8 @@
 import type { FileUIPart, UIMessage } from "ai";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { createSignedReadUrl } from "@hmls/agent";
 import { db, schema } from "@hmls/agent/db";
+import type { FixoMedia } from "@hmls/agent/db";
 import { getLogger } from "@logtape/logtape";
 
 const logger = getLogger(["hmls", "gateway", "fixo", "hydrate-media"]);
@@ -14,19 +15,65 @@ interface SessionEvidence {
 }
 
 /**
+ * Mode controls whether we filter to only-new rows and mark them hydrated:
+ *
+ *  - "task": atomically claims rows where `hydratedAt IS NULL`, marks them
+ *    hydrated, and returns only those. Concurrent /task calls won't double-
+ *    attach the same photo.
+ *  - "complete": reads every completed media row, never mutates. /complete
+ *    needs the full evidence list for the structured-output summary.
+ */
+type EvidenceMode = "task" | "complete";
+
+async function loadMediaRows(
+  sessionId: number,
+  mode: EvidenceMode,
+): Promise<FixoMedia[]> {
+  if (mode === "task") {
+    return await db
+      .update(schema.fixoMedia)
+      .set({ hydratedAt: new Date() })
+      .where(
+        and(
+          eq(schema.fixoMedia.sessionId, sessionId),
+          eq(schema.fixoMedia.processingStatus, "complete"),
+          isNull(schema.fixoMedia.hydratedAt),
+        ),
+      )
+      .returning();
+  }
+  return await db
+    .select()
+    .from(schema.fixoMedia)
+    .where(
+      and(
+        eq(schema.fixoMedia.sessionId, sessionId),
+        eq(schema.fixoMedia.processingStatus, "complete"),
+      ),
+    );
+}
+
+/**
  * Fetch the server-side evidence (uploaded photos and stored OBD-II codes)
  * for a session, gated by ownership. Returns parts ready to splice into a
  * UIMessage array. Used by both /task hydration and /complete summarization.
  *
  * Photos return as FileUIPart with short-lived signed URLs (15 min) — long
  * enough for one Gemini fetch, short enough not to leak as durable links.
+ *
+ * `mode` selects task vs complete semantics — see EvidenceMode above.
  */
 async function loadSessionEvidence(
   sessionId: number,
   authUserId: string,
   authCustomerId: number | undefined,
+  mode: EvidenceMode,
 ): Promise<SessionEvidence | null> {
   // Verify the caller owns the session before we surface any URLs or codes.
+  // /task mode mutates fixoMedia (claims rows for hydration), so the
+  // ownership check MUST gate that mutation — otherwise a user could mark
+  // someone else's media hydrated by guessing their session id, suppressing
+  // legit hydration on the next /task call from the real owner.
   const [session] = await db
     .select()
     .from(schema.fixoSessions)
@@ -40,15 +87,7 @@ async function loadSessionEvidence(
   }
 
   const [mediaRows, obdRows] = await Promise.all([
-    db
-      .select()
-      .from(schema.fixoMedia)
-      .where(
-        and(
-          eq(schema.fixoMedia.sessionId, sessionId),
-          eq(schema.fixoMedia.processingStatus, "complete"),
-        ),
-      ),
+    loadMediaRows(sessionId, mode),
     db
       .select()
       .from(schema.obdCodes)
@@ -87,11 +126,15 @@ async function loadSessionEvidence(
 }
 
 /**
- * Attach session evidence (photos + OBD codes) to the LATEST user message.
- * Used by /task because the user just sent that message and the upload
- * belongs to the active turn — the model sees the photo at exactly the
- * right point in the conversation. Mutates `messages` in place; returns
- * the count of FileUIParts added.
+ * Attach NEW session evidence (photos uploaded since the last /task call) to
+ * the LATEST user message. Each fixoMedia row is hydrated exactly once in its
+ * lifetime — `hydratedAt` is set atomically by `loadMediaRows("task")` so
+ * follow-up text turns don't re-feed (and re-bill) the same image to the
+ * model. Mutates `messages` in place; returns the count of FileUIParts added.
+ *
+ * OBD-II codes are NOT filtered here — they're short text and the obd_codes
+ * table doesn't carry a hydratedAt column. Re-injecting them costs ~5 tokens
+ * per turn and keeps the codes visible if the user buries them under chatter.
  */
 export async function hydrateSessionMedia(
   messages: UIMessage[],
@@ -105,6 +148,7 @@ export async function hydrateSessionMedia(
     sessionId,
     authUserId,
     authCustomerId,
+    "task",
   );
   if (!evidence) return 0;
   if (evidence.obdCodes.length === 0 && evidence.photoFileParts.length === 0) {
@@ -150,10 +194,15 @@ export async function prependSessionEvidence(
   authUserId: string,
   authCustomerId: number | undefined,
 ): Promise<number> {
+  // /complete needs every uploaded photo so the structured-output summary can
+  // attribute the diagnosis. Pass mode="complete" to read all rows without
+  // mutating hydratedAt — otherwise calling Report after a chat would mark
+  // every row hydrated and a follow-up /task would attach nothing.
   const evidence = await loadSessionEvidence(
     sessionId,
     authUserId,
     authCustomerId,
+    "complete",
   );
   if (!evidence) return 0;
   if (evidence.obdCodes.length === 0 && evidence.photoFileParts.length === 0) {

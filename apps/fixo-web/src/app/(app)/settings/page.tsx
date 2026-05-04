@@ -43,112 +43,118 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="flex flex-col h-dvh">
-      <header className="sticky top-0 z-10 bg-surface/80 backdrop-blur-sm border-b border-border px-4 py-3">
-        <h1 className="text-lg font-semibold">Settings</h1>
+    <div className="flex h-dvh flex-col">
+      <header className="sticky top-0 z-10 flex h-14 items-center border-b border-border bg-background/95 px-4 backdrop-blur-md">
+        <h1 className="text-[15px] font-semibold tracking-tight">Settings</h1>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-6">
-        {/* Account */}
-        <section>
-          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
-            Account
-          </h2>
-          <div className="bg-surface-alt rounded-xl border border-border divide-y divide-border">
-            <div className="px-4 py-3">
-              <p className="text-sm text-text-secondary">Email</p>
-              <p className="text-sm font-medium">{user?.email ?? "—"}</p>
+      <div className="flex-1 overflow-y-auto px-4 py-5 pb-24">
+        <div className="mx-auto max-w-2xl space-y-6">
+          {/* Account */}
+          <section>
+            <h2 className="mb-2.5 px-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Account
+            </h2>
+            <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+              <div className="px-4 py-3">
+                <p className="text-xs text-muted-foreground">Email</p>
+                <p className="mt-0.5 text-sm font-medium">
+                  {user?.email ?? "—"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-900/10"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Sign out
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-500/5 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Sign Out
-            </button>
-          </div>
-        </section>
+          </section>
 
-        {/* Subscription */}
-        <section>
-          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
-            Subscription
-          </h2>
-          <div className="bg-surface-alt rounded-xl border border-border divide-y divide-border">
-            <div className="px-4 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-text-secondary">Current Plan</p>
-                <p className="text-sm font-medium">Free</p>
+          {/* Subscription */}
+          <section>
+            <h2 className="mb-2.5 px-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Subscription
+            </h2>
+            <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+              <div className="flex items-center justify-between px-4 py-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Current plan</p>
+                  <p className="mt-0.5 text-sm font-medium">Free</p>
+                </div>
+                <a
+                  href="/pricing"
+                  className="inline-flex items-center justify-center rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
+                >
+                  Upgrade
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={handleManageSubscription}
+                className="flex w-full items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-muted"
+              >
+                <span>Manage subscription</span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </div>
+          </section>
+
+          {/* Theme */}
+          <section>
+            <h2 className="mb-2.5 px-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Appearance
+            </h2>
+            <div className="flex gap-0.5 rounded-lg border border-border bg-card p-0.5">
+              {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setTheme(value)}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${
+                    theme === value
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* About */}
+          <section>
+            <h2 className="mb-2.5 px-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              About
+            </h2>
+            <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-sm">Version</span>
+                <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                  0.1.0
+                </span>
               </div>
               <a
-                href="/pricing"
-                className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium"
+                href="/privacy"
+                className="flex items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-muted"
               >
-                Upgrade
+                <span>Privacy policy</span>
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+              </a>
+              <a
+                href="/terms"
+                className="flex items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-muted"
+              >
+                <span>Terms of service</span>
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
               </a>
             </div>
-            <button
-              type="button"
-              onClick={handleManageSubscription}
-              className="w-full flex items-center justify-between px-4 py-3 text-sm hover:bg-surface transition-colors"
-            >
-              <span>Manage Subscription</span>
-              <ChevronRight className="w-4 h-4 text-text-secondary" />
-            </button>
-          </div>
-        </section>
-
-        {/* Theme */}
-        <section>
-          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
-            Appearance
-          </h2>
-          <div className="bg-surface-alt rounded-xl border border-border p-1 flex gap-1">
-            {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setTheme(value)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  theme === value
-                    ? "bg-primary text-white"
-                    : "text-text-secondary hover:text-text"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* About */}
-        <section>
-          <h2 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-3">
-            About
-          </h2>
-          <div className="bg-surface-alt rounded-xl border border-border divide-y divide-border">
-            <div className="px-4 py-3 flex items-center justify-between">
-              <span className="text-sm">Version</span>
-              <span className="text-sm text-text-secondary">0.1.0</span>
-            </div>
-            <a
-              href="/privacy"
-              className="flex items-center justify-between px-4 py-3 text-sm hover:bg-surface transition-colors"
-            >
-              <span>Privacy Policy</span>
-              <ExternalLink className="w-4 h-4 text-text-secondary" />
-            </a>
-            <a
-              href="/terms"
-              className="flex items-center justify-between px-4 py-3 text-sm hover:bg-surface transition-colors"
-            >
-              <span>Terms of Service</span>
-              <ExternalLink className="w-4 h-4 text-text-secondary" />
-            </a>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   );

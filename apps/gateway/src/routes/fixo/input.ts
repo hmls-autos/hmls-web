@@ -143,8 +143,9 @@ input.post("/:id/input", async (c) => {
     mediaId = mediaRow.id;
 
     // Audio: client also generates a spectrogram PNG. Persist it as its own
-    // fixoMedia row so the spectrogram path (analyzeAudioNoise tool) can
-    // pick it up the same way photo media gets hydrated.
+    // fixoMedia row so the chat agent can see it as a FileUIPart on the next
+    // /task turn — Gemini analyzes the spectrogram inline (the dedicated
+    // analyzeAudioNoise tool was removed; the model has the image directly).
     if (type === "audio" && spectrogramBase64) {
       const spectrogramData = Uint8Array.from(
         atob(spectrogramBase64),

@@ -2,7 +2,6 @@ import { hasToolCall, type ModelMessage, stepCountIs, streamText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { getLogger } from "@logtape/logtape";
 import { SYSTEM_PROMPT } from "./system-prompt.ts";
-import { analyzeAudioNoiseTool } from "./tools/analyzeAudioNoise.ts";
 import { extractVideoFramesTool } from "./tools/extractVideoFrames.ts";
 import { lookupObdCodeTool } from "./tools/lookupObdCode.ts";
 import { convertTools, type LegacyTool } from "../common/convert-tools.ts";
@@ -31,11 +30,10 @@ export function runFixoAgent(options: RunFixoAgentOptions) {
 
   const allTools: LegacyTool[] = [
     // Photos and audio spectrograms reach the model as FileUIParts hydrated
-    // by the gateway in /task. analyzeImage / saveMedia / getMedia tools are
-    // gone — the model sees images directly. analyzeAudioNoise stays as a
-    // belt-and-suspenders option for the spectrogram path until D12's
-    // experiment retires it.
-    analyzeAudioNoiseTool,
+    // by the gateway in /task. The model analyzes the spectrogram inline; no
+    // dedicated audio-analysis tool is needed (the prior analyzeAudioNoise
+    // tool required base64 input that the agent never had — only signed
+    // URLs — so it was dead code and was removed).
     extractVideoFramesTool,
     lookupObdCodeTool,
     ...askUserQuestionTools,

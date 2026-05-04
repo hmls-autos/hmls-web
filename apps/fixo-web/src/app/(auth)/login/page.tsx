@@ -105,23 +105,26 @@ export default function LoginPage() {
     }
   };
 
+  const inputClass =
+    "w-full rounded-md border border-border bg-card px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors focus:border-foreground/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30";
+
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-background text-text px-4 pb-16">
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-background px-4 pb-16">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-10">
-          <h1 className="text-2xl font-bold tracking-tight">
-            Fixo<span className="text-primary">.</span>
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-accent">
+            Fixo<span className="text-accent-hover">.</span>
           </h1>
-          <p className="text-text-secondary text-sm mt-1">
+          <p className="mt-1 text-[13px] text-muted-foreground">
             AI-powered vehicle diagnostics
           </p>
         </div>
 
-        <div className="text-center mb-8">
-          <h2 className="text-xl font-semibold mb-1">
+        <div className="mb-6 text-center">
+          <h2 className="text-base font-semibold tracking-tight">
             {mode === "login" ? "Welcome back" : "Create an account"}
           </h2>
-          <p className="text-text-secondary text-sm">
+          <p className="mt-1 text-[13px] text-muted-foreground">
             {mode === "login"
               ? "Sign in to access your diagnostics"
               : "Sign up to get started"}
@@ -132,26 +135,28 @@ export default function LoginPage() {
           type="button"
           onClick={handleGoogleLogin}
           disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl border border-border bg-surface text-text font-medium hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex w-full items-center justify-center gap-2.5 rounded-md border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isLoading ? (
-            <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
           ) : (
             <GoogleLogo />
           )}
           Continue with Google
         </button>
 
-        <div className="relative my-6">
+        <div className="relative my-5">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-border" />
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-background px-4 text-text-secondary">or</span>
+          <div className="relative flex justify-center">
+            <span className="bg-background px-3 text-[11px] uppercase tracking-wider text-muted-foreground">
+              or
+            </span>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-2.5">
           <div>
             <label htmlFor="login-email" className="sr-only">
               Email address
@@ -166,7 +171,7 @@ export default function LoginPage() {
               required
               autoComplete="email"
               spellCheck={false}
-              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+              className={inputClass}
             />
           </div>
           <div>
@@ -185,22 +190,22 @@ export default function LoginPage() {
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
               }
-              className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary transition-colors"
+              className={inputClass}
             />
           </div>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-primary text-white font-medium py-3 rounded-xl hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isLoading && (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
             )}
-            {mode === "login" ? "Sign In" : "Sign Up"}
+            {mode === "login" ? "Sign in" : "Sign up"}
           </button>
         </form>
 
-        <p className="text-center text-text-secondary text-sm mt-6">
+        <p className="mt-5 text-center text-[13px] text-muted-foreground">
           {mode === "login" ? (
             <>
               Don&apos;t have an account?{" "}
@@ -210,7 +215,7 @@ export default function LoginPage() {
                   setMode("signup");
                   setError(null);
                 }}
-                className="text-primary hover:text-primary-hover font-medium"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
               >
                 Sign up
               </button>
@@ -224,7 +229,7 @@ export default function LoginPage() {
                   setMode("login");
                   setError(null);
                 }}
-                className="text-primary hover:text-primary-hover font-medium"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
               >
                 Sign in
               </button>
@@ -233,10 +238,14 @@ export default function LoginPage() {
         </p>
 
         {error && (
-          <p className="text-sm text-red-500 text-center mt-4">{error}</p>
+          <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-center text-xs text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-400">
+            {error}
+          </p>
         )}
         {message && (
-          <p className="text-sm text-green-500 text-center mt-4">{message}</p>
+          <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-400">
+            {message}
+          </p>
         )}
       </div>
     </main>

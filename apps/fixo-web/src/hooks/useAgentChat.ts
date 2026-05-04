@@ -298,18 +298,25 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
 
   // Map to our Message interface
   const messages: Message[] = useMemo(() => {
-    const filtered = chatMessages
-      .filter((msg) => msg.role === "user" || msg.role === "assistant")
-      .filter((msg) => getTextContent(msg)); // skip empty tool-only steps
-
-    // Resolve any pending imageUrl (stored by index) into the id-keyed map
+    // Resolve any pending imageUrl (stored by raw chatMessages position) into
+    // the id-keyed map. We index against the unfiltered array because the AI
+    // SDK assigns its own ids and the new user message lands at the position
+    // captured in sendMessage. Indexing against the text-filtered list dropped
+    // the new message any time a prior assistant turn was tool-only (no text)
+    // — the index would point past the end of the filtered array and the
+    // preview would silently never attach.
     if (pendingImageUrlRef.current !== null) {
       const { index, url } = pendingImageUrlRef.current;
-      if (index < filtered.length) {
-        imageUrlMapRef.current.set(filtered[index].id, url);
+      const newMsg = chatMessages[index];
+      if (newMsg && newMsg.role === "user") {
+        imageUrlMapRef.current.set(newMsg.id, url);
         pendingImageUrlRef.current = null;
       }
     }
+
+    const filtered = chatMessages
+      .filter((msg) => msg.role === "user" || msg.role === "assistant")
+      .filter((msg) => getTextContent(msg)); // skip empty tool-only steps
 
     return filtered.map((msg) => ({
       id: msg.id,
@@ -324,13 +331,15 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
   const sendMessage = useCallback(
     (content: string, options?: { imageUrl?: string }) => {
       if (options?.imageUrl) {
-        // Track by the index the new user message will occupy, since AI SDK v6
-        // assigns its own internal ID and ignores the pre-generated UUID key.
-        const userMessages = chatMessages.filter(
-          (m) => m.role === "user" || m.role === "assistant",
-        );
+        // Track by the raw chatMessages index the new user message will
+        // occupy. AI SDK v6 assigns its own ids and ignores any we pre-
+        // generate, so we capture position now and resolve it to an id once
+        // useChat appends the message. Indexing against the unfiltered array
+        // is critical: filtered views (e.g. "messages with text content") can
+        // drop tool-only assistant turns and shift the position out from
+        // under us, silently losing the preview.
         pendingImageUrlRef.current = {
-          index: userMessages.length,
+          index: chatMessages.length,
           url: options.imageUrl,
         };
       }
@@ -377,6 +386,12 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
     messages,
     uiMessages: chatMessages,
     isLoading,
+    // Expose the raw useChat status so the UI can distinguish "submitted but
+    // no token yet" (thinking indicator) from "streaming" (let Streamdown's
+    // caret + tool cards take over). Vercel AI SDK pattern: show the spinner
+    // ONLY on `submitted` — once `streaming` starts, content is in flight and
+    // a separate indicator is redundant.
+    status,
     error,
     currentTool,
     pendingEstimate,

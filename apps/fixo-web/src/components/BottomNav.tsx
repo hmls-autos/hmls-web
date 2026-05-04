@@ -15,22 +15,31 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 bg-surface border-t border-border pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-center justify-around max-w-lg mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+      <div className="mx-auto flex max-w-lg items-center justify-around">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center gap-0.5 py-2 px-3 text-xs transition-colors ${
+              className={`relative flex flex-col items-center gap-1 px-4 py-2.5 text-[11px] font-medium tracking-tight transition-colors ${
                 isActive
-                  ? "text-primary"
-                  : "text-text-secondary hover:text-text"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <Icon className="w-5 h-5" />
+              <Icon
+                className="h-[18px] w-[18px]"
+                strokeWidth={isActive ? 2.25 : 1.75}
+              />
               <span>{label}</span>
+              {isActive && (
+                <span
+                  aria-hidden
+                  className="absolute -top-px left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-accent"
+                />
+              )}
             </Link>
           );
         })}

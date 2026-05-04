@@ -53,24 +53,38 @@ export function ObdInput({ onSubmit, onClose }: ObdInputProps) {
   const hasValidCodes = codes.some((c) => OBD_PATTERN.test(c));
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-surface border-t border-border rounded-t-2xl p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Enter OBD Codes</h3>
+    <div className="fixed bottom-0 left-0 right-0 z-40 rounded-t-xl border-t border-border bg-card p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-base font-semibold tracking-tight">
+          Enter OBD codes
+        </h3>
         <button
           type="button"
           onClick={onClose}
-          className="p-1 text-text-secondary hover:text-text"
+          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           aria-label="Close"
         >
-          <X className="w-5 h-5" />
+          <X className="h-4 w-4" />
         </button>
       </div>
 
-      <p className="text-text-secondary text-sm mb-4">
-        Enter diagnostic trouble codes (e.g. P0171, B0001, C0035, U0100)
+      <p className="mb-4 text-[13px] text-muted-foreground">
+        Enter diagnostic trouble codes (e.g.{" "}
+        <code className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[11px]">
+          P0171
+        </code>
+        ,{" "}
+        <code className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[11px]">
+          B0001
+        </code>
+        ,{" "}
+        <code className="rounded border border-border bg-muted px-1 py-0.5 font-mono text-[11px]">
+          U0100
+        </code>
+        )
       </p>
 
-      <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
+      <div className="mb-3 max-h-48 space-y-2 overflow-y-auto">
         {codes.map((code, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: dynamic list of code inputs
           <div key={i} className="flex items-center gap-2">
@@ -80,7 +94,7 @@ export function ObdInput({ onSubmit, onClose }: ObdInputProps) {
               onChange={(e) => updateCode(i, e.target.value)}
               placeholder="P0171"
               maxLength={5}
-              className="flex-1 bg-surface-alt border border-border rounded-xl px-4 py-2.5 text-sm font-mono uppercase text-text placeholder-text-secondary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+              className="flex-1 rounded-md border border-border bg-card px-3 py-2 font-mono text-sm uppercase tracking-wide text-foreground placeholder:text-muted-foreground/70 focus:border-foreground/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
               // biome-ignore lint/a11y/noAutofocus: focus newest input for UX
               autoFocus={i === codes.length - 1}
             />
@@ -88,10 +102,10 @@ export function ObdInput({ onSubmit, onClose }: ObdInputProps) {
               <button
                 type="button"
                 onClick={() => removeCode(i)}
-                className="p-2 text-text-secondary hover:text-red-500"
+                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-red-600 dark:hover:text-red-500"
                 aria-label="Remove code"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
@@ -99,25 +113,27 @@ export function ObdInput({ onSubmit, onClose }: ObdInputProps) {
       </div>
 
       {errors.some((e) => e) && (
-        <p className="text-xs text-red-500 mb-3">{errors.find((e) => e)}</p>
+        <p className="mb-3 text-xs text-red-600 dark:text-red-500">
+          {errors.find((e) => e)}
+        </p>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={addCode}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-surface-alt text-text-secondary text-sm hover:text-text transition-colors"
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="h-3.5 w-3.5" />
           Add code
         </button>
         <button
           type="button"
           onClick={handleSubmit}
           disabled={!hasValidCodes}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-white font-medium disabled:opacity-30 transition-opacity"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-primary py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
         >
-          <Send className="w-4 h-4" />
+          <Send className="h-3.5 w-3.5" />
           Analyze {codes.filter((c) => OBD_PATTERN.test(c)).length || ""} code
           {codes.filter((c) => OBD_PATTERN.test(c)).length !== 1 ? "s" : ""}
         </button>

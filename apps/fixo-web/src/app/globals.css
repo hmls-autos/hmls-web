@@ -5,86 +5,110 @@
 @source "../../node_modules/streamdown/dist/*.js";
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Light palette — Fixo Blue ── */
+/* ── Vercel-style: zinc grayscale + Fixo Blue accent ────────────────────────
+ * Inspired by vercel.com / v0.dev / Vercel chatbot template:
+ *  - primary surfaces are pure black/white, secondary surfaces are zinc 50/100
+ *  - 1px hairline borders (zinc-200) instead of shadows for separation
+ *  - Fixo Blue retained ONLY as accent: focus ring, link, active state, and
+ *    select-CTA emphasis (Send button, primary action). Never as a fill on
+ *    large surfaces — that breaks the Vercel "content-first, brand-quiet" feel.
+ * ────────────────────────────────────────────────────────────────────────── */
 :root {
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(1 0 0); /* pure white */
+  --foreground: oklch(0.145 0 0); /* near-black */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.546 0.245 262.881);
+  /* Primary = Fixo Blue. We tried Vercel's pure-black CTA style and it
+   * killed the brand identity — every action target read as "system chrome"
+   * instead of "Fixo product." Keeping the Vercel-style hairlines / tight
+   * radius / tabular-nums / mono treatments around it gives the engineered
+   * feel without going monochrome. */
+  --primary: oklch(0.546 0.245 262.881); /* Fixo Blue */
   --primary-foreground: oklch(0.985 0 0);
-  --primary-hover: oklch(0.488 0.243 264.376);
-  --secondary: oklch(0.97 0.005 262);
-  --secondary-foreground: oklch(0.25 0.02 262);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.95 0.02 262);
-  --accent-foreground: oklch(0.25 0.02 262);
+  --primary-hover: oklch(0.488 0.243 264.376); /* a touch deeper on hover */
+  --secondary: oklch(0.97 0 0); /* zinc-50 */
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0); /* zinc-50 */
+  --muted-foreground: oklch(0.5 0 0); /* zinc-500 */
+  /* Accent = Fixo Blue, kept for selective use only (focus ring, send btn,
+   * active nav indicator, link highlight). Components that previously used
+   * `bg-primary` for brand emphasis should switch to `bg-accent text-accent-foreground`. */
+  --accent: oklch(0.546 0.245 262.881); /* Fixo Blue */
+  --accent-foreground: oklch(0.985 0 0);
+  --accent-hover: oklch(0.488 0.243 264.376);
   --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --border: oklch(0.92 0 0); /* zinc-200 hairline */
+  --input: oklch(0.92 0 0);
+  /* Ring uses accent so focus states feel branded without coloring fills. */
   --ring: oklch(0.546 0.245 262.881);
-  --surface: #ffffff;
-  --surface-alt: #f5f5f5;
-  --surface-hover: oklch(0.97 0.01 262);
-  --border-hover: oklch(0.546 0.245 262.881);
-  --text: #171717;
-  --text-secondary: #737373;
+  --surface: oklch(1 0 0); /* white */
+  --surface-alt: oklch(0.97 0 0); /* zinc-50 */
+  --surface-hover: oklch(0.95 0 0); /* zinc-100 */
+  --border-hover: oklch(0.85 0 0); /* zinc-300 */
+  --text: oklch(0.145 0 0);
+  --text-secondary: oklch(0.5 0 0); /* zinc-500 */
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --radius: 0.625rem;
+  /* Tighter radius — Vercel defaults to ~6px (was 10px). 8px on inputs feels
+   * slightly chunkier; 6px on buttons reads as "system control". */
+  --radius: 0.5rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
+  --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.95 0.02 262);
-  --sidebar-accent-foreground: oklch(0.25 0.02 262);
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.92 0 0);
   --sidebar-ring: oklch(0.546 0.245 262.881);
 }
 
-/* ── Dark palette ── */
+/* ── Dark palette — same logic, inverted ── */
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.145 0 0); /* near-black */
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.18 0 0); /* zinc-950 */
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.18 0 0);
   --popover-foreground: oklch(0.985 0 0);
+  /* Dark mode: lift the primary blue slightly so it reads bright against the
+   * near-black background — same lightness bump we use for --accent. */
   --primary: oklch(0.623 0.214 259.815);
-  --primary-foreground: oklch(0.145 0 0);
+  --primary-foreground: oklch(0.985 0 0);
   --primary-hover: oklch(0.7 0.17 259);
-  --secondary: oklch(0.269 0.01 262);
+  --secondary: oklch(0.22 0 0); /* zinc-900 */
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0.02 262);
-  --accent-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.22 0 0);
+  --muted-foreground: oklch(0.6 0 0); /* zinc-400 */
+  --accent: oklch(
+    0.623 0.214 259.815
+  ); /* Fixo Blue, slightly lighter for dark */
+  --accent-foreground: oklch(0.145 0 0);
+  --accent-hover: oklch(0.7 0.17 259);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: oklch(1 0 0 / 10%); /* hairline at 10% white */
+  --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.623 0.214 259.815);
-  --surface: #1c1917;
-  --surface-alt: #292524;
-  --surface-hover: #44403c;
-  --border-hover: oklch(0.623 0.214 259.815);
-  --text: #fafaf9;
-  --text-secondary: #a8a29e;
+  --surface: oklch(0.145 0 0);
+  --surface-alt: oklch(0.22 0 0); /* zinc-900 */
+  --surface-hover: oklch(0.27 0 0); /* zinc-800 */
+  --border-hover: oklch(1 0 0 / 18%);
+  --text: oklch(0.985 0 0);
+  --text-secondary: oklch(0.6 0 0);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: oklch(0.18 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.623 0.214 259.815);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0.01 262);
+  --sidebar-primary: oklch(0.985 0 0);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.22 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.623 0.214 259.815);
@@ -114,6 +138,7 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-hover: var(--accent-hover);
   --color-destructive: var(--destructive);
   --color-input: var(--input);
   --color-ring: var(--ring);

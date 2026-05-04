@@ -18,17 +18,17 @@ interface VehicleCardProps {
 
 export function VehicleCard({ vehicle: v, onDelete }: VehicleCardProps) {
   return (
-    <div className="flex items-center justify-between bg-surface-alt rounded-xl p-4 border border-border">
+    <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-border-hover">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-          <Car className="w-5 h-5 text-primary" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-md border border-border bg-muted">
+          <Car className="h-4 w-4 text-foreground" strokeWidth={1.75} />
         </div>
         <div>
-          <p className="font-medium">
+          <p className="text-sm font-medium tracking-tight">
             {v.nickname || `${v.year ?? ""} ${v.make} ${v.model}`.trim()}
           </p>
           {v.nickname && (
-            <p className="text-sm text-text-secondary">
+            <p className="text-xs text-muted-foreground">
               {[v.year, v.make, v.model].filter(Boolean).join(" ")}
             </p>
           )}
@@ -37,10 +37,10 @@ export function VehicleCard({ vehicle: v, onDelete }: VehicleCardProps) {
       <button
         type="button"
         onClick={() => onDelete(v.id)}
-        className="p-2 text-text-secondary hover:text-red-500 transition-colors"
+        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-red-600 dark:hover:text-red-500"
         aria-label="Delete vehicle"
       >
-        <Trash2 className="w-4 h-4" />
+        <Trash2 className="h-3.5 w-3.5" />
       </button>
     </div>
   );

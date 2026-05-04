@@ -328,6 +328,12 @@ export const fixoMedia = pgTable(
       .default("pending"),
     transcription: text("transcription"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    // Set to NOW() the first time /task hydrates this row into the chat
+    // agent's input. Subsequent turns skip already-hydrated rows so a single
+    // upload doesn't get re-fed (and re-billed in vision tokens) on every
+    // follow-up text message. /complete ignores this column and always pulls
+    // every row for the final summary.
+    hydratedAt: timestamp("hydrated_at"),
   },
   (table) => [index("idx_fixo_media_session").on(table.sessionId)],
 );
